@@ -10,7 +10,7 @@ interface SoftwareSpecsSectionProps {
 const DEFAULT_ROWS = [
   { sr_no: 1, name: '', maker: 'Microsoft', qty: '2' },
   { sr_no: 2, name: '', maker: 'Microsoft', qty: '4' },
-  { sr_no: 3, name: '', maker: 'Microsoft/ Other', qty: '6' },
+  { sr_no: 3, name: '', maker: 'Microsoft', qty: '6' },
   { sr_no: 4, name: '', maker: 'Microsoft/ Other', qty: '2' },
   { sr_no: 5, name: '', maker: '', qty: '6' },
   { sr_no: 6, name: '', maker: '-', qty: '2' },

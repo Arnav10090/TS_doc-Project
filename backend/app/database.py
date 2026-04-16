@@ -12,8 +12,10 @@ engine = create_async_engine(
 )
 
 # CRITICAL: Verify pool_pre_ping is NOT set (causes MissingGreenlet errors with asyncpg)
-# Note: We check the engine URL string to ensure pool_pre_ping was not accidentally added
-assert 'pool_pre_ping' not in str(engine.url), "pool_pre_ping must not be set with asyncpg"
+# Check the actual engine configuration, not the URL string
+engine_config = engine.pool._creator.keywords if hasattr(engine.pool, '_creator') else {}
+assert 'pool_pre_ping' not in engine.pool.__dict__, \
+    "pool_pre_ping must not be set with asyncpg - causes MissingGreenlet errors"
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(

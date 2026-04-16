@@ -20,7 +20,9 @@ const CoverSection: React.FC<CoverSectionProps> = ({ projectId }) => {
   });
   const [loading, setLoading] = useState(true);
   const { save, status } = useAutoSave(projectId, 'cover', 800);
-  const { setSolutionName } = useProjectStore();
+  // Note: Cover section should NOT update Zustand store
+  // solutionName (short name) is set from project.solution_name on initial load
+  // Cover section only edits solution_full_name which is a different field
 
   useEffect(() => {
     const loadSection = async () => {
@@ -47,11 +49,10 @@ const CoverSection: React.FC<CoverSectionProps> = ({ projectId }) => {
     // Update project record for global fields
     try {
       await updateProject(projectId, { [field]: value });
-      
-      // Update Zustand store when solution_name changes
-      if (field === 'solution_full_name') {
-        setSolutionName(value);
-      }
+      // Note: Do NOT update Zustand store here
+      // solutionName in store is the SHORT name (e.g., "PMYMS") from project.solution_name
+      // Cover section edits solution_full_name which is a different field
+      // Store is only updated via setProject() on initial load
     } catch (error) {
       console.error('Error updating project:', error);
     }
