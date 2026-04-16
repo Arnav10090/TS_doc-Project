@@ -1,5 +1,78 @@
 import { test, expect } from '@playwright/test'
 
+// Test fixtures: Create projects before tests
+let testProjectId: string
+let completeProjectId: string
+let incompleteProjectId: string
+
+test.beforeAll(async ({ request }) => {
+  // Create test project
+  const testProject = await request.post('http://localhost:8000/api/v1/projects', {
+    data: {
+      solution_name: 'PMYMS',
+      solution_full_name: 'Plate Mill Yard Management System',
+      client_name: 'JSPL',
+      client_location: 'Angul',
+    }
+  })
+  const testData = await testProject.json()
+  testProjectId = testData.id
+
+  // Create complete project (with all sections filled)
+  const completeProject = await request.post('http://localhost:8000/api/v1/projects', {
+    data: {
+      solution_name: 'Complete',
+      solution_full_name: 'Complete Test Project',
+      client_name: 'Test Client',
+      client_location: 'Test Location',
+    }
+  })
+  const completeData = await completeProject.json()
+  completeProjectId = completeData.id
+
+  // Fill all required sections for complete project
+  const sections = [
+    'cover', 'revision_history', 'executive_summary', 'introduction',
+    'abbreviations', 'process_flow', 'overview', 'features', 'remote_support',
+    'documentation_control', 'customer_training', 'system_config', 'fat_condition',
+    'tech_stack', 'hardware_specs', 'software_specs', 'third_party_sw',
+    'overall_gantt', 'shutdown_gantt', 'supervisors', 'division_of_eng',
+    'work_completion', 'buyer_obligations', 'exclusion_list', 'value_addition',
+    'buyer_prerequisites', 'poc'
+  ]
+
+  for (const section of sections) {
+    await request.put(`http://localhost:8000/api/v1/projects/${completeProjectId}/sections/${section}`, {
+      data: { content: { test: 'data' } }
+    })
+  }
+
+  // Create incomplete project (only cover section)
+  const incompleteProject = await request.post('http://localhost:8000/api/v1/projects', {
+    data: {
+      solution_name: 'Incomplete',
+      solution_full_name: 'Incomplete Test Project',
+      client_name: 'Test Client',
+      client_location: 'Test Location',
+    }
+  })
+  const incompleteData = await incompleteProject.json()
+  incompleteProjectId = incompleteData.id
+})
+
+test.afterAll(async ({ request }) => {
+  // Clean up test projects
+  if (testProjectId) {
+    await request.delete(`http://localhost:8000/api/v1/projects/${testProjectId}`)
+  }
+  if (completeProjectId) {
+    await request.delete(`http://localhost:8000/api/v1/projects/${completeProjectId}`)
+  }
+  if (incompleteProjectId) {
+    await request.delete(`http://localhost:8000/api/v1/projects/${incompleteProjectId}`)
+  }
+})
+
 test.describe('Project Creation and Editing', () => {
   test('should create new project and navigate to editor', async ({ page }) => {
     await page.goto('http://localhost:5173')
@@ -23,7 +96,7 @@ test.describe('Project Creation and Editing', () => {
 
   test('should auto-save section changes', async ({ page }) => {
     // Navigate to existing project
-    await page.goto('http://localhost:5173/editor/test-project-id')
+    await page.goto(`http://localhost:5173/editor/${testProjectId}`)
     
     // Click Cover Page section
     await page.click('text=Cover Page')
@@ -37,7 +110,7 @@ test.describe('Project Creation and Editing', () => {
   })
 
   test('should update solution name across all sections', async ({ page }) => {
-    await page.goto('http://localhost:5173/editor/test-project-id')
+    await page.goto(`http://localhost:5173/editor/${testProjectId}`)
     
     // Update solution name in cover
     await page.click('text=Cover Page')
@@ -55,7 +128,7 @@ test.describe('Project Creation and Editing', () => {
 test.describe('Document Generation', () => {
   test('should generate document when all sections complete', async ({ page }) => {
     // Navigate to complete project
-    await page.goto('http://localhost:5173/editor/complete-project-id')
+    await page.goto(`http://localhost:5173/editor/${completeProjectId}`)
     
     // Click Generate Document
     const downloadPromise = page.waitForEvent('download')
@@ -67,7 +140,7 @@ test.describe('Document Generation', () => {
   })
 
   test('should show missing sections on incomplete project', async ({ page }) => {
-    await page.goto('http://localhost:5173/editor/incomplete-project-id')
+    await page.goto(`http://localhost:5173/editor/${incompleteProjectId}`)
     
     // Click Generate Document
     await page.click('text=Generate Document')
@@ -81,7 +154,7 @@ test.describe('Document Generation', () => {
 
 test.describe('Image Upload', () => {
   test('should upload architecture diagram', async ({ page }) => {
-    await page.goto('http://localhost:5173/editor/test-project-id')
+    await page.goto(`http://localhost:5173/editor/${testProjectId}`)
     
     // Navigate to System Configuration
     await page.click('text=System Configuration')

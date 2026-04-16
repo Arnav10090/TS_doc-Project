@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from httpx import AsyncClient
 
 # Set test environment variables before importing app modules
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://postgres:postgres@db:5432/ts_generator_test"
-os.environ["SYNC_DATABASE_URL"] = "postgresql://postgres:postgres@db:5432/ts_generator_test"
+os.environ["DATABASE_URL"] = "postgresql+asyncpg://ts_user:ts_password@db:5432/ts_generator_test"
+os.environ["SYNC_DATABASE_URL"] = "postgresql://ts_user:ts_password@db:5432/ts_generator_test"
 os.environ["UPLOAD_DIR"] = "/tmp/test_uploads"
 os.environ["TEMPLATE_PATH"] = "/tmp/test_template.docx"
 
@@ -21,7 +21,7 @@ from app.projects.models import Project
 from app.sections.models import SectionData
 
 # Test database URL
-TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@db:5432/ts_generator_test"
+TEST_DATABASE_URL = "postgresql+asyncpg://ts_user:ts_password@db:5432/ts_generator_test"
 
 # Create test engine
 test_engine = create_async_engine(

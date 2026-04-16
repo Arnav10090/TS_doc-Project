@@ -48,13 +48,13 @@ const SECTION_GROUPS: SectionGroup[] = [
       { key: 'remote_support', label: 'Remote Support' },
       { key: 'documentation_control', label: 'Documentation Control' },
       { key: 'customer_training', label: 'Customer Training' },
+      { key: 'system_config', label: 'System Configuration' },
+      { key: 'fat_condition', label: 'FAT Condition' },
     ],
   },
   {
     category: 'TECHNOLOGY STACK',
     sections: [
-      { key: 'system_config', label: 'System Configuration' },
-      { key: 'fat_condition', label: 'FAT Condition' },
       { key: 'tech_stack', label: 'Technology Stack' },
       { key: 'hardware_specs', label: 'Hardware Specifications' },
       { key: 'software_specs', label: 'Software Specifications' },
@@ -77,6 +77,8 @@ const SECTION_GROUPS: SectionGroup[] = [
       { key: 'work_completion', label: 'Work Completion' },
       { key: 'buyer_obligations', label: 'Buyer Obligations' },
       { key: 'exclusion_list', label: 'Exclusion List' },
+      { key: 'value_addition', label: 'Value Addition' },
+      { key: 'buyer_prerequisites', label: 'Buyer Prerequisites' },
     ],
   },
   {
@@ -85,8 +87,6 @@ const SECTION_GROUPS: SectionGroup[] = [
       { key: 'binding_conditions', label: 'Binding Conditions', locked: true },
       { key: 'cybersecurity', label: 'Cybersecurity', locked: true },
       { key: 'disclaimer', label: 'Disclaimer', locked: true },
-      { key: 'value_addition', label: 'Value Addition' },
-      { key: 'buyer_prerequisites', label: 'Buyer Prerequisites' },
       { key: 'poc', label: 'Proof of Concept' },
     ],
   },
