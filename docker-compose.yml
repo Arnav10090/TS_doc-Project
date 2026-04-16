@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: ts_generator_db
+    environment:
+      POSTGRES_USER: ts_user
+      POSTGRES_PASSWORD: ts_password
+      POSTGRES_DB: ts_generator
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ts_user -d ts_generator"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ts_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ts_generator_backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ts_user:ts_password@db:5432/ts_generator
+      SYNC_DATABASE_URL: postgresql://ts_user:ts_password@db:5432/ts_generator
+      UPLOAD_DIR: /app/uploads
+      TEMPLATE_PATH: /app/templates/TS_Template_jinja.docx
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - backend_uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ts_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ts_generator_frontend
+    environment:
+      VITE_API_URL: http://localhost:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - ts_network
+
+volumes:
+  postgres_data:
+  backend_uploads:
+
+networks:
+  ts_network:
+    driver: bridge
