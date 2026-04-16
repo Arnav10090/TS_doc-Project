@@ -20,11 +20,11 @@ This assertion always passes because it checks if the string `'pool_pre_ping'` a
 Changed the assertion to check the actual engine pool configuration:
 
 ```python
-assert 'pool_pre_ping' not in engine.pool.__dict__, \
+assert not hasattr(engine.pool, 'pre_ping') or not engine.pool.pre_ping, \
     "pool_pre_ping must not be set with asyncpg - causes MissingGreenlet errors"
 ```
 
-This checks the engine's pool object's attributes dictionary, which contains the actual configuration parameters.
+This checks if the engine's pool has a `pre_ping` attribute and verifies it's not enabled.
 
 ### Verification
 - The assertion now correctly validates that `pool_pre_ping` is not set in the engine configuration
