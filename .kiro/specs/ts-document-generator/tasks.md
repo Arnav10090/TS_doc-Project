@@ -1,0 +1,1166 @@
+# Implementation Plan: TS Document Generator
+
+## Overview
+
+This implementation plan breaks down the TS Document Generator feature into discrete coding tasks. The application is a local MVP with React TypeScript frontend, FastAPI Python backend, and PostgreSQL database orchestrated via Docker Compose. The implementation follows a bottom-up approach: infrastructure → backend → frontend → integration.
+
+## Tasks
+
+- [x] 1. Set up project infrastructure and Docker environment
+  - Create root directory structure with backend/, frontend/, and docker-compose.yml
+  - Create backend/Dockerfile with Python 3.11 slim base image
+  - Create frontend/Dockerfile with Node 20 Alpine base image
+  - Create docker-compose.yml with db, backend, and frontend services
+  - Configure PostgreSQL 15 service with health check and persistent volume
+  - Health check parameters (Req 47.5): test: pg_isready, interval: 5s, timeout: 5s, retries: 10
+  - CRITICAL: retries=10 ensures backend waits for PostgreSQL to be ready before starting
+  - Configure backend service with uploads volume and environment variables
+  - Configure backend service depends_on db with condition: service_healthy
+  - Configure frontend service with hot reload volume mounting
+  - Create .env file with DATABASE_URL (asyncpg), SYNC_DATABASE_URL (psycopg2 for Alembic), UPLOAD_DIR, and TEMPLATE_PATH
+  - DATABASE_URL format: postgresql+asyncpg://user:password@db:5432/ts_generator
+  - SYNC_DATABASE_URL format: postgresql://user:password@db:5432/ts_generator (Req 47.8)
+  - Create .gitignore with backend/uploads/, node_modules/, dist/, __pycache__/
+  - _Requirements: 47.1, 47.2, 47.3, 47.4, 47.5, 47.6, 47.7, 47.8, 47.9, 47.10, 47.11, 47.12, 47.13, 47.14, 47.15, 47.16, 47.17, 47.18_
+
+- [x] 2. Set up backend Python application structure
+  - [x] 2.1 Create FastAPI application with core configuration
+    - Create backend/requirements.txt with exact pinned versions (Req 63):
+    - fastapi==0.111.0
+    - uvicorn[standard]==0.29.0 (Req 63.2)
+    - sqlalchemy[asyncio]==2.0.30
+    - asyncpg==0.29.0
+    - alembic==1.13.1
+    - python-docx==1.1.2 (Req 63.11)
+    - docxtpl==0.16.8 (Req 63.7)
+    - python-multipart==0.0.9
+    - pydantic==2.7.1
+    - pydantic-settings==2.2.1
+    - pytest==8.2.0
+    - pytest-asyncio==0.23.6
+    - httpx==0.27.0
+    - psycopg2-binary==2.9.9 (Req 63.5 - required for Alembic sync operations)
+    - aiofiles==23.2.1 (Req 63.13 - required for async file operations in image upload)
+    - Pillow==10.3.0 (Req 63.12 - required for image validation)
+    - Create backend/app/main.py with FastAPI app instance and CORS middleware
+    - Create backend/app/config.py with environment variable loading
+    - Load DATABASE_URL (asyncpg for async operations) from environment
+    - Load SYNC_DATABASE_URL (psycopg2 for Alembic sync operations) from environment (Req 47.8)
+    - Create backend/app/database.py with async SQLAlchemy engine and session factory
+    - Configure database engine with pool_recycle=3600, pool_size=5, max_overflow=10
+    - CRITICAL: DO NOT set pool_pre_ping=True (causes MissingGreenlet errors with asyncpg)
+    - Add assertion in database.py: assert 'pool_pre_ping' not in engine configuration to prevent accidental addition
+    - Configure CORS to allow origins http://localhost:5173 and http://localhost:3000
+    - Add global exception handlers in main.py for RequestValidationError (return 422 with validation details), IntegrityError (return 409 with conflict message), and generic Exception (return 500 with error message)
+    - _Requirements: 46.22, 45.6, 47.8, 63.1, 63.2, 63.3, 63.4, 63.5, 63.6, 63.7, 63.8, 63.9, 63.10, 63.11, 63.12, 63.13_
+
+  - [x] 2.2 Set up Alembic for database migrations
+    - Run alembic init alembic in backend directory
+    - Create alembic/env.py with Base import and model imports
+    - CRITICAL: Add sys.path.insert(0, os.path.dirname(os.path.dirname(__file__))) at top of env.py
+    - Without sys.path modification, "from app.database import Base" will fail with ModuleNotFoundError
+    - Import os and sys modules in env.py
+    - Import app.projects.models, app.sections.models, app.generation.models in env.py
+    - Set target_metadata = Base.metadata in env.py
+    - Configure env.py to use SYNC_DATABASE_URL from environment for sync engine (Req 47.8)
+    - Alembic requires sync engine (psycopg2) not async engine (asyncpg)
+    - Configure alembic.ini with sqlalchemy.url = postgresql://user:password@db:5432/ts_generator (sync URL format)
+    - Replace the default sqlite URL with postgresql (NOT postgresql+asyncpg) URL matching SYNC_DATABASE_URL format
+    - CRITICAL: Run alembic revision --autogenerate -m "Initial migration" to create first migration file (Req 51.2)
+    - Commit alembic/versions/*.py migration file to repository
+    - Without committed migration, alembic upgrade head creates zero tables → all API calls fail with "relation does not exist"
+    - Add startup event in main.py to run "alembic upgrade head" with error handling
+    - Wrap subprocess.run in try-except block catching subprocess.CalledProcessError
+    - On migration failure, log error message and call sys.exit(1) to prevent app startup with wrong schema
+    - Import subprocess and sys modules in main.py
+    - _Requirements: 45.7, 45.8, 45.9, 47.8, 48.32, 48.33, 51.2_
+
+  - [x] 2.3 Create database models with SQLAlchemy
+    - Create backend/app/projects/models.py with Project model
+    - Define Project columns: id (UUID), solution_name, solution_full_name, solution_abbreviation, client_name, client_location, client_abbreviation, ref_number, doc_date, doc_version, created_at, updated_at
+    - Create backend/app/sections/models.py with SectionData model
+    - Define SectionData columns: id (UUID), project_id (FK), section_key, content (JSONB), updated_at
+    - Add unique constraint on (project_id, section_key) in SectionData
+    - Create backend/app/generation/models.py with DocumentVersion model
+    - Define DocumentVersion columns: id (UUID), project_id (FK), version_number, filename, file_path, created_at
+    - Configure cascade delete relationships from Project to SectionData and DocumentVersion
+    - _Requirements: 45.2, 45.3, 45.4, 45.5_
+
+  - [x] 2.4 Create Pydantic schemas for request/response validation
+    - Create backend/app/projects/schemas.py with ProjectCreate, ProjectUpdate, ProjectSummary, ProjectDetail, CompletionSummary
+    - Create backend/app/sections/schemas.py with SectionDataCreate, SectionDataResponse
+    - Create backend/app/generation/schemas.py with DocumentVersionResponse, GenerationError
+    - Define all schema fields matching database models with proper types
+    - _Requirements: 46.2, 46.4, 46.8_
+
+
+- [x] 3. Implement backend API endpoints and business logic
+  - [x] 3.1 Implement Projects API endpoints
+    - Create backend/app/projects/__init__.py (empty file - required for Python package recognition per Req 51)
+    - Create backend/app/projects/router.py with FastAPI router
+    - Implement POST /api/v1/projects endpoint accepting ProjectCreate schema
+    - Implement GET /api/v1/projects endpoint returning list of ProjectSummary
+    - Implement GET /api/v1/projects/{id} endpoint returning ProjectDetail with completion data
+    - Implement PATCH /api/v1/projects/{id} endpoint accepting ProjectUpdate schema
+    - Implement DELETE /api/v1/projects/{id} endpoint returning 204 on success
+    - Create backend/app/projects/service.py with database operations
+    - Implement create_project, get_all_projects, get_project_by_id, update_project, delete_project functions
+    - _Requirements: 46.1, 46.2, 46.3, 46.4, 46.5, 51_
+
+  - [x] 3.2 Implement Sections API endpoints
+    - Create backend/app/sections/__init__.py (empty file - required for Python package recognition per Req 51)
+    - Create backend/app/sections/router.py with FastAPI router
+    - Define VALID_SECTION_KEYS constant with all 31 section keys
+    - Implement GET /api/v1/projects/{id}/sections endpoint returning all section data
+    - Implement GET /api/v1/projects/{id}/sections/{section_key} endpoint returning single section
+    - On first GET for a section, auto-create Section_Data record with empty content if it doesn't exist (Req 2.4, 50.6)
+    - This ensures locked sections auto-complete when first opened
+    - Implement PUT /api/v1/projects/{id}/sections/{section_key} endpoint with upsert logic
+    - Add section_key validation returning HTTP 400 for invalid keys
+    - Create backend/app/sections/service.py with upsert_section, get_section, get_all_sections functions
+    - _Requirements: 46.6, 46.7, 46.8, 46.18, 2.4, 50.6, 51_
+
+  - [x] 3.3 Implement completion calculation logic
+    - Create backend/app/generation/__init__.py (empty file - required for Python package recognition per Req 51)
+    - Create backend/app/generation/completion.py with calculate_section_completion function
+    - Implement helper function s(key) to safely retrieve section content
+    - Implement helper function strip_html to remove HTML tags from rich text
+    - Implement completion rules for cover section (3 required fields)
+    - Implement completion rules for revision_history (at least 1 row with details)
+    - Implement completion rules for executive_summary (para1 with content after HTML stripping)
+    - Implement completion rules for introduction (tender_reference and tender_date)
+    - Implement completion rules for abbreviations (row 13 abbreviation field)
+    - Implement completion rules for process_flow (text with content)
+    - Implement completion rules for overview (system_objective and existing_system)
+    - Implement completion rules for features (at least 1 item with title and description)
+    - Implement completion rules for remote_support (text field)
+    - Implement completion rules for customer_training (persons and days)
+    - Implement completion rules for fat_condition (text field)
+    - Implement completion rules for tech_stack (first row component and technology)
+    - Implement completion rules for hardware_specs (first row specs_line1 and maker)
+    - Implement completion rules for software_specs (first row name)
+    - Implement completion rules for third_party_sw (sw4_name)
+    - Implement completion rules for supervisors (4 required fields)
+    - Implement completion rules for value_addition (text field)
+    - Implement completion rules for buyer_prerequisites (at least 1 non-empty item)
+    - Implement completion rules for poc (name and description)
+    - Implement auto-complete rules for 12 locked/auto-complete sections: documentation_control, system_config, overall_gantt, shutdown_gantt, scope_definitions, division_of_eng, work_completion, buyer_obligations, exclusion_list, binding_conditions, cybersecurity, disclaimer
+    - Note: 31 total sections - 4 excluded sections (binding_conditions, cybersecurity, disclaimer, scope_definitions) = 27 completable sections (Req 3.26)
+    - CRITICAL: documentation_control IS one of the 27 completable sections (auto-completes on visit)
+    - Return completion map with all 31 section keys and boolean values
+    - Calculate completion_summary with total=27 (HARDCODED - do NOT count dynamically), completed count, and percentage
+    - CRITICAL: total must be hardcoded as 27 because 4 sections are excluded by design (binding_conditions, cybersecurity, disclaimer, scope_definitions)
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14, 3.15, 3.16, 3.17, 3.18, 3.19, 3.20, 3.21, 3.22, 3.23, 3.24, 3.25, 3.26, 3.27_
+
+  - [x] 3.4 Implement context builder for Jinja2 template rendering
+    - Create backend/app/generation/context_builder.py with build_context function
+    - Map Project fields to context variables (SolutionName, SolutionFullName, ClientName, ClientLocation, etc.)
+    - Map executive_summary.para1 to ExecutiveSummaryPara1 with HTML stripping
+    - Map introduction fields to TenderReference and TenderDate
+    - Map abbreviations.rows to abbreviation_rows array
+    - Map process_flow.text to ProcessFlowDescription with HTML stripping
+    - Map overview fields to SystemObjective, ExistingSystemDescription, IntegrationDescription, TangibleBenefits, IntangibleBenefits with HTML stripping
+    - Map features.items to features array
+    - Map remote_support.text to RemoteSupportText with HTML stripping
+    - Map documentation_control.custom_items to doc_control_custom
+    - Map customer_training fields to TrainingPersons and TrainingDays
+    - Map fat_condition.text to FATCondition with HTML stripping
+    - Pad tech_stack.rows to 6 elements with empty objects and map to ts_rows
+    - Pad hardware_specs.rows to 6 elements with empty objects and map to hw_rows
+    - Pad software_specs.rows to 9 elements with empty objects (maker defaults to "-") and map to sw_rows
+    - Map third_party_sw.sw4_name to ThirdPartySW
+    - Map supervisors fields to PMDays, DevDays, CommDays, TotalManDays
+    - Map value_addition.text to ValueAddedOfferings with HTML stripping
+    - Map work_completion.custom_items to work_completion_custom
+    - Map buyer_obligations.custom_items to buyer_obligations_custom
+    - Map exclusion_list.custom_items to exclusion_custom
+    - Map buyer_prerequisites.items to buyer_prereqs
+    - Map revision_history.rows to revision_rows array for revision history table in template
+    - Map poc.name to POCName
+    - Map poc.description to POCDescription with HTML stripping (Req 49.3, 5.47 - rich text field)
+    - Check if uploads/images/{project_id}/architecture.png exists
+    - If architecture image exists, create InlineImage with 15cm width and assign to context['architecture_diagram']
+    - If architecture image missing, assign placeholder text "[Architecture Diagram — To Be Inserted]" to context['architecture_diagram']
+    - Check if uploads/images/{project_id}/gantt_overall.png exists
+    - If overall_gantt image exists, create InlineImage with 15cm width and assign to context['overall_gantt']
+    - If overall_gantt image missing, assign placeholder text "[Overall Gantt Chart — To Be Inserted]" to context['overall_gantt']
+    - Check if uploads/images/{project_id}/gantt_shutdown.png exists
+    - If shutdown_gantt image exists, create InlineImage with 15cm width and assign to context['shutdown_gantt']
+    - If shutdown_gantt image missing, assign placeholder text "[Shutdown Gantt Chart — To Be Inserted]" to context['shutdown_gantt']
+    - Use empty string defaults for all missing section data
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10, 5.11, 5.12, 5.13, 5.14, 5.15, 5.16, 5.17, 5.18, 5.19, 5.20, 5.21, 5.22, 5.23, 5.24, 5.25, 5.26, 5.27, 5.28, 5.29, 5.30, 5.31, 5.32, 5.33, 5.34, 5.35, 5.36, 5.37, 5.38, 5.39, 5.40, 5.41, 5.42, 5.43, 5.44, 5.45, 5.46, 5.47, 6.10, 6.11, 6.12, 6.13, 6.14, 6.15, 6.16, 6.17, 6.18_
+
+  - [x] 3.5 Implement document generation service
+    - Create backend/app/generation/docx_generator.py with generate_document function
+    - Accept parameters: project, all_sections, template_path, upload_dir, version_number (int)
+    - CRITICAL: version_number parameter is the auto-incremented DB version (1, 2, 3...), NOT project.doc_version
+    - Implement generate_safe_filename function replacing spaces with underscores and slashes with hyphens
+    - Truncate client_name to 30 characters (Req 58.7)
+    - Truncate solution_name to 20 characters (Req 58.8)
+    - Load DocxTemplate from template_path
+    - Call build_context to get Jinja2 context dictionary
+    - Render template with context using template.render(context)
+    - Create output directory uploads/versions/{project_id}/ with parents=True, exist_ok=True
+    - Generate filename as "TS_{client_name}_{solution_name}_v{version_number}.docx" using the passed version_number parameter
+    - Save rendered template to output path
+    - Return tuple of (file_path, filename)
+    - _Requirements: 4.5, 4.6, 4.7, 4.10, 4.11, 4.12, 58.7, 58.8, 58.10_
+
+  - [x] 3.6 Implement Generation API endpoints
+    - Create backend/app/generation/router.py with FastAPI router
+    - Implement POST /api/v1/projects/{id}/generate endpoint
+    - Load project and all section data from database
+    - Call calculate_section_completion to get completion status
+    - Identify missing required sections (19 sections excluding auto-complete ones)
+    - If missing sections exist, raise HTTPException with status 422 and detail dict containing message and missing_sections array
+    - Query maximum version_number for project from document_versions table
+    - Set next_version_number to max + 1 (or 1 if no versions exist)
+    - Call generate_document(project, all_sections, template_path, upload_dir, next_version_number)
+    - CRITICAL: Pass next_version_number (auto-incremented int) to generate_document, NOT project.doc_version (user string)
+    - Create DocumentVersion record with project_id, version_number=next_version_number, filename, file_path
+    - Return FileResponse with content-type "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    - Set Content-Disposition header to "attachment; filename={filename}"
+    - Implement GET /api/v1/projects/{id}/versions endpoint returning all versions ordered by version_number desc
+    - Implement GET /api/v1/versions/{version_id}/download endpoint returning file from stored path
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.8, 4.9, 4.13, 4.14, 4.15, 4.16, 46.9, 46.10, 46.11_
+
+  - [x] 3.7 Implement Images API endpoints
+    - Create backend/app/images/__init__.py (empty file - required for Python package recognition per Req 51)
+    - Create backend/app/images/router.py with FastAPI router
+    - Create backend/app/images/service.py with validate_image function
+    - Implement POST /api/v1/projects/{id}/images/{image_type} endpoint accepting multipart file upload
+    - Validate image_type is one of: "architecture", "gantt_overall", "gantt_shutdown"
+    - Validate file content-type is "image/png" or "image/jpeg"
+    - Validate file size does not exceed 10MB
+    - Return HTTP 400 with descriptive error for validation failures
+    - Save file to uploads/images/{project_id}/{image_type}.png (overwrite if exists)
+    - Return JSON with url field: "http://localhost:8000/uploads/images/{project_id}/{image_type}.png"
+    - Implement GET /api/v1/projects/{id}/images endpoint returning array of uploaded images
+    - Check filesystem for architecture.png, gantt_overall.png, gantt_shutdown.png
+    - Return array of objects with type and url for existing files
+    - Implement DELETE /api/v1/projects/{id}/images/{image_type} endpoint
+    - Remove file from disk and return HTTP 204
+    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 46.12, 46.13, 46.14, 46.16_
+
+  - [x] 3.8 Implement AI Prompt Generation API endpoints
+    - Create backend/app/ai_prompts/__init__.py (empty file - required for Python package recognition per Req 51)
+    - Create backend/app/ai_prompts/router.py with FastAPI router
+    - Create backend/app/ai_prompts/builders.py with prompt generation functions
+    - Implement POST /api/v1/projects/{id}/ai-prompt/{prompt_type} endpoint
+    - Validate prompt_type is one of: "architecture", "gantt_overall", "gantt_shutdown"
+    - For architecture prompt: load project and tech_stack section data
+    - Generate architecture prompt describing system with L1/L2/L3 layers, application server, database, HMI, mobile devices, network boundaries, data flow
+    - Return recommended tools: Eraser.io, Claude.ai, Mermaid Live Editor, Draw.io with URLs and notes
+    - For gantt_overall prompt: load project and supervisors section data
+    - Generate gantt_overall prompt describing project phases: kickoff, design, development, FAT, commissioning, training, go-live
+    - Include PM days, dev days, comm days from supervisors section
+    - Return recommended tools: Claude.ai, Mermaid Live Editor, Tom's Planner
+    - For gantt_shutdown prompt: load project details
+    - Generate gantt_shutdown prompt describing 14-day commissioning: preparation, installation, deployment, testing, training, parallel run, go-live
+    - Return recommended tools: Claude.ai, Mermaid Live Editor, Tom's Planner
+    - Include style requirements in all prompts: clean professional appearance, white background, labeled components, PNG export at 1920x1080px minimum
+    - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 7.11, 7.12, 7.13, 46.15, 46.17_
+
+
+- [x] 4. Create Word template conversion script
+  - Create backend/scripts/convert_template.py script
+  - Import re, pathlib.Path, docx.Document, docx.oxml.ns.qn, copy modules
+  - Define INPUT path as Path("templates/TS_Template_original.docx")
+  - Define OUTPUT path as Path("templates/TS_Template_jinja.docx")
+  - Define REPLACEMENTS dictionary with 80+ key-value pairs
+  - Add mappings for SolutionFullName, SolutionName, SolutionAbbreviation, CLIENTNAME, ClientName, ClientLocation, CLIENTLOCATION, ClientAbbreviation
+  - Add mappings for ExecutiveSummaryPara1, TenderReference, TenderDate, ProcessFlowDescription
+  - Add mappings for SystemObjective, ExistingSystemDescription, IntegrationDescription, TangibleBenefits, IntangibleBenefits
+  - Add mappings for Feature1Title through Feature6Title, Feature1Brief through Feature6Brief, Feature1Description through Feature6Description
+  - Add mappings for TrainingPersons, TrainingDays, FATCondition
+  - CRITICAL: Add ARCHITECTURE_DIAGRAM → architecture_diagram (lowercase) mapping
+  - CRITICAL: Add OVERALL_GANTT_CHART → overall_gantt (lowercase) mapping
+  - CRITICAL: Add SHUTDOWN_GANTT_CHART → shutdown_gantt (lowercase) mapping
+  - Note: Uppercase/lowercase mismatch causes diagrams to disappear with no error
+  - Add mappings for TS1_Component through TS6_Component, TS1_Technology through TS6_Technology
+  - Add mappings for HW1_Specs_Line1 through HW1_Specs_Line4, HW1_Maker, HW1_Qty
+  - Add mappings for HW2_Specs through HW6_Specs with appropriate line counts
+  - Add mappings for SW1_Name through SW9_Name, SW1_Maker through SW9_Maker
+  - Add mappings for PMDays, DevDays, CommDays, TotalManDays
+  - Add mappings for ValueAddedOfferings, POCName, POCDescription
+  - Add mapping to replace full Remote Support section paragraph with {{ RemoteSupportText }}
+  - Define replace_in_paragraph function that concatenates run texts, applies replacements, updates first run, clears remaining runs
+  - Define process_document function that processes all paragraphs in document body
+  - Process all paragraphs in all table cells
+  - Load Document from INPUT path
+  - Call process_document on loaded document
+  - Save processed document to OUTPUT path
+  - Print confirmation message with OUTPUT path
+  - Print IMPORTANT warning to manually verify {%tr for feature in features %} tags in features table
+  - Print reference to docxtpl documentation URL
+  - _Requirements: 48.1, 48.2, 48.3, 48.4, 48.5, 48.6, 48.7, 48.8, 48.9, 48.10, 48.11, 48.12, 48.13, 48.14, 48.15, 48.16, 48.17, 48.18, 48.19, 48.20, 48.21, 48.22, 48.23, 48.24, 48.25, 48.26, 48.27, 48.28, 48.29, 48.30, 48.31, 48.32, 48.33, 48.34, 48.35, 48.36, 52.1, 52.2, 52.3, 52.4, 52.5, 52.6, 52.7, 52.8, 52.9, 52.10, 52.11, 52.12, 52.13, 52.14, 52.15, 52.16, 52.17, 52.18, 52.19, 52.20, 52.21, 52.22, 52.23, 52.24, 52.25, 52.26_
+
+- [x] 5. Checkpoint - Backend API complete
+  - Verify all backend endpoints are implemented and return correct status codes
+  - Test database migrations create all three tables
+  - Test completion calculation logic with sample data
+  - Test context builder with sample section data
+  - Test document generation with complete project data
+  - Ensure all tests pass, ask the user if questions arise.
+
+
+- [x] 6. Set up frontend React TypeScript application
+  - [x] 6.1 Initialize React project with Vite and TypeScript
+    - Create frontend/package.json with react, react-dom, react-router-dom, axios, zustand, @tiptap/react, @tiptap/starter-kit, @tiptap/extension-underline, @dnd-kit/core, @dnd-kit/sortable, react-dropzone, react-hot-toast
+    - CRITICAL: @tiptap/extension-underline must be installed separately (StarterKit does NOT include underline - Reqs 15.4, 19.7, 44.14)
+    - Create frontend/tsconfig.json with strict mode and path aliases
+    - Create frontend/vite.config.ts with proxy configuration for /api and /uploads
+    - Configure proxy to forward /api requests to http://backend:8000
+    - Configure proxy to forward /uploads requests to http://backend:8000
+    - Create frontend/tailwind.config.ts with Hitachi color palette
+    - Define colors: primary #E60012, primary-light #FFF0F0, bg #F5F7FA, surface #FFFFFF, text #1A1A2E, text-muted #6B7280, border #E5E7EB, locked-bg #F9FAFB, success #10B981, warning #F59E0B
+    - Create frontend/index.html with IBM Plex Sans font from Google Fonts (weights 400, 500, 600, 700)
+    - Create frontend/src/main.tsx with React.StrictMode and BrowserRouter
+    - Create frontend/src/App.tsx with Routes for "/" and "/editor/:projectId"
+    - _Requirements: 44.2, 47.14, 47.19, 47.20, 15.4, 19.7, 44.14_
+
+  - [x] 6.2 Create TypeScript type definitions
+    - Create frontend/src/types/index.ts
+    - Define Project interface with all fields matching backend schema
+    - Define ProjectDetail interface extending Project with completion_summary and section_completion
+    - Define ProjectSummary interface with summary fields
+    - Define SectionData interface with id, project_id, section_key, content, updated_at
+    - Define DocumentVersion interface with id, project_id, version_number, filename, file_path, created_at
+    - Define CompletionSummary interface with total, completed, percentage
+    - Define section-specific content type interfaces: CoverContent, FeaturesContent, AbbreviationsContent, TechStackContent, HardwareSpecsContent, etc.
+    - Define ProjectStore interface with projectId, solutionName, solutionFullName, clientName, clientLocation, sectionCompletion, and action methods
+    - _Requirements: 51.24, 51.25_
+
+  - [x] 6.3 Create API client with Axios
+    - Create frontend/src/api/client.ts with axios instance
+    - Configure baseURL as import.meta.env.VITE_API_URL || 'http://localhost:8000'
+    - Set timeout to 30000ms
+    - Add response interceptor for centralized error handling
+    - Handle 400 errors with "Invalid request" message
+    - Handle 404 errors with "Resource not found" message
+    - Handle 422 errors extracting missing_sections array from detail object
+    - Handle 500 errors with "Server error. Please try again." message
+    - Handle network errors with "Network error. Check your connection." message
+    - Create frontend/src/api/projects.ts with getAllProjects, createProject, getProjectById, updateProject, deleteProject functions
+    - Create frontend/src/api/sections.ts with getAllSections, getSection, upsertSection functions
+    - Create frontend/src/api/generation.ts with generateDocument, getVersions, downloadVersion functions
+    - CRITICAL: generateDocument must use responseType: 'blob' for binary file download (Req 70.1)
+    - Create frontend/src/api/images.ts with uploadImage, getImages, deleteImage functions
+    - Create frontend/src/api/ai_prompts.ts with getAiPrompt function (required by Req 46.15, not listed in Req 51.15 repo structure)
+    - _Requirements: 46.1, 46.2, 46.3, 46.4, 46.5, 46.6, 46.7, 46.8, 46.9, 46.10, 46.11, 46.12, 46.13, 46.14, 46.15_
+
+  - [x] 6.4 Create Zustand store for global state
+    - Create frontend/src/store/project.store.ts
+    - Define ProjectStore interface with projectId, solutionName, solutionFullName, clientName, clientLocation, sectionCompletion fields
+    - Implement setProject action to populate store from ProjectDetail
+    - Implement setSolutionName action to update solutionName field
+    - Implement setSectionComplete action to update individual section completion status
+    - Implement clearProject action to reset store state
+    - Export useProjectStore hook
+    - Create frontend/src/store/ui.store.ts for modal and navigation state (Req 51.16)
+    - Define UiStore interface with isNewProjectModalOpen, activeSectionKey fields
+    - Implement openNewProjectModal and closeNewProjectModal actions
+    - Implement setActiveSection action to update activeSectionKey
+    - Export useUiStore hook
+    - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 51.16_
+
+  - [x] 6.5 Create useAutoSave custom hook
+    - Create frontend/src/hooks/useAutoSave.ts
+    - Accept projectId, sectionKey, and delay (default 800ms) parameters
+    - Return save function and status state ('idle' | 'saving' | 'saved' | 'error')
+    - Implement debounce logic clearing existing timer on each save call
+    - Set status to 'saving' when timer starts
+    - Call PUT /api/v1/projects/{projectId}/sections/{sectionKey} when timer expires
+    - Set status to 'saved' on success
+    - Reset status to 'idle' after 2000ms when in 'saved' state
+    - Set status to 'error' on API failure
+    - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 9.10_
+
+  - [x] 6.6 Create useGenerationPolling stub hook
+    - Create frontend/src/hooks/useGenerationPolling.ts
+    - Add JSDoc comment: "useGenerationPolling - Reserved for future async generation support"
+    - Add JSDoc comment: "MVP Implementation: Document generation is synchronous."
+    - Add JSDoc comment: "The backend generates the .docx file and returns it immediately."
+    - Add JSDoc comment: "This hook is a stub for future enhancement when generation becomes async."
+    - Add JSDoc comment: "DO NOT call this hook from any component in the MVP."
+    - Export function useGenerationPolling returning object with status: 'idle' as const, progress: 0, error: null
+    - Export type GenerationStatus = 'idle' | 'generating' | 'complete' | 'error'
+    - _Requirements: 51.22, 71.1, 71.2, 71.3, 71.4, 71.5_
+
+
+- [x] 7. Implement shared frontend components
+  - [x] 7.1 Create RichTextEditor component with Tiptap
+    - Create frontend/src/components/shared/RichTextEditor.tsx
+    - Accept value (HTML string), onChange callback, and optional placeholder props
+    - Import Underline from '@tiptap/extension-underline'
+    - Initialize Tiptap editor with StarterKit and Underline extensions
+    - CRITICAL: StarterKit does NOT include underline - must import and add Underline extension separately
+    - Configure toolbar with Bold, Italic, Underline, BulletList, OrderedList, ClearFormatting buttons
+    - Style toolbar with minimal design using Hitachi colors
+    - Call onChange with HTML string on editor update
+    - Display editor content area with border and padding
+    - _Requirements: 15.4, 19.7, 44.14_
+
+  - [x] 7.2 Create EditableTable component
+    - Create frontend/src/components/shared/EditableTable.tsx
+    - Accept columns array with key, label, locked, multiline properties
+    - Accept rows array, onChange callback, onAddRow, onDeleteRow callbacks
+    - Accept optional lockedRows array with row indices
+    - Render table with header row showing column labels
+    - For each row, render cells based on column configuration
+    - Display 🔒 icon and grey background for locked cells
+    - Disable editing for locked cells
+    - Render text input for editable single-line cells
+    - Render textarea for editable multiline cells
+    - Display "Add Row" button if onAddRow provided
+    - Display delete ✕ button for each row if onDeleteRow provided (skip locked rows)
+    - Call onChange with updated rows array on any cell edit
+    - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7_
+
+  - [x] 7.3 Create DynamicList component
+    - Create frontend/src/components/shared/DynamicList.tsx
+    - Accept items (string array), onChange callback, addButtonLabel, minItems props
+    - Render text input for each item in array
+    - Display delete ✕ button next to each input (disabled if items.length <= minItems)
+    - Display "Add Item" button (or custom label) below inputs
+    - Call onChange with updated items array on add/delete/edit
+    - _Requirements: 20.8, 20.9, 20.10, 20.11, 20.12_
+
+  - [x] 7.4 Create DiagramUpload component with react-dropzone
+    - Create frontend/src/components/shared/DiagramUpload.tsx
+    - Accept projectId, imageType ('architecture' | 'gantt_overall' | 'gantt_shutdown'), onUploadSuccess props
+    - Use react-dropzone with accept={'image/png': [], 'image/jpeg': []}
+    - Display drag-drop zone with dashed border and upload icon
+    - Validate file type is PNG or JPG, show error toast if invalid
+    - Validate file size is under 10MB, show error toast if too large
+    - Call POST /api/v1/projects/{projectId}/images/{imageType} with FormData
+    - Display thumbnail with image URL on successful upload
+    - Display "Change" button to upload different image
+    - Display "Remove" button to delete image (calls DELETE endpoint)
+    - Show loading spinner during upload
+    - _Requirements: 24.9, 24.10, 24.11, 24.12, 24.13, 24.14, 24.15_
+
+  - [x] 7.5 Create AiPromptModal component
+    - Create frontend/src/components/shared/AiPromptModal.tsx
+    - Accept isOpen, onClose, prompt (string), recommendedTools (array) props
+    - Render modal overlay with centered dialog
+    - Display prompt text in scrollable read-only textarea
+    - Display "Copy Prompt" button that copies prompt to clipboard
+    - Display "Recommended Free Tools" section with clickable links
+    - For each tool, show name, URL, and note
+    - Display step-by-step instructions: "1. Copy the prompt above → 2. Open any tool and paste → 3. Export diagram as PNG → 4. Upload below"
+    - Close modal on overlay click or Escape key
+    - _Requirements: 24.4, 24.5, 24.6, 24.7, 24.8_
+
+  - [x] 7.6 Create LockedSection component
+    - Create frontend/src/components/shared/LockedSection.tsx
+    - Accept content (string) and sectionKey props
+    - Display top banner with "🔒 This section is fixed and cannot be edited." message
+    - Style banner with locked-bg background color
+    - Display content text with grey background (#F9FAFB)
+    - Resolve {{placeholders}} in content using values from Zustand store
+    - Replace {{SolutionName}} with solutionName from store
+    - Replace {{ClientName}} with clientName from store
+    - Format content with proper line breaks and spacing
+    - _Requirements: 40.1, 40.2, 44.9_
+
+  - [x] 7.7 Create CompletionBadge component
+    - Create frontend/src/components/shared/CompletionBadge.tsx
+    - Accept status prop: 'complete' | 'visited' | 'not_started'
+    - Render ✅ emoji for 'complete' status
+    - Render 🟡 emoji for 'visited' status
+    - Render ⚪ emoji for 'not_started' status
+    - _Requirements: 10.5, 10.6, 10.7, 10.8_
+
+  - [x] 7.8 Create PlaceholderField component
+    - Create frontend/src/components/shared/PlaceholderField.tsx
+    - Accept label, value, onChange, and placeholder props
+    - Display label text above input field
+    - Display text input with placeholder text
+    - Call onChange with new value on input change
+    - Style with consistent spacing and Hitachi color scheme
+    - _Requirements: 51.21_
+
+
+- [x] 8. Implement layout components
+  - [x] 8.1 Create Header component
+    - Create frontend/src/components/layout/Header.tsx
+    - Display "HITACHI" wordmark in Hitachi red (#E60012) with large bold font
+    - Display current project solution name from Zustand store
+    - Display "← Back to Home" link navigating to "/"
+    - Style with fixed height 56px and white background
+    - _Requirements: 44.5, 11.2_
+
+  - [x] 8.2 Create SectionSidebar component
+    - Create frontend/src/components/layout/SectionSidebar.tsx
+    - Accept projectId and activeSectionKey props
+    - Display fixed left panel with 260px width
+    - Set overflow-y: auto for independent scrolling
+    - Group sections into 7 categories with category headers
+    - Categories: "COVER & HISTORY", "GENERAL OVERVIEW", "OFFERINGS", "TECHNOLOGY STACK", "SCHEDULE", "SCOPE OF SUPPLY", "LEGAL"
+    - Display all 31 sections with display names
+    - For each section, display CompletionBadge with status from Zustand store
+    - Display 🔒 icon next to locked section names (binding_conditions, cybersecurity, disclaimer)
+    - Highlight active section with left red border and light red background
+    - Display progress indicator at top: "X / 27 sections complete"
+    - Display thin red progress bar showing completion percentage
+    - Display "Generate Document" button at bottom with red background
+    - Handle section click to navigate to that section
+    - Handle Generate button click to call generateDocument from api/generation.ts
+    - On 422 error, extract missing_sections array from error.response.data.detail.missing_sections and display as clickable links
+    - On success, call handleDocumentDownload helper function (implemented in Task 15.5)
+    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 10.10, 10.11, 10.12, 10.13, 10.14, 10.15, 10.16, 10.17, 10.18, 18.1, 18.2, 18.3, 18.4, 18.5, 18.6, 18.7, 18.8, 18.9, 18.10, 18.11, 18.12, 18.13, 18.14_
+
+
+- [x] 9. Implement page components
+  - [x] 9.1 Create HomePage component
+    - Create frontend/src/pages/Home.tsx
+    - Display "HITACHI" wordmark in Hitachi red (#E60012)
+    - Display "Technical Specification Generator" subtitle
+    - Display "New Project" button in top right corner with red background
+    - Fetch all projects on mount using GET /api/v1/projects
+    - Display projects in grid or table layout
+    - For each project, display solution name in bold
+    - For each project, display client name and client location
+    - For each project, display creation date formatted as "DD MMM YYYY"
+    - For each project, display completion badge: "X / 27 sections" with percentage
+    - For each project, display "Open →" button navigating to "/editor/{project_id}"
+    - For projects with versions, display "Download Latest" button
+    - For each project, display "Delete" button
+    - Show confirmation dialog on delete button click
+    - Call DELETE /api/v1/projects/{id} on confirmation
+    - If no projects exist, display centered message "No projects yet. Create your first TS document."
+    - If no projects exist, display large "New Project" button in center
+    - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.6, 11.7, 11.8, 11.9, 11.10, 11.11, 11.12, 11.13, 11.14, 11.15, 11.16, 11.17, 11.18, 11.19_
+
+  - [x] 9.2 Create NewProjectModal component
+    - Create frontend/src/components/modals/NewProjectModal.tsx
+    - Display as overlay dialog when isOpen prop is true
+    - Display text input for "Solution Name" marked as required
+    - Display text input for "Solution Full Name" marked as required
+    - Display text input for "Solution Abbreviation" marked as optional
+    - Display text input for "Client Name" marked as required
+    - Display text input for "Client Location" marked as required
+    - Display text input for "Client Abbreviation" marked as optional
+    - Display text input for "Reference Number" marked as optional
+    - Display text input for "Document Date" marked as optional
+    - Display text input for "Document Version" with default value "0"
+    - Display "Create Project" button disabled when required fields are empty
+    - Call POST /api/v1/projects with form data on Create button click
+    - Navigate to "/editor/{new_project_id}" on success
+    - Display "Cancel" button closing modal without creating project
+    - Close modal on overlay click or Escape key
+    - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 12.10, 12.11, 12.12, 12.13, 12.14, 12.15, 12.16, 12.17, 12.18_
+
+  - [x] 9.3 Create EditorPage component
+    - Create frontend/src/pages/Editor.tsx
+    - Extract projectId from URL params using useParams
+    - Fetch project details on mount using GET /api/v1/projects/{id}
+    - Populate Zustand store with project data using setProject action
+    - CRITICAL: Fetch all sections on mount using GET /api/v1/projects/{id}/sections to build visited state
+    - Create visitedSections Set from returned section keys (sections with records in database)
+    - Store visitedSections in component state or Zustand store
+    - Pass visitedSections to SectionSidebar to determine badge status: ✅ complete (section_completion[key] === true), 🟡 visited (key in visitedSections but not complete), ⚪ not_started (key not in visitedSections)
+    - Display two-column layout: SectionSidebar (260px fixed) + content area (scrollable)
+    - Extract activeSectionKey from URL hash or default to 'cover'
+    - Render active section component based on activeSectionKey
+    - Pass projectId prop to section component
+    - _Requirements: 44.4, 10.10_
+
+- [x] 10. Checkpoint - Frontend infrastructure complete
+  - Verify all shared components render correctly
+  - Test Zustand store updates propagate to all components
+  - Test useAutoSave hook debounces correctly
+  - Test API client handles errors properly
+  - Ensure all tests pass, ask the user if questions arise.
+
+
+- [x] 10.5. Extract locked section content from template document
+  - Open TS_Template_original.docx and extract exact text for all locked/boilerplate sections
+  - Extract Executive Summary boilerplate opening text from Section 1
+  - Extract Executive Summary client logos table structure from Section 1
+  - Extract Scope Definitions text from Section 7.1
+  - Extract Division of Engineering Responsibility matrix table from Section 7.2
+  - Extract Binding Conditions full text from Section 8.1
+  - Extract Cybersecurity full text from Section 8.2
+  - Extract Disclaimer full text with all 4 subsections from Section 8.3
+  - Extract Proof of Concept boilerplate text from Section 9
+  - Create frontend/src/constants/lockedSections.ts file
+  - Define constants: EXECUTIVE_SUMMARY_BOILERPLATE, CLIENT_LOGOS_TABLE, SCOPE_DEFINITIONS_CONTENT, RESPONSIBILITY_MATRIX_CONTENT, BINDING_CONDITIONS_CONTENT, CYBERSECURITY_CONTENT, DISCLAIMER_CONTENT, POC_BOILERPLATE_CONTENT
+  - CRITICAL: Design doc examples are placeholder/illustrative - must extract actual content from .docx
+  - Export all constants for use in section components
+  - _Requirements: 15.1, 15.2, 33.1, 34.1, 40.1, 41.1, 42.1, 43.6_
+
+- [x] 11. Implement section components (Part 1: Cover through Features)
+  - [x] 11.1 Create CoverSection component
+    - Create frontend/src/components/sections/CoverSection.tsx
+    - Display text input for "Solution Full Name" marked as required
+    - Display text input for "Client Name" marked as required
+    - Display text input for "Client Location" marked as required
+    - Display text input for "Reference Number" marked as optional
+    - Display text input for "Document Date" marked as optional
+    - Display text input for "Document Version" marked as optional
+    - Display visual preview of cover layout showing resolved field values
+    - Load section data on mount using GET /api/v1/projects/{id}/sections/cover
+    - Call useAutoSave hook with projectId, 'cover', 800ms
+    - Call save function on any field change
+    - Call PATCH /api/v1/projects/{id} to update Project record when saving
+    - Update Zustand store with setSolutionName when solution_name changes
+    - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 13.10_
+
+  - [x] 11.2 Create RevisionHistory component
+    - Create frontend/src/components/sections/RevisionHistory.tsx
+    - Initialize with one default row: sr_no=1, details="First issue", date="23-01-2026", rev_no="0"
+    - Use EditableTable component with columns: sr_no, revised_by, checked_by, approved_by, details, date, rev_no
+    - Display "Add Row" button below table
+    - Append blank row on Add Row button click
+    - Display delete ✕ button for each row except the first
+    - Remove row on delete button click
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'revision_history', 800ms
+    - Call save function with rows array on any change
+    - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9_
+
+  - [x] 11.3 Create ExecutiveSummary component
+    - Create frontend/src/components/sections/ExecutiveSummary.tsx
+    - Import EXECUTIVE_SUMMARY_BOILERPLATE and CLIENT_LOGOS_TABLE from constants/lockedSections.ts (extracted in Task 10.5)
+    - Display EXECUTIVE_SUMMARY_BOILERPLATE as read-only locked block
+    - Display CLIENT_LOGOS_TABLE as read-only locked block
+    - Display RichTextEditor labeled "Project-specific summary paragraph"
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'executive_summary', 800ms
+    - Call save function with para1 field as HTML on editor change
+    - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6_
+
+  - [x] 11.4 Create IntroductionSection component
+    - Create frontend/src/components/sections/IntroductionSection.tsx
+    - Display full introduction paragraph text as read-only block
+    - Highlight {{TenderReference}} and {{TenderDate}} placeholders in read-only text
+    - Display text input labeled "Tender Reference Number"
+    - Display text input labeled "Tender Date"
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'introduction', 800ms
+    - Call save function with tender_reference and tender_date on change
+    - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5, 16.6_
+
+  - [x] 11.5 Create AbbreviationsSection component
+    - Create frontend/src/components/sections/AbbreviationsSection.tsx
+    - Initialize with 14 default rows from requirement 53
+    - Row 1: sr_no=1, abbreviation="JSPL", description="Jindal Steel & Power Ltd.", locked=true
+    - Row 2: sr_no=2, abbreviation="HIL", description="Hitachi India Pvt. Ltd.", locked=true
+    - Row 3-12: standard abbreviations with locked=true
+    - Row 13: sr_no=13, abbreviation="", description="Plate Mill Yard Management System", locked=false
+    - Row 14: sr_no=14, abbreviation="HTC", description="Heat Treatment Complex", locked=true
+    - Use EditableTable component with columns: sr_no, abbreviation, description, locked
+    - Display 🔒 icon and grey background for locked rows
+    - Disable editing for locked cells
+    - Auto-fill row 13 abbreviation from Project.solution_abbreviation in Zustand store
+    - Display "Add Row" button below table
+    - Append new editable row below row 14 on Add Row click
+    - Display delete ✕ button for user-added rows only
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'abbreviations', 800ms
+    - Call save function with rows array on change
+    - _Requirements: 17.1, 17.2, 17.3, 17.4, 17.5, 17.6, 17.7, 17.8, 17.9, 17.10, 17.11, 17.12, 53.1, 53.2, 53.3, 53.4, 53.5, 53.6, 53.7, 53.8, 53.9, 53.10, 53.11, 53.12, 53.13, 53.14_
+
+  - [x] 11.6 Create ProcessFlowSection component
+    - Create frontend/src/components/sections/ProcessFlowSection.tsx
+    - Display RichTextEditor with full toolbar
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'process_flow', 800ms
+    - Call save function with text field as HTML on editor change
+    - _Requirements: 18.1, 18.2, 18.3, 18.4_
+
+  - [x] 11.7 Create OverviewSection component
+    - Create frontend/src/components/sections/OverviewSection.tsx
+    - Display section title as "Overview of {solutionName}" using value from Zustand store
+    - Display RichTextEditor labeled "System Objective"
+    - Display RichTextEditor labeled "Existing System Description"
+    - Display RichTextEditor labeled "Integration Description"
+    - Display RichTextEditor labeled "Tangible Benefits"
+    - Display RichTextEditor labeled "Intangible Benefits"
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'overview', 800ms
+    - Call save function with all five fields on any editor change
+    - _Requirements: 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7, 19.8, 19.9_
+
+  - [x] 11.8 Create FeaturesSection component with drag-drop
+    - Create frontend/src/components/sections/FeaturesSection.tsx
+    - Display dynamic list of feature cards
+    - For each card, display text input for "Title" marked as required
+    - For each card, display text input for "Brief" with 150 character max and counter
+    - For each card, display RichTextEditor for "Description"
+    - Display drag handle ⠿ icon on left side of each card
+    - Make each card collapsible showing title when collapsed
+    - Display auto-generated label "Feature 1", "Feature 2" based on position
+    - Use @dnd-kit/sortable for drag-drop reordering
+    - Display "Add Feature" button below all cards
+    - Append blank feature card on Add Feature click
+    - Display "Remove Feature" button on each card (disabled when only 1 card)
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'features', 800ms
+    - Call save function with items array (id, title, brief, description) on change
+    - _Requirements: 20.1, 20.2, 20.3, 20.4, 20.5, 20.6, 20.7, 20.8, 20.9, 20.10, 20.11, 20.12, 20.13, 20.14, 20.15_
+
+
+- [x] 12. Implement section components (Part 2: Remote Support through Hardware Specs)
+  - [x] 12.1 Create RemoteSupportSection component
+    - Create frontend/src/components/sections/RemoteSupportSection.tsx
+    - Display RichTextEditor with full toolbar
+    - Pre-populate with default text on first open: "SELLER will provide complimentary remote maintenance support for troubleshooting and issue resolution (if any) for a period of 6 months from the date of completion of project. Necessary infrastructure and network configuration will have to be enabled by BUYER to facilitate this. Remote maintenance support will be limited to scope of supply of this proposal. Also, access to remote terminal should be made available to SELLER as per requirement. Dedicated Internet/Lease line at site to be arranged by BUYER. The effective working hours at SELLER's Office shall be from 9:00 AM to 5:00 PM IST (Monday to Friday), excluding National Holidays. NON-DISCLOSURE AGREEMENT (NDA) will be signed between BUYER and SELLER before starting the remote support."
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'remote_support', 800ms
+    - Call save function with text field as HTML on editor change
+    - _Requirements: 21.1, 21.2, 21.3, 21.4_
+
+  - [x] 12.2 Create DocumentationControlSection component
+    - Create frontend/src/components/sections/DocumentationControlSection.tsx
+    - Display four locked standard items with 🔒 icon: "Screen Design Document", "Hardware Specifications", "Software specifications", "Operation Manual"
+    - Style locked items with grey background and non-editable
+    - Display DynamicList component for custom items below locked items
+    - Display "Add Item" button appending blank text input to custom_items array
+    - Display delete ✕ button for each custom item
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'documentation_control', 800ms
+    - Call save function with custom_items array on change
+    - _Requirements: 22.1, 22.2, 22.3, 22.4, 22.5, 22.6, 22.7, 22.8, 22.9, 22.10_
+
+  - [x] 12.3 Create CustomerTrainingSection component
+    - Create frontend/src/components/sections/CustomerTrainingSection.tsx
+    - Display number input labeled "Number of persons to be trained" with min=1
+    - Display number input labeled "Number of training days" with min=1
+    - Display preview text: "SELLER shall provide training at site during commissioning to a maximum of [persons] people for a maximum of [days] days."
+    - Update preview text in real-time as user modifies inputs
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'customer_training', 800ms
+    - Call save function with persons and days on change
+    - _Requirements: 23.1, 23.2, 23.3, 23.4, 23.5, 23.6_
+
+  - [x] 12.4 Create SystemConfigSection component with AI prompt and image upload
+    - Create frontend/src/components/sections/SystemConfigSection.tsx
+    - Display "Generate AI Prompt" button
+    - Call POST /api/v1/projects/{id}/ai-prompt/architecture on button click
+    - Open AiPromptModal with prompt and recommended tools on API response
+    - Display DiagramUpload component with imageType='architecture'
+    - Load section data on mount (creates record marking section as visited)
+    - _Requirements: 24.1, 24.2, 24.3, 24.4, 24.5, 24.6, 24.7, 24.8, 24.9, 24.10, 24.11, 24.12, 24.13, 24.14, 24.15, 24.16_
+
+  - [x] 12.5 Create FATConditionSection component
+    - Create frontend/src/components/sections/FATConditionSection.tsx
+    - Display RichTextEditor with full toolbar
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'fat_condition', 800ms
+    - Call save function with text field as HTML on editor change
+    - _Requirements: 25.1, 25.2, 25.3_
+
+  - [x] 12.6 Create TechStackSection component
+    - Create frontend/src/components/sections/TechStackSection.tsx
+    - Initialize with 6 fixed rows from requirement 54
+    - Row 1: sr_no=1, component="Frontend Application", technology="", note="Application can be viewed on a standard web browser like Chrome, Edge & Mozilla"
+    - Rows 2-6: Backend Application, Database, Integration Layer, Mobile/HHT Application, Communication Protocol
+    - Use EditableTable component with columns: sr_no, component, technology, note
+    - Lock sr_no and component columns for all rows
+    - Provide editable technology column for all rows
+    - Display note field only for row 1 below technology input
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'tech_stack', 800ms
+    - Call save function with rows array on change
+    - _Requirements: 26.1, 26.2, 26.3, 26.4, 26.5, 26.6, 26.7, 26.8, 54.1, 54.2, 54.3, 54.4, 54.5, 54.6, 54.7, 54.8, 54.9, 54.10_
+
+  - [x] 12.7 Create HardwareSpecsSection component
+    - Create frontend/src/components/sections/HardwareSpecsSection.tsx
+    - Initialize with 6 fixed rows from requirement 55
+    - Row 1: name="Server (Tower Based)" with 4 spec line inputs
+    - Row 2: name="Server Console & accessories", qty="2"
+    - Row 3: name="GSM Modem", specs_line1="2G/3G/4G Industrial Cellular GSM Model with Ethernet Port & 2dBi Antenna 2mtr cable" (locked)
+    - Row 4: name="HX Controller", qty="1 set"
+    - Row 5: name="{SolutionName} Client Desktop" with 4 spec line inputs, qty="4 set"
+    - Row 6: name="{SolutionName} Client Console & accessories", specs_line1="23.8\" FHD (1920x1080) resolution monitor with USB Mouse and Keyboard" (locked), qty="4 Set"
+    - Use EditableTable component with columns: sr_no, name, specs (multi-line), maker, qty
+    - Lock sr_no and name columns for all rows
+    - Lock specs_line1 for rows 3 and 6
+    - Resolve {SolutionName} placeholder in rows 5 and 6 from Zustand store
+    - Provide 4 spec line inputs for rows 1 and 5
+    - Provide single spec line input for rows 2, 3, 4, 6
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'hardware_specs', 800ms
+    - Call save function with rows array on change
+    - _Requirements: 27.1, 27.2, 27.3, 27.4, 27.5, 27.6, 27.7, 27.8, 27.9, 27.10, 27.11, 27.12, 27.13, 55.1, 55.2, 55.3, 55.4, 55.5, 55.6, 55.7, 55.8, 55.9, 55.10, 55.11, 55.12, 55.13_
+
+
+- [x] 13. Implement section components (Part 3: Software Specs through Locked Sections)
+  - [x] 13.1 Create SoftwareSpecsSection component
+    - Create frontend/src/components/sections/SoftwareSpecsSection.tsx
+    - Initialize with 9 fixed rows from requirement 56
+    - Rows 1-4: maker="Microsoft" or "Microsoft/ Other", qty="2", "4", "6", "2"
+    - Row 5: maker="", qty="6"
+    - Rows 6-8: maker="-", qty="2"
+    - Row 9: maker="", qty="2"
+    - Use EditableTable component with columns: sr_no, name, maker, qty
+    - Lock sr_no and qty columns for all rows
+    - Provide editable name and maker columns with pre-filled values
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'software_specs', 800ms
+    - Call save function with rows array on change
+    - _Requirements: 28.1, 28.2, 28.3, 28.4, 28.5, 28.6, 28.7, 28.8, 56.1, 56.2, 56.3, 56.4, 56.5, 56.6, 56.7, 56.8, 56.9, 56.10, 56.11, 56.12, 56.13_
+
+  - [x] 13.2 Create ThirdPartySwSection component
+    - Create frontend/src/components/sections/ThirdPartySwSection.tsx
+    - Display single text input labeled "Third-party software / remote link tool name"
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'third_party_sw', 800ms
+    - Call save function with sw4_name on change
+    - _Requirements: 29.1, 29.2, 29.3_
+
+  - [x] 13.3 Create OverallGanttSection component
+    - Create frontend/src/components/sections/OverallGanttSection.tsx
+    - Display "Generate AI Prompt" button
+    - Call POST /api/v1/projects/{id}/ai-prompt/gantt_overall on button click
+    - Open AiPromptModal with prompt and recommended tools
+    - Display DiagramUpload component with imageType='gantt_overall'
+    - Load section data on mount (creates record marking section as visited)
+    - _Requirements: 30.1, 30.2, 30.3, 30.4, 30.5, 30.6_
+
+  - [x] 13.4 Create ShutdownGanttSection component
+    - Create frontend/src/components/sections/ShutdownGanttSection.tsx
+    - Display "Generate AI Prompt" button
+    - Call POST /api/v1/projects/{id}/ai-prompt/gantt_shutdown on button click
+    - Open AiPromptModal with prompt and recommended tools
+    - Display DiagramUpload component with imageType='gantt_shutdown'
+    - Load section data on mount (creates record marking section as visited)
+    - _Requirements: 31.1, 31.2, 31.3, 31.4, 31.5, 31.6_
+
+  - [x] 13.5 Create SupervisorsSection component
+    - Create frontend/src/components/sections/SupervisorsSection.tsx
+    - Display number input labeled "Project Manager (days)" with min=1
+    - Display number input labeled "Developer (days)" with min=1
+    - Display number input labeled "Commissioning Supervisor (days)" with min=1
+    - Display number input labeled "Total Man-days" with min=1
+    - Display preview text: "Project Manager: X Days · Developer: Y Days · Commissioning: Z Days · Total: N man-days"
+    - Update preview text in real-time as user modifies inputs
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'supervisors', 800ms
+    - Call save function with pm_days, dev_days, comm_days, total_man_days on change
+    - _Requirements: 32.1, 32.2, 32.3, 32.4, 32.5, 32.6, 32.7, 32.8_
+
+  - [x] 13.6 Create ScopeDefinitionsSection component
+    - Create frontend/src/components/sections/ScopeDefinitionsSection.tsx
+    - Import SCOPE_DEFINITIONS_CONTENT from constants/lockedSections.ts (extracted in Task 10.5)
+    - Display SCOPE_DEFINITIONS_CONTENT as read-only block
+    - Resolve {{ClientName}} placeholder to clientName from Zustand store
+    - Display 🔒 badge indicating locked content
+    - Load section data on mount (creates record marking section as visited)
+    - _Requirements: 33.1, 33.2, 33.3, 33.4_
+
+  - [x] 13.7 Create DivisionOfEngSection component
+    - Create frontend/src/components/sections/DivisionOfEngSection.tsx
+    - Import RESPONSIBILITY_MATRIX_CONTENT from constants/lockedSections.ts (extracted in Task 10.5)
+    - Display RESPONSIBILITY_MATRIX_CONTENT as styled read-only display
+    - Resolve {{SolutionName}} placeholder to solutionName from Zustand store
+    - Display two number inputs for training_days and training_persons if not filled in customer_training
+    - Load section data on mount (creates record marking section as visited)
+    - Call useAutoSave with projectId, 'division_of_eng', 800ms if training fields modified
+    - _Requirements: 34.1, 34.2, 34.3, 34.4, 34.5_
+
+  - [x] 13.8 Create ValueAdditionSection component
+    - Create frontend/src/components/sections/ValueAdditionSection.tsx
+    - Display RichTextEditor labeled "Describe the value-added features and capabilities included in this solution"
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'value_addition', 800ms
+    - Call save function with text field as HTML on editor change
+    - _Requirements: 35.1, 35.2, 35.3_
+
+  - [x] 13.9 Create WorkCompletionSection component
+    - Create frontend/src/components/sections/WorkCompletionSection.tsx
+    - Display four locked standard items with 🔒 icon
+    - Items: "Supply of Hardware & Software as per the scope of supply (described in section 6.2)", "Submission of all documentation as per the scope (described in section 3.3)", "Commissioning work Man-days used (as described in section 5.2)", "Deployment of {SolutionName}"
+    - Resolve {SolutionName} in fourth item to solutionName from Zustand store
+    - Display DynamicList component for custom items below locked items
+    - Load section data on mount (creates record marking section as visited)
+    - Call useAutoSave with projectId, 'work_completion', 800ms
+    - Call save function with custom_items array on change
+    - _Requirements: 36.1, 36.2, 36.3, 36.4, 36.5, 36.6, 36.7_
+
+  - [x] 13.10 Create BuyerObligationsSection component
+    - Create frontend/src/components/sections/BuyerObligationsSection.tsx
+    - Display six locked standard items with 🔒 icon
+    - Items: "Responsible for the project execution (answer technical queries in reasonable time and coordinate with all the stake holders of the project)", "Arrange all the hardware in BUYER scope well ahead of the agreed time schedule.", "Network cables & accessories not included in this technical proposal to be provided by BUYER", "Site access to SELLER's representative for data collection and discussion with the technical team as per requirement.", "Dedicated internet connection", "In case of any health issue to SELLER's representative, BUYER to immediately provide best available medical facility. The expenses will be borne by the SELLER."
+    - Display DynamicList component for custom items below locked items
+    - Load section data on mount (creates record marking section as visited)
+    - Call useAutoSave with projectId, 'buyer_obligations', 800ms
+    - Call save function with custom_items array on change
+    - _Requirements: 37.1, 37.2, 37.3, 37.4, 37.5, 37.6_
+
+  - [x] 13.11 Create ExclusionListSection component
+    - Create frontend/src/components/sections/ExclusionListSection.tsx
+    - Display ten locked standard items with 🔒 icon
+    - Items: "Interface with external devices other than explicitly described in the technical proposal document.", "Software patches including but not limited to Microsoft Security updates, Antivirus updates or any other software upgrades or patches.", "Any warranty, guarantee, liability, responsibility, etc. about productivity, quality, yield, etc.", "Source code of software of core technology.", "Erection activities wherever required for project execution. Any kind of Civil work.", "Hardware and software other than that is mentioned in technical document.", "Mechanical equipment supply, modification etc.", "Support for troubleshooting for mechanical/operation/process issues of customers.", "Firewall and other networking components", "Performance with respect to productivity, yield, quality, process capability, process performance, etc."
+    - Display DynamicList component for custom items below locked items
+    - Load section data on mount (creates record marking section as visited)
+    - Call useAutoSave with projectId, 'exclusion_list', 800ms
+    - Call save function with custom_items array on change
+    - _Requirements: 38.1, 38.2, 38.3, 38.4, 38.5, 38.6_
+
+  - [x] 13.12 Create BuyerPrerequisitesSection component
+    - Create frontend/src/components/sections/BuyerPrerequisitesSection.tsx
+    - Display DynamicList starting with 3 blank text inputs
+    - Display "Add Prerequisite" button
+    - Append new text input to items array on Add button click
+    - Display delete ✕ button for each item
+    - Maintain minimum of 1 item in list
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'buyer_prerequisites', 800ms
+    - Call save function with items array on change
+    - _Requirements: 39.1, 39.2, 39.3, 39.4, 39.5, 39.6, 39.7, 39.8_
+
+  - [x] 13.13 Create BindingConditionsSection component
+    - Create frontend/src/components/sections/BindingConditionsSection.tsx
+    - Import BINDING_CONDITIONS_CONTENT from constants/lockedSections.ts (extracted in Task 10.5)
+    - Use LockedSection component with BINDING_CONDITIONS_CONTENT and sectionKey='binding_conditions'
+    - CRITICAL: Add useEffect(() => { getSection(projectId, 'binding_conditions') }, [projectId]) on mount
+    - This triggers backend auto-create of Section_Data record per Reqs 2.4, 50.6
+    - _Requirements: 40.1, 40.2, 40.3, 40.4, 2.4, 50.6_
+
+  - [x] 13.14 Create CybersecuritySection component
+    - Create frontend/src/components/sections/CybersecuritySection.tsx
+    - Import CYBERSECURITY_CONTENT from constants/lockedSections.ts (extracted in Task 10.5)
+    - Use LockedSection component with CYBERSECURITY_CONTENT and sectionKey='cybersecurity'
+    - CRITICAL: Add useEffect(() => { getSection(projectId, 'cybersecurity') }, [projectId]) on mount
+    - This triggers backend auto-create of Section_Data record per Reqs 2.4, 50.6
+    - _Requirements: 41.1, 41.2, 41.3, 41.4, 2.4, 50.6_
+
+  - [x] 13.15 Create DisclaimerSection component
+    - Create frontend/src/components/sections/DisclaimerSection.tsx
+    - Import DISCLAIMER_CONTENT from constants/lockedSections.ts (extracted in Task 10.5 with all 4 subsections)
+    - Use LockedSection component with DISCLAIMER_CONTENT and sectionKey='disclaimer'
+    - CRITICAL: Add useEffect(() => { getSection(projectId, 'disclaimer') }, [projectId]) on mount
+    - This triggers backend auto-create of Section_Data record per Reqs 2.4, 50.6
+    - _Requirements: 42.1, 42.2, 42.3, 42.4, 42.5, 42.6, 2.4, 50.6_
+
+  - [x] 13.16 Create PoCSection component
+    - Create frontend/src/components/sections/PoCSection.tsx
+    - Import POC_BOILERPLATE_CONTENT from constants/lockedSections.ts (extracted in Task 10.5 per Req 43.6)
+    - Display POC_BOILERPLATE_CONTENT as read-only block
+    - Display text input labeled "PoC Solution Name"
+    - Display RichTextEditor labeled "PoC description and capabilities"
+    - Load section data on mount
+    - Call useAutoSave with projectId, 'poc', 800ms
+    - Call save function with name and description on change
+    - _Requirements: 43.1, 43.2, 43.3, 43.4, 43.5, 43.6_
+
+
+- [x] 14. Checkpoint - All section components complete
+  - Verify all 31 section components render correctly
+  - Test auto-save functionality in each section
+  - Test completion status updates in sidebar
+  - Test locked sections display correctly with resolved placeholders
+  - Test dynamic lists add/remove items correctly
+  - Test editable tables with locked cells
+  - Test drag-drop reordering in features section
+  - Test image upload and AI prompt generation
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 15. Integration and final wiring
+  - [x] 15.1 Wire all section components to EditorPage router
+    - Update EditorPage to render correct section component based on activeSectionKey
+    - Import all 31 section components at top of EditorPage.tsx
+    - Create SECTION_COMPONENTS constant as Record<string, React.ComponentType<{projectId: string}>>
+    - Map section keys to components: 'cover' → CoverSection, 'revision_history' → RevisionHistorySection, etc.
+    - Include all 31 mappings: cover, revision_history, executive_summary, introduction, abbreviations, process_flow, overview, features, remote_support, documentation_control, customer_training, system_config, fat_condition, tech_stack, hardware_specs, software_specs, third_party_sw, overall_gantt, shutdown_gantt, supervisors, scope_definitions, division_of_eng, value_addition, work_completion, buyer_obligations, exclusion_list, buyer_prerequisites, binding_conditions, cybersecurity, disclaimer, poc
+    - Retrieve component using const SectionComponent = SECTION_COMPONENTS[activeSectionKey] || SECTION_COMPONENTS['cover']
+    - Render <SectionComponent projectId={projectId} /> in content area
+    - Handle invalid section keys with fallback to cover section
+    - _Requirements: 10.10_
+
+  - [x] 15.2 Configure static file serving for uploads
+    - Add static file mount in FastAPI main.py for /uploads path
+    - Mount uploads directory to serve images and generated documents
+    - Configure CORS to allow image loading from frontend
+    - _Requirements: 6.6, 6.7_
+
+  - [x] 15.3 Add error handling and loading states
+    - Add loading spinners to all API calls
+    - Add error toast notifications using react-hot-toast
+    - Handle 404 errors for missing projects/sections
+    - Handle 422 validation errors with user-friendly messages
+    - Handle network errors with retry suggestions
+    - _Requirements: 9.11, 9.12, 9.13, 9.14_
+
+  - [x] 15.4 Add auto-save status indicators
+    - Display "Saved ✓" in green when status is 'saved'
+    - Display "Saving..." in grey when status is 'saving'
+    - Display "Error saving" in red when status is 'error'
+    - Position indicator at bottom of each section card
+    - _Requirements: 9.11, 9.12, 9.13, 44.8_
+
+  - [x] 15.5 Implement document download flow
+    - Create frontend/src/utils/downloadHelper.ts with handleDocumentDownload function
+    - Accept blob (Blob), filename (string) parameters
+    - Create blob URL using URL.createObjectURL(blob) per Req 70.1
+    - Create temporary anchor element with document.createElement('a') per Req 70.2
+    - Set anchor href to blob URL per Req 70.3
+    - Set anchor download attribute to filename per Req 70.4
+    - Append anchor to document.body per Req 70.5
+    - Trigger click event with anchor.click() per Req 70.6
+    - Remove anchor from document.body per Req 70.7
+    - Revoke blob URL with URL.revokeObjectURL(blobUrl) per Req 70.8
+    - Export handleDocumentDownload function for use in SectionSidebar and HomePage components
+    - Display success toast "Document downloaded successfully" on completion
+    - _Requirements: 4.13, 4.14, 50.3, 50.4, 70.1, 70.2, 70.3, 70.4, 70.5, 70.6, 70.7, 70.8_
+
+  - [x] 15.6 Test end-to-end workflows
+    - Test creating new project and navigating to editor
+    - Test filling out all required sections
+    - Test generating document with complete data
+    - Test generating document with missing sections (422 error)
+    - Test uploading images and generating document with images
+    - Test deleting project cascades to sections and versions
+    - Test version history and downloading previous versions
+
+  - [x] 15.7 Create README.md documentation
+    - Create README.md in project root
+    - Add title "TS Document Generator — Local Setup"
+    - Add Prerequisites section listing Docker Desktop (running) and Git
+    - Add Setup (First Time) section with 5 numbered steps
+    - Step 1: Clone repository and cd to ts-generator directory
+    - Step 2: Ensure TS_Template.docx is at backend/templates/TS_Template_original.docx
+    - Step 3: Run docker-compose up --build to start all services
+    - Step 4: Run docker-compose exec backend python scripts/convert_template.py to convert template
+    - Step 4 note: Manually verify TS_Template_jinja.docx has correct {%tr for %} tags in features table
+    - Step 4 note: Reference KIRO_REQUIREMENTS.md section 4 for details
+    - Step 5: Open http://localhost:5173
+    - Add Daily Use section with command docker-compose up
+    - Add Reset database section with command docker-compose down -v && docker-compose up --build
+    - Add API docs section with URL http://localhost:8000/docs
+    - _Requirements: 62.1, 62.2, 62.3, 62.4, 62.5, 62.6, 62.7, 62.8, 62.9, 62.10, 62.11, 62.12, 62.13, 75.1_
+
+- [x] 16. Implement backend testing suite
+  - [x] 16.1 Create testing infrastructure
+    - Create tests/conftest.py with pytest fixtures
+    - Create pytest.ini with asyncio_mode = auto configuration
+    - Add testpaths = tests to pytest.ini
+    - Add python_files = test_*.py to pytest.ini
+    - Define TEST_DATABASE_URL for test database
+    - Create test_engine with create_async_engine
+    - Create TestSessionLocal sessionmaker with AsyncSession
+    - Create event_loop fixture with session scope
+    - Create db_session fixture creating and dropping tables for each test
+    - Create client fixture with test database override
+    - Create create_test_project helper fixture
+    - Create create_complete_project helper fixture with all required sections
+    - _Requirements: Design doc testing infrastructure section_
+
+  - [x] 16.2 Create unit tests for completion logic
+    - Create tests/test_completion.py
+    - Test cover section complete when all fields present
+    - Test cover section incomplete when missing client_name
+    - Test features section complete with valid item
+    - Test features section incomplete with empty title
+    - Test HTML stripping in rich text fields
+    - Test empty HTML tags mark section incomplete
+    - Test locked sections auto-complete when visited
+    - Test completion summary counts 27 sections
+    - _Requirements: Design doc Backend Testing section_
+
+  - [x] 16.3 Create unit tests for context builder
+    - Create tests/test_context_builder.py
+    - Test context builder maps project fields correctly
+    - Test context builder pads tech_stack to 6 rows
+    - Test context builder handles missing sections with empty defaults
+    - Test context builder creates InlineImage when file exists
+    - Test context builder uses placeholder when image missing
+    - Test context builder creates gantt images when files exist
+    - Test context builder uses placeholders for missing gantt images
+    - _Requirements: Design doc Backend Testing section_
+
+  - [x] 16.4 Create unit tests for filename generation
+    - Create tests/test_filename.py
+    - Test filename replaces spaces with underscores
+    - Test filename replaces slashes with hyphens
+    - Test filename truncates long names
+    - Test filename format matches "TS_{client}_{solution}_v{version}.docx"
+    - _Requirements: Design doc Backend Testing section_
+
+  - [x] 16.5 Create integration tests for Projects API
+    - Create tests/integration/test_projects_api.py
+    - Test create project returns 200 with project data
+    - Test get project with completion returns completion_summary and section_completion
+    - Test update project modifies fields correctly
+    - Test delete project cascades to sections
+    - _Requirements: Design doc Backend Testing section_
+
+  - [x] 16.6 Create integration tests for Sections API
+    - Create tests/integration/test_sections_api.py
+    - Test upsert section creates new record
+    - Test upsert section updates existing record
+    - Test invalid section_key returns 400
+    - _Requirements: Design doc Backend Testing section_
+
+  - [x] 16.7 Create integration tests for Generation API
+    - Create tests/integration/test_generation_api.py
+    - Test generate document with complete sections returns file
+    - Test generate document with missing sections returns 422 with missing_sections array
+    - Test generate document increments version number
+    - _Requirements: Design doc Backend Testing section_
+
+  - [x] 16.8 Create integration tests for Images API
+    - Create tests/integration/test_images_api.py
+    - Test upload valid image returns 200 with url
+    - Test upload invalid file type returns 400
+    - Test upload oversized file returns 400
+    - _Requirements: Design doc Backend Testing section_
+
+  - [x] 16.9 Create integration tests for database
+    - Create tests/integration/test_database.py
+    - Test all tables exist after migrations
+    - Test projects table has correct columns
+    - Test section_data has unique constraint on (project_id, section_key)
+    - Test cascade delete from projects to section_data and document_versions
+    - _Requirements: Design doc Backend Testing section_
+
+- [x] 17. Implement frontend testing suite
+  - [x] 17.1 Create unit tests for useAutoSave hook
+    - Create frontend/src/hooks/__tests__/useAutoSave.test.ts
+    - Test hook debounces save calls correctly
+    - Test status updates to saving then saved
+    - Test status updates to error on API failure
+    - _Requirements: Design doc Frontend Testing section_
+
+  - [x] 17.2 Create unit tests for CompletionBadge component
+    - Create frontend/src/components/shared/__tests__/CompletionBadge.test.tsx
+    - Test renders checkmark for complete status
+    - Test renders yellow circle for visited status
+    - Test renders white circle for not_started status
+    - _Requirements: Design doc Frontend Testing section_
+
+  - [x] 17.3 Create end-to-end tests with Playwright
+    - Create e2e/workflows.spec.ts
+    - Test create new project and navigate to editor
+    - Test auto-save section changes
+    - Test solution name updates across all sections
+    - Test generate document when all sections complete
+    - Test show missing sections on incomplete project
+    - Test upload architecture diagram
+    - _Requirements: Design doc Frontend Testing section_
+
+- [x] 18. Final checkpoint - Complete application
+  - Run docker-compose up and verify all services start
+  - Test complete user workflow from project creation to document generation
+  - Verify database migrations create all tables correctly
+  - Verify template conversion script produces valid Jinja2 template
+  - Test all 31 sections save and load correctly
+  - Test completion tracking shows correct progress
+  - Test document generation includes all section data
+  - Test generated document includes uploaded images or placeholders
+  - Ensure all tests pass, ask the user if questions arise.
+
+## Notes
+
+- Tasks marked with `*` are optional and can be skipped for faster MVP
+- Each task references specific requirements for traceability
+- Checkpoints ensure incremental validation
+- The implementation follows bottom-up approach: infrastructure → backend → frontend → integration → testing
+- Unit tests focus on completion logic, context builder, and filename generation
+- Integration tests cover API endpoints and database operations
+- End-to-end tests validate complete user workflows
+- Testing tasks (16-17) can be executed in parallel with implementation or after core features are complete
