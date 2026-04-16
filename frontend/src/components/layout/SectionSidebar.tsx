@@ -162,15 +162,15 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
     <aside
       style={{
         width: '260px',
-        height: '100vh',
+        position: 'fixed',
+        left: 0,
+        top: '56px',
+        bottom: 0,
         backgroundColor: '#FFFFFF',
         borderRight: '1px solid #E5E7EB',
         display: 'flex',
         flexDirection: 'column',
-        position: 'fixed',
-        left: 0,
-        top: '56px',
-        overflowY: 'auto',
+        overflow: 'hidden',
       }}
     >
       {/* Progress Indicator */}
@@ -178,6 +178,7 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
         style={{
           padding: '16px',
           borderBottom: '1px solid #E5E7EB',
+          flexShrink: 0,
         }}
       >
         <div
@@ -211,7 +212,7 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
       </div>
 
       {/* Section Groups */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingBottom: '16px' }}>
         {SECTION_GROUPS.map((group) => (
           <div key={group.category}>
             <div
@@ -295,6 +296,7 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
             padding: '16px',
             backgroundColor: '#FFF0F0',
             borderTop: '1px solid #E5E7EB',
+            flexShrink: 0,
           }}
         >
           <div
@@ -340,6 +342,10 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
         style={{
           padding: '16px',
           borderTop: '1px solid #E5E7EB',
+          flexShrink: 0,
+          backgroundColor: '#FFFFFF',
+          position: 'relative',
+          zIndex: 10,
         }}
       >
         <button
