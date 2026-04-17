@@ -56,6 +56,11 @@ const DiagramUpload: React.FC<DiagramUploadProps> = ({
     try {
       const response = await uploadImage(projectId, imageType, file);
       setImageUrl(response.url);
+      window.dispatchEvent(
+        new CustomEvent('project-images-changed', {
+          detail: { projectId, imageType },
+        })
+      );
       toast.success('Image uploaded successfully!');
       if (onUploadSuccess) {
         onUploadSuccess();
@@ -71,6 +76,11 @@ const DiagramUpload: React.FC<DiagramUploadProps> = ({
     try {
       await deleteImage(projectId, imageType);
       setImageUrl(null);
+      window.dispatchEvent(
+        new CustomEvent('project-images-changed', {
+          detail: { projectId, imageType },
+        })
+      );
       toast.success('Image removed successfully!');
     } catch (error: any) {
       toast.error(error.message || 'Failed to remove image');

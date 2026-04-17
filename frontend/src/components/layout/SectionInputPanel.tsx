@@ -39,10 +39,18 @@ interface SectionInputPanelProps {
   projectId: string;
   activeSectionKey: string;
   onContentChange?: (sectionKey: string, content: Record<string, any>) => void;
+  width: number;
+  leftOffset: number;
+  isNarrowScreen: boolean;
+  showResizeHandle?: boolean;
+  isResizing?: boolean;
+  onResizeStart?: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onResizeStep?: (delta: number) => void;
+  resizeKeyboardStep?: number;
 }
 
 // Map section keys to components and display names
-const SECTION_COMPONENTS: Record<string, React.ComponentType<{ projectId: string }>> = {
+const SECTION_COMPONENTS: Record<string, React.ComponentType<any>> = {
   cover: CoverSection,
   revision_history: RevisionHistory,
   executive_summary: ExecutiveSummary,
@@ -110,7 +118,19 @@ const SECTION_NAMES: Record<string, string> = {
   poc: 'Proof of Concept',
 };
 
-const SectionInputPanel: React.FC<SectionInputPanelProps> = ({ projectId, activeSectionKey, onContentChange }) => {
+const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
+  projectId,
+  activeSectionKey,
+  onContentChange,
+  width,
+  leftOffset,
+  isNarrowScreen,
+  showResizeHandle = false,
+  isResizing = false,
+  onResizeStart,
+  onResizeStep,
+  resizeKeyboardStep = 16,
+}) => {
   const SectionComponent = SECTION_COMPONENTS[activeSectionKey] || SECTION_COMPONENTS['cover'];
   const sectionName = SECTION_NAMES[activeSectionKey] || 'Section';
 
@@ -121,11 +141,28 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({ projectId, active
     }
   };
 
+  const handleResizeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!onResizeStep) {
+      return;
+    }
+
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      onResizeStep(resizeKeyboardStep);
+    }
+
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      onResizeStep(-resizeKeyboardStep);
+    }
+  };
+
   return (
     <aside
       style={{
-        width: '380px',
+        width: isNarrowScreen ? `calc(100% - ${leftOffset}px)` : width,
         position: 'fixed',
+        left: isNarrowScreen ? `${leftOffset}px` : 'auto',
         right: 0,
         top: '56px',
         bottom: 0,
@@ -134,8 +171,46 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({ projectId, active
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        zIndex: isNarrowScreen ? 20 : 'auto',
       }}
     >
+      {showResizeHandle && onResizeStart && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize right sidebar"
+          tabIndex={0}
+          onPointerDown={onResizeStart}
+          onKeyDown={handleResizeKeyDown}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: '-6px',
+            bottom: 0,
+            width: '12px',
+            cursor: 'col-resize',
+            zIndex: 30,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            touchAction: 'none',
+          }}
+        >
+          <div
+            style={{
+              width: '2px',
+              height: '56px',
+              borderRadius: '999px',
+              backgroundColor: isResizing ? '#E60012' : '#D1D5DB',
+              boxShadow: isResizing
+                ? '0 0 0 3px rgba(230, 0, 18, 0.12)'
+                : '0 0 0 3px rgba(255, 255, 255, 0.95)',
+              transition: 'background-color 0.2s ease, box-shadow 0.2s ease',
+            }}
+          />
+        </div>
+      )}
+
       {/* Sticky Header */}
       <div
         style={{

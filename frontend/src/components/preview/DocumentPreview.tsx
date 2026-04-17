@@ -1,5 +1,24 @@
-import React, { useRef, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { getImages } from '../../api/images';
 import { useProjectStore } from '../../store/project.store';
+import {
+  BINDING_CONDITIONS_PARAGRAPHS,
+  BUYER_OBLIGATION_ITEMS,
+  CYBERSECURITY_DISCLAIMER_PARAGRAPHS,
+  DISCLAIMER_SECTIONS,
+  DOCUMENTATION_CONTROL_ITEMS,
+  EXECUTIVE_SUMMARY_PARAGRAPHS,
+  EXCLUSION_INTRO_PARAGRAPHS,
+  EXCLUSION_STANDARD_ITEMS,
+  INTRODUCTION_PARAGRAPHS,
+  POC_PARAGRAPHS,
+  REMOTE_SUPPORT_PARAGRAPHS,
+  RESPONSIBILITY_MATRIX_ROWS,
+  SCOPE_SUPPLY_DEFINITION_LINES,
+  VALUE_ADDITION_INTRO,
+  WORK_COMPLETION_CRITERIA,
+  WORK_COMPLETION_PARAGRAPHS,
+} from './templateContent';
 
 interface DocumentPreviewProps {
   projectId: string;
@@ -8,107 +27,9 @@ interface DocumentPreviewProps {
   onSectionClick?: (sectionKey: string) => void;
 }
 
-// Helper functions
-const stripHtml = (html: string): string => {
-  if (!html) return '';
-  const tmp = document.createElement('div');
-  tmp.innerHTML = html;
-  return tmp.textContent || tmp.innerText || '';
-};
+type PreviewImageType = 'architecture' | 'gantt_overall' | 'gantt_shutdown';
+type PreviewImageMap = Partial<Record<PreviewImageType, string>>;
 
-const truncate = (text: string, maxLen: number): string => {
-  if (!text) return '';
-  if (text.length <= maxLen) return text;
-  return text.substring(0, maxLen) + '...';
-};
-
-// Zoom levels
-const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25];
-
-// Page break component
-const PageBreak: React.FC = () => (
-  <div style={{ width: '100%', height: '16px', background: '#E8E8E8' }} />
-);
-
-// Page header component (for non-cover pages)
-const PageHeader: React.FC = () => (
-  <div style={{ 
-    marginBottom: '24px', 
-    paddingBottom: '12px', 
-    borderBottom: '1px solid #1F3864',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <div style={{
-        width: '60px',
-        height: '30px',
-        background: '#D1D5DB',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '8pt',
-        color: '#6B7280',
-      }}>
-        HITACHI
-      </div>
-      <span style={{ fontFamily: 'Arial, sans-serif', fontSize: '10pt', fontWeight: 'bold', color: '#1F3864' }}>
-        Technical Specification
-      </span>
-    </div>
-    <span style={{ fontSize: '9pt', color: '#E60012', fontWeight: 'bold' }}>
-      CONFIDENTIAL
-    </span>
-  </div>
-);
-
-// Page wrapper component
-const Page: React.FC<{ pageNumber: number; showHeader?: boolean; children: React.ReactNode }> = ({ 
-  pageNumber, 
-  showHeader = false,
-  children 
-}) => (
-  <div
-    style={{
-      width: '794px',
-      minHeight: '1123px',
-      backgroundColor: '#FFFFFF',
-      margin: '0 auto',
-      padding: '64px 72px 80px',
-      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-      fontFamily: "'Times New Roman', serif",
-      fontSize: '14.67px', // 11pt
-      lineHeight: '1.5',
-      position: 'relative',
-    }}
-  >
-    {showHeader && <PageHeader />}
-    {children}
-    <div
-      style={{
-        position: 'absolute',
-        bottom: '48px',
-        left: '0',
-        right: '0',
-        borderTop: '1px solid #D1D5DB',
-        paddingTop: '8px',
-      }}
-    >
-      <div
-        style={{
-          textAlign: 'center',
-          fontSize: '10pt',
-          color: '#6B7280',
-        }}
-      >
-        Page {pageNumber}
-      </div>
-    </div>
-  </div>
-);
-
-// Section wrapper with click-to-edit functionality
 interface SectionWrapperProps {
   sectionKey: string;
   isActive: boolean;
@@ -121,8 +42,33 @@ interface SectionWrapperProps {
   children: React.ReactNode;
 }
 
+const ZOOM_LEVELS = [0.5, 0.75, 1, 1.25];
+
+const stripHtml = (html: string): string => {
+  if (!html) return '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
+};
+
+const resolveTemplateText = (
+  text: string,
+  replacements: Record<string, string>
+): string => {
+  let resolved = text;
+
+  Object.entries(replacements).forEach(([key, value]) => {
+    const safeValue = value || '';
+    resolved = resolved.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), safeValue);
+  });
+
+  return resolved.replace(/\s+/g, ' ').trim();
+};
+
+const filterFilledItems = (items?: string[]) =>
+  (items || []).map((item) => item.trim()).filter(Boolean);
+
 const SectionWrapper: React.FC<SectionWrapperProps> = ({
-  sectionKey,
   isActive,
   isHovered,
   onMouseEnter,
@@ -152,1054 +98,1733 @@ const SectionWrapper: React.FC<SectionWrapperProps> = ({
           zIndex: 10,
         }}
       >
-        Click to edit →
+        Click to edit {'->'}
       </div>
     )}
     {children}
   </div>
 );
 
-const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(({
-  projectId,
-  activeSectionKey,
-  sectionContents,
-  onSectionClick,
-}) => {
-  const { solutionName, clientName, clientLocation, sectionCompletion } = useProjectStore();
-  
-  // Refs for each section for scroll-to functionality
-  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  
-  // State for hover effects and zoom
-  const [hoveredSection, setHoveredSection] = useState<string | null>(null);
-  const [zoom, setZoom] = useState<number>(() => {
-    const saved = localStorage.getItem('documentPreviewZoom');
-    return saved ? parseFloat(saved) : 1;
-  });
+const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
+  ({ projectId, activeSectionKey, sectionContents, onSectionClick }) => {
+    const {
+      solutionName,
+      solutionFullName,
+      clientName,
+      clientLocation,
+      sectionCompletion,
+    } = useProjectStore();
 
-  // Calculate completion count
-  const completedCount = useMemo(() => {
-    const excludedSections = ['binding_conditions', 'cybersecurity', 'disclaimer', 'scope_definitions'];
-    return Object.entries(sectionCompletion).filter(
-      ([key, isComplete]) => !excludedSections.includes(key) && isComplete
-    ).length;
-  }, [sectionCompletion]);
+    const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+    const [hoveredSection, setHoveredSection] = useState<string | null>(null);
+    const [imageUrls, setImageUrls] = useState<PreviewImageMap>({});
+    const [zoom, setZoom] = useState<number>(() => {
+      const saved = localStorage.getItem('documentPreviewZoom');
+      return saved ? parseFloat(saved) : 1;
+    });
 
-  // Helper to safely get section content
-  const getSectionContent = (key: string): Record<string, any> => {
-    return sectionContents[key] || {};
-  };
+    const completedCount = useMemo(() => {
+      const excludedSections = [
+        'binding_conditions',
+        'cybersecurity',
+        'disclaimer',
+        'scope_definitions',
+      ];
 
-  // Scroll to active section when it changes
-  useEffect(() => {
-    if (activeSectionKey && sectionRefs.current[activeSectionKey]) {
-      sectionRefs.current[activeSectionKey]?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-    }
-  }, [activeSectionKey]);
+      return Object.entries(sectionCompletion).filter(
+        ([key, isComplete]) => !excludedSections.includes(key) && isComplete
+      ).length;
+    }, [sectionCompletion]);
 
-  // Save zoom preference
-  useEffect(() => {
-    localStorage.setItem('documentPreviewZoom', zoom.toString());
-  }, [zoom]);
+    const getSectionContent = (key: string): Record<string, any> => sectionContents[key] || {};
 
-  const handleZoomIn = () => {
-    const currentIndex = ZOOM_LEVELS.indexOf(zoom);
-    if (currentIndex < ZOOM_LEVELS.length - 1) {
-      setZoom(ZOOM_LEVELS[currentIndex + 1]);
-    }
-  };
+    useEffect(() => {
+      if (activeSectionKey && sectionRefs.current[activeSectionKey]) {
+        sectionRefs.current[activeSectionKey]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }
+    }, [activeSectionKey]);
 
-  const handleZoomOut = () => {
-    const currentIndex = ZOOM_LEVELS.indexOf(zoom);
-    if (currentIndex > 0) {
-      setZoom(ZOOM_LEVELS[currentIndex - 1]);
-    }
-  };
+    useEffect(() => {
+      localStorage.setItem('documentPreviewZoom', zoom.toString());
+    }, [zoom]);
 
-  const handleFitWidth = () => {
-    setZoom(1);
-  };
+    useEffect(() => {
+      let cancelled = false;
 
-  // Memoized document structure
-  const documentContent = useMemo(() => {
-    const coverContent = getSectionContent('cover');
-    const executiveSummary = getSectionContent('executive_summary');
-    const introduction = getSectionContent('introduction');
-    const abbreviations = getSectionContent('abbreviations');
-    const processFlow = getSectionContent('process_flow');
-    const overview = getSectionContent('overview');
-    const features = getSectionContent('features');
-    const remoteSupport = getSectionContent('remote_support');
-    const customerTraining = getSectionContent('customer_training');
-    const fatCondition = getSectionContent('fat_condition');
-    const techStack = getSectionContent('tech_stack');
-    const hardwareSpecs = getSectionContent('hardware_specs');
-    const softwareSpecs = getSectionContent('software_specs');
-    const thirdPartySw = getSectionContent('third_party_sw');
-    const supervisors = getSectionContent('supervisors');
-    const poc = getSectionContent('poc');
+      const loadImages = async () => {
+        try {
+          const images = await getImages(projectId);
+          if (cancelled) return;
 
-    return {
-      coverContent,
-      executiveSummary,
-      introduction,
-      abbreviations,
-      processFlow,
-      overview,
-      features,
-      remoteSupport,
-      customerTraining,
-      fatCondition,
-      techStack,
-      hardwareSpecs,
-      softwareSpecs,
-      thirdPartySw,
-      supervisors,
-      poc,
-    };
-  }, [sectionContents]);
-
-  const isActive = (sectionKey: string) => activeSectionKey === sectionKey;
-
-  const sectionStyle = (sectionKey: string): React.CSSProperties => ({
-    position: 'relative',
-    cursor: onSectionClick ? 'pointer' : 'default',
-    transition: 'all 0.2s ease',
-    marginBottom: '24px',
-    ...(isActive(sectionKey) && {
-      background: '#FFF9C4',
-      borderLeft: '3px solid #E60012',
-      borderRadius: '2px',
-      paddingLeft: '8px',
-      marginLeft: '-8px',
-    }),
-    ...(hoveredSection === sectionKey && !isActive(sectionKey) && {
-      border: '1px solid #BFDBFE',
-      borderRadius: '2px',
-      padding: '4px',
-      margin: '-4px -4px 20px',
-    }),
-  });
-
-  const headingStyle: React.CSSProperties = {
-    fontFamily: 'Arial, sans-serif',
-    fontSize: '12pt',
-    fontWeight: 'bold',
-    color: '#1F3864',
-    marginBottom: '12px',
-  };
-
-  const subHeadingStyle: React.CSSProperties = {
-    fontFamily: 'Arial, sans-serif',
-    fontSize: '11pt',
-    fontWeight: 'bold',
-    marginBottom: '8px',
-  };
-
-  const tableStyle: React.CSSProperties = {
-    width: '100%',
-    borderCollapse: 'collapse',
-    fontSize: '10pt',
-    marginBottom: '12px',
-  };
-
-  const tableHeaderStyle: React.CSSProperties = {
-    background: '#1F3864',
-    color: 'white',
-    fontWeight: 'bold',
-    padding: '4px 8px',
-    border: '1px solid #000',
-    textAlign: 'left',
-  };
-
-  const tableCellStyle = (isEven: boolean): React.CSSProperties => ({
-    padding: '4px 8px',
-    border: '1px solid #000',
-    background: isEven ? '#F2F2F2' : 'white',
-  });
-
-  const requiredPlaceholderStyle: React.CSSProperties = {
-    border: '1px dashed #E60012',
-    padding: '4px 8px',
-    color: '#E60012',
-    fontStyle: 'italic',
-    display: 'inline-block',
-  };
-
-  const optionalPlaceholderStyle: React.CSSProperties = {
-    fontStyle: 'italic',
-    color: '#6B7280',
-  };
-
-  const handleSectionClick = (sectionKey: string) => {
-    if (onSectionClick) {
-      onSectionClick(sectionKey);
-    }
-  };
-
-  return (
-    <>
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
+          const next: PreviewImageMap = {};
+          images.forEach((image) => {
+            if (
+              image.type === 'architecture' ||
+              image.type === 'gantt_overall' ||
+              image.type === 'gantt_shutdown'
+            ) {
+              next[image.type] = image.url;
+            }
+          });
+          setImageUrls(next);
+        } catch (error) {
+          if (!cancelled) {
+            setImageUrls({});
           }
-          .document-preview-print, .document-preview-print * {
-            visibility: visible;
-          }
-          .document-preview-print {
-            position: absolute;
-            left: 0;
-            top: 0;
-          }
-          .preview-toolbar, .completion-badge {
-            display: none !important;
-          }
+          console.error('Failed to load preview images:', error);
         }
-      `}</style>
-      
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          backgroundColor: '#E8E8E8',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {/* Zoom Toolbar */}
-        <div
-          className="preview-toolbar"
-          style={{
-            padding: '12px 24px',
-            backgroundColor: '#FFFFFF',
-            borderBottom: '1px solid #E5E7EB',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            flexShrink: 0,
-          }}
-        >
-          <button
-            onClick={handleZoomOut}
-            disabled={zoom === ZOOM_LEVELS[0]}
-            style={{
-              padding: '4px 12px',
-              border: '1px solid #D1D5DB',
-              borderRadius: '4px',
-              background: 'white',
-              cursor: zoom === ZOOM_LEVELS[0] ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-            }}
-          >
-            −
-          </button>
-          <span style={{ fontSize: '14px', fontWeight: 500, minWidth: '50px', textAlign: 'center' }}>
-            {Math.round(zoom * 100)}%
-          </span>
-          <button
-            onClick={handleZoomIn}
-            disabled={zoom === ZOOM_LEVELS[ZOOM_LEVELS.length - 1]}
-            style={{
-              padding: '4px 12px',
-              border: '1px solid #D1D5DB',
-              borderRadius: '4px',
-              background: 'white',
-              cursor: zoom === ZOOM_LEVELS[ZOOM_LEVELS.length - 1] ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-            }}
-          >
-            +
-          </button>
-          <button
-            onClick={handleFitWidth}
-            style={{
-              padding: '4px 12px',
-              border: '1px solid #D1D5DB',
-              borderRadius: '4px',
-              background: 'white',
-              cursor: 'pointer',
-              fontSize: '12px',
-            }}
-          >
-            Fit Width
-          </button>
+      };
+
+      const handleImagesChanged = (event: Event) => {
+        const customEvent = event as CustomEvent<{ projectId?: string }>;
+        if (!customEvent.detail?.projectId || customEvent.detail.projectId === projectId) {
+          void loadImages();
+        }
+      };
+
+      void loadImages();
+      window.addEventListener('project-images-changed', handleImagesChanged as EventListener);
+
+      return () => {
+        cancelled = true;
+        window.removeEventListener(
+          'project-images-changed',
+          handleImagesChanged as EventListener
+        );
+      };
+    }, [projectId]);
+
+    const handleZoomIn = () => {
+      const currentIndex = ZOOM_LEVELS.indexOf(zoom);
+      if (currentIndex < ZOOM_LEVELS.length - 1) {
+        setZoom(ZOOM_LEVELS[currentIndex + 1]);
+      }
+    };
+
+    const handleZoomOut = () => {
+      const currentIndex = ZOOM_LEVELS.indexOf(zoom);
+      if (currentIndex > 0) {
+        setZoom(ZOOM_LEVELS[currentIndex - 1]);
+      }
+    };
+
+    const handleFitWidth = () => {
+      setZoom(1);
+    };
+
+    const documentContent = useMemo(() => {
+      return {
+        coverContent: getSectionContent('cover'),
+        revisionHistory: getSectionContent('revision_history'),
+        executiveSummary: getSectionContent('executive_summary'),
+        introduction: getSectionContent('introduction'),
+        abbreviations: getSectionContent('abbreviations'),
+        processFlow: getSectionContent('process_flow'),
+        overview: getSectionContent('overview'),
+        features: getSectionContent('features'),
+        remoteSupport: getSectionContent('remote_support'),
+        documentationControl: getSectionContent('documentation_control'),
+        customerTraining: getSectionContent('customer_training'),
+        techStack: getSectionContent('tech_stack'),
+        hardwareSpecs: getSectionContent('hardware_specs'),
+        softwareSpecs: getSectionContent('software_specs'),
+        thirdPartySw: getSectionContent('third_party_sw'),
+        fatCondition: getSectionContent('fat_condition'),
+        supervisors: getSectionContent('supervisors'),
+        divisionOfEng: getSectionContent('division_of_eng'),
+        workCompletion: getSectionContent('work_completion'),
+        buyerObligations: getSectionContent('buyer_obligations'),
+        exclusionList: getSectionContent('exclusion_list'),
+        valueAddition: getSectionContent('value_addition'),
+        buyerPrerequisites: getSectionContent('buyer_prerequisites'),
+        poc: getSectionContent('poc'),
+      };
+    }, [sectionContents]);
+
+    const coverSolutionName =
+      documentContent.coverContent.solution_full_name || solutionFullName || solutionName;
+    const coverClientName = documentContent.coverContent.client_name || clientName;
+    const coverClientLocation = documentContent.coverContent.client_location || clientLocation;
+    const coverRefNumber =
+      documentContent.coverContent.ref_number || '26/XXXX/XXXXX/v0';
+    const coverDate = documentContent.coverContent.doc_date || '23rd Jan 2026';
+    const coverVersion = documentContent.coverContent.doc_version || '0';
+
+    const revisionRows =
+      documentContent.revisionHistory.rows?.length > 0
+        ? documentContent.revisionHistory.rows
+        : [
+            {
+              sr_no: 1,
+              revised_by: '',
+              checked_by: '',
+              approved_by: '',
+              details: 'First issue',
+              date: '23-01-2026',
+              rev_no: '0',
+            },
+          ];
+
+    const techRows = documentContent.techStack.rows || [];
+    const hardwareRows = documentContent.hardwareSpecs.rows || [];
+    const softwareRows = documentContent.softwareSpecs.rows || [];
+    const featureItems = documentContent.features.items || [];
+    const documentationControlCustom = filterFilledItems(
+      documentContent.documentationControl.custom_items
+    );
+    const workCompletionCustom = filterFilledItems(
+      documentContent.workCompletion.custom_items
+    );
+    const buyerObligationCustom = filterFilledItems(
+      documentContent.buyerObligations.custom_items
+    );
+    const exclusionCustom = filterFilledItems(documentContent.exclusionList.custom_items);
+    const buyerPrerequisites = filterFilledItems(documentContent.buyerPrerequisites.items);
+
+    const templateReplacements = useMemo(
+      () => ({
+        ExecutiveSummaryPara1: stripHtml(documentContent.executiveSummary.para1 || ''),
+        SolutionName: solutionName || '{SolutionName}',
+        SolutionFullName: coverSolutionName || '{SolutionFullName}',
+        ClientName: coverClientName || '{ClientName}',
+        CLIENTNAME: coverClientName || '{CLIENTNAME}',
+        ClientLocation: coverClientLocation || '{ClientLocation}',
+        CLIENTLOCATION: coverClientLocation || '{CLIENTLOCATION}',
+        ClientAbbreviation: coverClientName || '{ClientAbbreviation}',
+        TenderReference:
+          documentContent.introduction.tender_reference || '{TenderReference}',
+        TenderDate: documentContent.introduction.tender_date || '{TenderDate}',
+        ProcessFlowDescription:
+          stripHtml(documentContent.processFlow.text || '') || '{ProcessFlowDescription}',
+        SystemObjective:
+          stripHtml(documentContent.overview.system_objective || '') || '{SystemObjective}',
+        ExistingSystemDescription:
+          stripHtml(documentContent.overview.existing_system || '') ||
+          '{ExistingSystemDescription}',
+        IntegrationDescription:
+          stripHtml(documentContent.overview.integration || '') ||
+          '{IntegrationDescription}',
+        TangibleBenefits:
+          stripHtml(documentContent.overview.tangible_benefits || '') || '{TangibleBenefits}',
+        IntangibleBenefits:
+          stripHtml(documentContent.overview.intangible_benefits || '') ||
+          '{IntangibleBenefits}',
+        TrainingPersons:
+          documentContent.customerTraining.persons || '[TrainingPersons]',
+        TrainingDays: documentContent.customerTraining.days || '[TrainingDays]',
+        FATCondition:
+          stripHtml(documentContent.fatCondition.text || '') || '{FATCondition}',
+        ValueAddedOfferings:
+          stripHtml(documentContent.valueAddition.text || '') || '{ValueAddedOfferings}',
+        PMDays: documentContent.supervisors.pm_days || '[PMDays]',
+        DevDays: documentContent.supervisors.dev_days || '[DevDays]',
+        CommDays: documentContent.supervisors.comm_days || '[CommDays]',
+        TotalManDays: documentContent.supervisors.total_man_days || '[TotalManDays]',
+        SW3_Name: softwareRows[2]?.name || '{SW3_Name}',
+        TS4_Component: techRows[3]?.component || '{TS4_Component}',
+        TS2_Technology: techRows[1]?.technology || '{TS2_Technology}',
+        POCName: documentContent.poc.name || '[POC Name]',
+        POCDescription:
+          stripHtml(documentContent.poc.description || '') || '[POC Description]',
+      }),
+      [
+        coverClientLocation,
+        coverClientName,
+        coverSolutionName,
+        documentContent.customerTraining.days,
+        documentContent.customerTraining.persons,
+        documentContent.executiveSummary.para1,
+        documentContent.fatCondition.text,
+        documentContent.introduction.tender_date,
+        documentContent.introduction.tender_reference,
+        documentContent.overview.existing_system,
+        documentContent.overview.integration,
+        documentContent.overview.intangible_benefits,
+        documentContent.overview.system_objective,
+        documentContent.overview.tangible_benefits,
+        documentContent.poc.description,
+        documentContent.poc.name,
+        documentContent.processFlow.text,
+        documentContent.supervisors.comm_days,
+        documentContent.supervisors.dev_days,
+        documentContent.supervisors.pm_days,
+        documentContent.supervisors.total_man_days,
+        documentContent.valueAddition.text,
+        softwareRows,
+        solutionName,
+        techRows,
+      ]
+    );
+
+    const resolvedMatrixRows = useMemo(
+      () =>
+        RESPONSIBILITY_MATRIX_ROWS.map((row) =>
+          row.map((cell) => resolveTemplateText(cell, templateReplacements))
+        ),
+      [templateReplacements]
+    );
+
+    const resolvedExclusionItems = useMemo(() => {
+      const custom = [...exclusionCustom];
+
+      return [
+        EXCLUSION_STANDARD_ITEMS[0],
+        EXCLUSION_STANDARD_ITEMS[1],
+        EXCLUSION_STANDARD_ITEMS[2],
+        EXCLUSION_STANDARD_ITEMS[3],
+        custom[0],
+        custom[1],
+        EXCLUSION_STANDARD_ITEMS[4],
+        EXCLUSION_STANDARD_ITEMS[5],
+        EXCLUSION_STANDARD_ITEMS[6],
+        EXCLUSION_STANDARD_ITEMS[7],
+        custom[2],
+        EXCLUSION_STANDARD_ITEMS[8],
+        EXCLUSION_STANDARD_ITEMS[9],
+        ...custom.slice(3),
+      ].filter(Boolean);
+    }, [exclusionCustom]);
+
+    const isActive = (sectionKey: string) => activeSectionKey === sectionKey;
+
+    const sectionStyle = (sectionKey: string): React.CSSProperties => ({
+      position: 'relative',
+      cursor: onSectionClick ? 'pointer' : 'default',
+      transition: 'all 0.2s ease',
+      marginBottom: '24px',
+      ...(isActive(sectionKey) && sectionKey !== 'cover' && {
+        background: '#FFF9C4',
+        borderLeft: '3px solid #E60012',
+        borderRadius: '2px',
+        paddingLeft: '8px',
+        marginLeft: '-8px',
+      }),
+      ...(isActive(sectionKey) && sectionKey === 'cover' && {
+        background: '#FFF9C4',
+      }),
+      ...(hoveredSection === sectionKey && !isActive(sectionKey) && sectionKey !== 'cover' && {
+        border: '1px solid #BFDBFE',
+        borderRadius: '2px',
+        padding: '4px',
+        margin: '-4px -4px 20px',
+      }),
+      ...(hoveredSection === sectionKey && !isActive(sectionKey) && sectionKey === 'cover' && {
+        opacity: 0.9,
+      }),
+    });
+
+    const heading1BurgundyStyle: React.CSSProperties = {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '16pt',
+      fontWeight: 'bold',
+      color: '#943634',
+      marginBottom: '16px',
+      textTransform: 'uppercase',
+    };
+
+    const heading1RedStyle: React.CSSProperties = {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '16pt',
+      fontWeight: 'bold',
+      color: '#EE0000',
+      marginBottom: '16px',
+      textTransform: 'uppercase',
+    };
+
+    const heading1BlueStyle: React.CSSProperties = {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '16pt',
+      fontWeight: 'bold',
+      color: '#4F81BD',
+      marginBottom: '16px',
+      textTransform: 'uppercase',
+    };
+
+    const heading2BlackStyle: React.CSSProperties = {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '12pt',
+      fontWeight: 'bold',
+      color: '#000000',
+      marginBottom: '12px',
+    };
+
+    const heading2RedStyle: React.CSSProperties = {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '12pt',
+      fontWeight: 'bold',
+      color: '#EE0000',
+      marginBottom: '12px',
+      textTransform: 'uppercase',
+    };
+
+    const heading2BlueStyle: React.CSSProperties = {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '12pt',
+      fontWeight: 'bold',
+      color: '#4F81BD',
+      marginBottom: '12px',
+      textTransform: 'uppercase',
+    };
+
+    const heading3RedStyle: React.CSSProperties = {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '11pt',
+      fontWeight: 'bold',
+      color: '#EE0000',
+      marginBottom: '8px',
+    };
+
+    const bodyParagraphStyle: React.CSSProperties = {
+      marginBottom: '10px',
+      textAlign: 'justify',
+    };
+
+    const listParagraphStyle: React.CSSProperties = {
+      ...bodyParagraphStyle,
+      marginLeft: '16px',
+    };
+
+    const labelParagraphStyle: React.CSSProperties = {
+      ...bodyParagraphStyle,
+      fontWeight: 'bold',
+      marginBottom: '4px',
+      textAlign: 'left',
+    };
+
+    const noteParagraphStyle: React.CSSProperties = {
+      marginBottom: '8px',
+      fontSize: '10pt',
+      fontStyle: 'italic',
+      color: '#6B7280',
+      textAlign: 'left',
+    };
+
+    const tableStyle: React.CSSProperties = {
+      width: '100%',
+      borderCollapse: 'collapse',
+      fontSize: '10pt',
+      marginBottom: '12px',
+    };
+
+    const tableHeaderStyle: React.CSSProperties = {
+      fontWeight: 'bold',
+      padding: '4px 8px',
+      border: '1px solid #000',
+      textAlign: 'left',
+      backgroundColor: '#FFFFFF',
+      verticalAlign: 'top',
+    };
+
+    const tableCellStyle: React.CSSProperties = {
+      padding: '4px 8px',
+      border: '1px solid #000',
+      verticalAlign: 'top',
+    };
+
+    const matrixCellStyle: React.CSSProperties = {
+      padding: '3px 4px',
+      border: '1px solid #000',
+      verticalAlign: 'top',
+      fontSize: '8.5pt',
+      textAlign: 'center',
+    };
+
+    const matrixItemCellStyle: React.CSSProperties = {
+      ...matrixCellStyle,
+      textAlign: 'left',
+    };
+
+    const placeholderStyle: React.CSSProperties = {
+      fontStyle: 'italic',
+      color: '#6B7280',
+    };
+
+    const imageFrameStyle: React.CSSProperties = {
+      width: '100%',
+      minHeight: '180px',
+      border: '1px solid #000',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#F9FAFB',
+      marginBottom: '10px',
+      overflow: 'hidden',
+    };
+
+    const renderTemplateParagraphs = (
+      paragraphs: string[],
+      style: React.CSSProperties = bodyParagraphStyle
+    ) =>
+      paragraphs.map((paragraph, index) => (
+        <p key={`${paragraph}-${index}`} style={style}>
+          {resolveTemplateText(paragraph, templateReplacements)}
+        </p>
+      ));
+
+    const renderImageOrPlaceholder = (
+      imageType: PreviewImageType,
+      placeholderText: string,
+      alt: string
+    ) => {
+      const imageUrl = imageUrls[imageType];
+
+      if (imageUrl) {
+        return (
+          <div style={imageFrameStyle}>
+            <img
+              src={imageUrl}
+              alt={alt}
+              style={{
+                width: '100%',
+                display: 'block',
+                objectFit: 'contain',
+              }}
+            />
+          </div>
+        );
+      }
+
+      return (
+        <div style={imageFrameStyle}>
+          <span style={placeholderStyle}>{placeholderText}</span>
         </div>
+      );
+    };
 
-        {/* Completion Badge */}
-        <div
-          className="completion-badge"
-          style={{
-            position: 'absolute',
-            top: '80px',
-            right: '24px',
-            padding: '8px 12px',
-            background: '#FFFFFF',
-            border: '1px solid #E5E7EB',
-            borderRadius: '4px',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-            fontSize: '12px',
-            fontWeight: 500,
-            color: '#1A1A2E',
-            zIndex: 10,
-          }}
-        >
-          Preview — {completedCount} / 27 complete
-        </div>
+    const renderSpecLines = (row: Record<string, any>) => {
+      const lines = [
+        row.specs_line1,
+        row.specs_line2,
+        row.specs_line3,
+        row.specs_line4,
+      ].filter(Boolean);
 
-        {/* Document Content */}
-        <div
-          className="document-preview-print"
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '24px 0',
-            transform: `scale(${zoom})`,
-            transformOrigin: 'top center',
-            transition: 'transform 0.2s ease',
-          }}
-        >
-      {/* PAGE 1: COVER PAGE */}
-      <Page pageNumber={1} showHeader={false}>
-        <SectionWrapper
-          sectionKey="cover"
-          isActive={isActive('cover')}
-          isHovered={hoveredSection === 'cover'}
-          onMouseEnter={() => setHoveredSection('cover')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('cover')}
-          sectionRef={(el) => (sectionRefs.current['cover'] = el)}
-          style={{
-            ...sectionStyle('cover'),
-            textAlign: 'center',
-            paddingTop: '200px',
-          }}
-        >
-          <h1 style={{ fontSize: '16pt', fontWeight: 'bold', marginBottom: '24px' }}>
-            TECHNICAL SPECIFICATION
-          </h1>
-          <p style={{ fontSize: '12pt', marginBottom: '8px' }}>For</p>
-          <p style={{ fontSize: '14pt', fontWeight: 'bold', marginBottom: '16px' }}>
-            {documentContent.coverContent.solution_full_name || solutionName || '{Solution Full Name}'}
-          </p>
-          <p style={{ marginBottom: '4px' }}>Prepared for:</p>
-          <p style={{ fontWeight: 'bold', marginBottom: '16px' }}>
-            {clientName || '{Client Name}'}, {clientLocation || '{Client Location}'}
-          </p>
-          <p style={{ marginBottom: '4px' }}>
-            Document Version: {documentContent.coverContent.doc_version || '0'}
-          </p>
-          <p style={{ marginBottom: '4px' }}>
-            Date: {documentContent.coverContent.doc_date || '—'}
-          </p>
-          <p>Reference: {documentContent.coverContent.ref_number || '—'}</p>
-        </SectionWrapper>
-      </Page>
+      if (lines.length === 0) {
+        return <span style={placeholderStyle}>[Specifications pending]</span>;
+      }
 
-      <PageBreak />
-
-      {/* PAGE 2: Executive Summary, Introduction, Abbreviations */}
-      <Page pageNumber={2} showHeader={true}>
-        {/* SECTION 1: EXECUTIVE SUMMARY */}
-        <SectionWrapper
-          sectionKey="executive_summary"
-          isActive={isActive('executive_summary')}
-          isHovered={hoveredSection === 'executive_summary'}
-          onMouseEnter={() => setHoveredSection('executive_summary')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('executive_summary')}
-          sectionRef={(el) => (sectionRefs.current['executive_summary'] = el)}
-          style={sectionStyle('executive_summary')}
-        >
-          <h2 style={headingStyle}>
-            1. Executive Summary
-          </h2>
-          <h3 style={subHeadingStyle}>
-            1.1 About Hitachi India
-          </h3>
-          <p style={optionalPlaceholderStyle}>
-            [Standard Hitachi boilerplate — locked]
-          </p>
-          <h3 style={subHeadingStyle}>
-            1.2 Project Overview
-          </h3>
-          <p style={{ marginBottom: '12px' }}>
-            {documentContent.executiveSummary?.para1
-              ? stripHtml(documentContent.executiveSummary.para1)
-              : <span style={requiredPlaceholderStyle}>Required — click to fill</span>}
-          </p>
-        </SectionWrapper>
-
-        {/* SECTION 2: INTRODUCTION */}
-        <SectionWrapper
-          sectionKey="introduction"
-          isActive={isActive('introduction')}
-          isHovered={hoveredSection === 'introduction'}
-          onMouseEnter={() => setHoveredSection('introduction')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('introduction')}
-          sectionRef={(el) => (sectionRefs.current['introduction'] = el)}
-          style={sectionStyle('introduction')}
-        >
-          <h2 style={headingStyle}>
-            2. Introduction
-          </h2>
-          <p>
-            This Technical Specification document has been prepared in response to the tender reference{' '}
-            <strong style={documentContent.introduction?.tender_reference ? {} : requiredPlaceholderStyle}>
-              {documentContent.introduction?.tender_reference || '{{TenderReference}}'}
-            </strong>{' '}
-            dated{' '}
-            <strong style={documentContent.introduction?.tender_date ? {} : requiredPlaceholderStyle}>
-              {documentContent.introduction?.tender_date || '{{TenderDate}}'}
-            </strong>
-            ...
-          </p>
-        </SectionWrapper>
-
-        {/* SECTION 3: ABBREVIATIONS */}
-        <SectionWrapper
-          sectionKey="abbreviations"
-          isActive={isActive('abbreviations')}
-          isHovered={hoveredSection === 'abbreviations'}
-          onMouseEnter={() => setHoveredSection('abbreviations')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('abbreviations')}
-          sectionRef={(el) => (sectionRefs.current['abbreviations'] = el)}
-          style={sectionStyle('abbreviations')}
-        >
-          <h2 style={headingStyle}>
-            3. Abbreviations
-          </h2>
-          <table style={tableStyle}>
-            <thead>
-              <tr>
-                <th style={{ ...tableHeaderStyle, width: '60px' }}>Sr.No.</th>
-                <th style={{ ...tableHeaderStyle, width: '120px' }}>Abbreviation</th>
-                <th style={tableHeaderStyle}>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {documentContent.abbreviations?.rows?.slice(0, 5).map((row: any, idx: number) => (
-                <tr key={idx}>
-                  <td style={tableCellStyle(idx % 2 === 0)}>{row.sr_no || idx + 1}</td>
-                  <td style={tableCellStyle(idx % 2 === 0)}>{row.abbreviation || '—'}</td>
-                  <td style={tableCellStyle(idx % 2 === 0)}>{row.description || '—'}</td>
-                </tr>
-              ))}
-              {(documentContent.abbreviations?.rows?.length || 0) > 5 && (
-                <tr>
-                  <td colSpan={3} style={{ ...tableCellStyle(false), fontStyle: 'italic', color: '#6B7280' }}>
-                    ... ({documentContent.abbreviations.rows.length - 5} more)
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </SectionWrapper>
-      </Page>
-
-      <PageBreak />
-
-      {/* PAGE 3: Process Flow, Overview */}
-      <Page pageNumber={3} showHeader={true}>
-        {/* SECTION 4: PROCESS FLOW */}
-        <SectionWrapper
-          sectionKey="process_flow"
-          isActive={isActive('process_flow')}
-          isHovered={hoveredSection === 'process_flow'}
-          onMouseEnter={() => setHoveredSection('process_flow')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('process_flow')}
-          sectionRef={(el) => (sectionRefs.current['process_flow'] = el)}
-          style={sectionStyle('process_flow')}
-        >
-          <h2 style={headingStyle}>
-            4. Process Flow
-          </h2>
-          <p>
-            {documentContent.processFlow?.text
-              ? truncate(stripHtml(documentContent.processFlow.text), 200)
-              : <span style={optionalPlaceholderStyle}>[Enter process flow description]</span>}
-          </p>
-        </SectionWrapper>
-
-        {/* SECTION 5: OVERVIEW */}
-        <SectionWrapper
-          sectionKey="overview"
-          isActive={isActive('overview')}
-          isHovered={hoveredSection === 'overview'}
-          onMouseEnter={() => setHoveredSection('overview')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('overview')}
-          sectionRef={(el) => (sectionRefs.current['overview'] = el)}
-          style={sectionStyle('overview')}
-        >
-          <h2 style={headingStyle}>
-            5. Overview of {solutionName || '{Solution Name}'}
-          </h2>
-          <h3 style={subHeadingStyle}>System Objective</h3>
-          <p style={{ marginBottom: '12px' }}>
-            {documentContent.overview?.system_objective
-              ? truncate(stripHtml(documentContent.overview.system_objective), 100)
-              : <span style={optionalPlaceholderStyle}>[Enter system objective]</span>}
-          </p>
-          <h3 style={subHeadingStyle}>Existing System</h3>
-          <p style={{ marginBottom: '12px' }}>
-            {documentContent.overview?.existing_system
-              ? truncate(stripHtml(documentContent.overview.existing_system), 100)
-              : <span style={optionalPlaceholderStyle}>[Enter existing system details]</span>}
-          </p>
-        </SectionWrapper>
-      </Page>
-
-      <PageBreak />
-
-      {/* PAGE 4: Features */}
-      <Page pageNumber={4}>
-        {/* SECTION 6: DESIGN SCOPE (FEATURES) */}
-        <SectionWrapper
-          sectionKey="features"
-          isActive={isActive('features')}
-          isHovered={hoveredSection === 'features'}
-          onMouseEnter={() => setHoveredSection('features')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('features')}
-          sectionRef={(el) => (sectionRefs.current['features'] = el)}
-          style={sectionStyle('features')}
-        >
-          <h2 style={headingStyle}>
-            6. Design Scope of Work
-          </h2>
-          {documentContent.features?.items?.slice(0, 3).map((feature: any, idx: number) => (
-            <div key={idx} style={{ marginBottom: '12px' }}>
-              <p style={{ fontWeight: 'bold' }}>{feature.title || `Feature ${idx + 1}`}</p>
-              {feature.brief && <p style={{ fontStyle: 'italic', fontSize: '10pt' }}>{feature.brief}</p>}
-              <p>{truncate(feature.description || '', 80)}</p>
-            </div>
+      return (
+        <div>
+          {lines.map((line) => (
+            <div key={line}>{line}</div>
           ))}
-          {(documentContent.features?.items?.length || 0) > 3 && (
-            <p style={{ fontStyle: 'italic', color: '#6B7280' }}>
-              ... ({documentContent.features.items.length - 3} more features)
-            </p>
-          )}
-        </SectionWrapper>
-      </Page>
+        </div>
+      );
+    };
 
-      <PageBreak />
+    const formatSoftwareName = (row: Record<string, any>, index: number) => {
+      const name = row.name || '';
 
-      {/* PAGE 5: Remote Support, Documentation, Training */}
-      <Page pageNumber={5}>
-        {/* SECTION 7: REMOTE SUPPORT */}
-        <SectionWrapper
-          sectionKey="remote_support"
-          isActive={isActive('remote_support')}
-          isHovered={hoveredSection === 'remote_support'}
-          onMouseEnter={() => setHoveredSection('remote_support')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('remote_support')}
-          sectionRef={(el) => (sectionRefs.current['remote_support'] = el)}
-          style={sectionStyle('remote_support')}
+      if (!name) {
+        return <span style={placeholderStyle}>[Software name pending]</span>;
+      }
+
+      if (index === 0) return `${name} (5 CAL)`;
+      if (index === 3) return `${name} (5 CAL) / Other`;
+      return name;
+    };
+
+    const handleSectionClick = (sectionKey: string) => {
+      if (onSectionClick) {
+        onSectionClick(sectionKey);
+      }
+    };
+
+    return (
+      <>
+        <style>{`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            .document-preview-print, .document-preview-print * {
+              visibility: visible;
+            }
+            .document-preview-print {
+              position: absolute;
+              left: 0;
+              top: 0;
+            }
+            .preview-toolbar, .completion-badge {
+              display: none !important;
+            }
+          }
+        `}</style>
+
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#E8E8E8',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
         >
-          <h2 style={headingStyle}>
-            7. Remote Support System
-          </h2>
-          <p>
-            {documentContent.remoteSupport?.text
-              ? truncate(stripHtml(documentContent.remoteSupport.text), 150)
-              : <span style={optionalPlaceholderStyle}>[Enter remote support details]</span>}
-          </p>
-        </SectionWrapper>
-
-        {/* SECTION 8: DOCUMENTATION CONTROL */}
-        <SectionWrapper
-          sectionKey="documentation_control"
-          isActive={isActive('documentation_control')}
-          isHovered={hoveredSection === 'documentation_control'}
-          onMouseEnter={() => setHoveredSection('documentation_control')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('documentation_control')}
-          sectionRef={(el) => (sectionRefs.current['documentation_control'] = el)}
-          style={sectionStyle('documentation_control')}
-        >
-          <h2 style={headingStyle}>
-            8. Documentation Control
-          </h2>
-          <ul style={{ marginLeft: '20px' }}>
-            <li>System Architecture Document</li>
-            <li>User Manual</li>
-            <li>Installation Guide</li>
-            <li>Maintenance Manual</li>
-          </ul>
-        </SectionWrapper>
-
-        {/* SECTION 9: CUSTOMER TRAINING */}
-        <SectionWrapper
-          sectionKey="customer_training"
-          isActive={isActive('customer_training')}
-          isHovered={hoveredSection === 'customer_training'}
-          onMouseEnter={() => setHoveredSection('customer_training')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('customer_training')}
-          sectionRef={(el) => (sectionRefs.current['customer_training'] = el)}
-          style={sectionStyle('customer_training')}
-        >
-          <h2 style={headingStyle}>
-            9. Customer Training
-          </h2>
-          <p>
-            SELLER shall provide training for{' '}
-            <strong>{documentContent.customerTraining?.persons || '[X]'}</strong> people for{' '}
-            <strong>{documentContent.customerTraining?.days || '[Y]'}</strong> days.
-          </p>
-        </SectionWrapper>
-      </Page>
-
-      <PageBreak />
-
-      {/* PAGE 6: System Config, FAT Condition, Tech Stack */}
-      <Page pageNumber={6}>
-        {/* SECTION 10: SYSTEM CONFIGURATION */}
-        <SectionWrapper
-          sectionKey="system_config"
-          isActive={isActive('system_config')}
-          isHovered={hoveredSection === 'system_config'}
-          onMouseEnter={() => setHoveredSection('system_config')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('system_config')}
-          sectionRef={(el) => (sectionRefs.current['system_config'] = el)}
-          style={sectionStyle('system_config')}
-        >
-          <h2 style={headingStyle}>
-            10. System Configuration
-          </h2>
           <div
+            className="preview-toolbar"
             style={{
-              width: '100%',
-              height: '80px',
-              backgroundColor: '#F3F4F6',
+              padding: '12px 24px',
+              backgroundColor: '#FFFFFF',
+              borderBottom: '1px solid #E5E7EB',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px dashed #D1D5DB',
-              fontStyle: 'italic',
-              color: '#6B7280',
+              gap: '12px',
+              flexShrink: 0,
             }}
           >
-            [Architecture Diagram — To Be Inserted]
+            <button
+              onClick={handleZoomOut}
+              disabled={zoom === ZOOM_LEVELS[0]}
+              style={{
+                padding: '4px 12px',
+                border: '1px solid #D1D5DB',
+                borderRadius: '4px',
+                background: 'white',
+                cursor: zoom === ZOOM_LEVELS[0] ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+              }}
+            >
+              -
+            </button>
+            <span
+              style={{
+                fontSize: '14px',
+                fontWeight: 500,
+                minWidth: '50px',
+                textAlign: 'center',
+              }}
+            >
+              {Math.round(zoom * 100)}%
+            </span>
+            <button
+              onClick={handleZoomIn}
+              disabled={zoom === ZOOM_LEVELS[ZOOM_LEVELS.length - 1]}
+              style={{
+                padding: '4px 12px',
+                border: '1px solid #D1D5DB',
+                borderRadius: '4px',
+                background: 'white',
+                cursor:
+                  zoom === ZOOM_LEVELS[ZOOM_LEVELS.length - 1]
+                    ? 'not-allowed'
+                    : 'pointer',
+                fontSize: '14px',
+              }}
+            >
+              +
+            </button>
+            <button
+              onClick={handleFitWidth}
+              style={{
+                padding: '4px 12px',
+                border: '1px solid #D1D5DB',
+                borderRadius: '4px',
+                background: 'white',
+                cursor: 'pointer',
+                fontSize: '12px',
+              }}
+            >
+              Fit Width
+            </button>
           </div>
-        </SectionWrapper>
 
-        {/* SECTION 11: FAT CONDITION */}
-        <SectionWrapper
-          sectionKey="fat_condition"
-          isActive={isActive('fat_condition')}
-          isHovered={hoveredSection === 'fat_condition'}
-          onMouseEnter={() => setHoveredSection('fat_condition')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('fat_condition')}
-          sectionRef={(el) => (sectionRefs.current['fat_condition'] = el)}
-          style={sectionStyle('fat_condition')}
-        >
-          <h2 style={headingStyle}>
-            11. FAT Condition
-          </h2>
-          <p>
-            {documentContent.fatCondition?.text
-              ? truncate(stripHtml(documentContent.fatCondition.text), 150)
-              : <span style={optionalPlaceholderStyle}>[Enter FAT conditions]</span>}
-          </p>
-        </SectionWrapper>
-
-        {/* SECTION 12: TECHNOLOGY STACK */}
-        <SectionWrapper
-          sectionKey="tech_stack"
-          isActive={isActive('tech_stack')}
-          isHovered={hoveredSection === 'tech_stack'}
-          onMouseEnter={() => setHoveredSection('tech_stack')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('tech_stack')}
-          sectionRef={(el) => (sectionRefs.current['tech_stack'] = el)}
-          style={sectionStyle('tech_stack')}
-        >
-          <h2 style={headingStyle}>
-            12. Technology Stack
-          </h2>
-          <table style={tableStyle}>
-            <thead>
-              <tr>
-                <th style={tableHeaderStyle}>Component</th>
-                <th style={tableHeaderStyle}>Technology</th>
-              </tr>
-            </thead>
-            <tbody>
-              {documentContent.techStack?.rows?.slice(0, 5).map((row: any, idx: number) => (
-                <tr key={idx}>
-                  <td style={tableCellStyle(idx % 2 === 0)}>{row.component || '—'}</td>
-                  <td style={tableCellStyle(idx % 2 === 0)}>{row.technology || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </SectionWrapper>
-      </Page>
-
-      <PageBreak />
-
-      {/* PAGE 7: Hardware Specs, Software Specs, Third Party SW */}
-      <Page pageNumber={7}>
-        {/* SECTION 13: HARDWARE SPECS */}
-        <SectionWrapper
-          sectionKey="hardware_specs"
-          isActive={isActive('hardware_specs')}
-          isHovered={hoveredSection === 'hardware_specs'}
-          onMouseEnter={() => setHoveredSection('hardware_specs')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('hardware_specs')}
-          sectionRef={(el) => (sectionRefs.current['hardware_specs'] = el)}
-          style={sectionStyle('hardware_specs')}
-        >
-          <h2 style={headingStyle}>
-            13. Hardware Specifications
-          </h2>
-          <p style={optionalPlaceholderStyle}>
-            [Table with {documentContent.hardwareSpecs?.rows?.length || 0} hardware items]
-          </p>
-        </SectionWrapper>
-
-        {/* SECTION 14: SOFTWARE SPECS */}
-        <SectionWrapper
-          sectionKey="software_specs"
-          isActive={isActive('software_specs')}
-          isHovered={hoveredSection === 'software_specs'}
-          onMouseEnter={() => setHoveredSection('software_specs')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('software_specs')}
-          sectionRef={(el) => (sectionRefs.current['software_specs'] = el)}
-          style={sectionStyle('software_specs')}
-        >
-          <h2 style={headingStyle}>
-            14. Software Specifications
-          </h2>
-          <p style={optionalPlaceholderStyle}>
-            [Table with {documentContent.softwareSpecs?.rows?.length || 0} software items]
-          </p>
-        </SectionWrapper>
-
-        {/* SECTION 15: THIRD PARTY SOFTWARE */}
-        <SectionWrapper
-          sectionKey="third_party_sw"
-          isActive={isActive('third_party_sw')}
-          isHovered={hoveredSection === 'third_party_sw'}
-          onMouseEnter={() => setHoveredSection('third_party_sw')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('third_party_sw')}
-          sectionRef={(el) => (sectionRefs.current['third_party_sw'] = el)}
-          style={sectionStyle('third_party_sw')}
-        >
-          <h2 style={headingStyle}>
-            15. Third Party Software
-          </h2>
-          <p>{documentContent.thirdPartySw?.sw4_name || <span style={optionalPlaceholderStyle}>[Enter third party software]</span>}</p>
-        </SectionWrapper>
-      </Page>
-
-      <PageBreak />
-
-      {/* PAGE 8: Gantt Charts, Supervisors */}
-      <Page pageNumber={8}>
-        {/* SECTION 16: OVERALL GANTT */}
-        <SectionWrapper
-          sectionKey="overall_gantt"
-          isActive={isActive('overall_gantt')}
-          isHovered={hoveredSection === 'overall_gantt'}
-          onMouseEnter={() => setHoveredSection('overall_gantt')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('overall_gantt')}
-          sectionRef={(el) => (sectionRefs.current['overall_gantt'] = el)}
-          style={sectionStyle('overall_gantt')}
-        >
-          <h2 style={headingStyle}>
-            16. Overall Gantt Chart
-          </h2>
           <div
+            className="completion-badge"
             style={{
-              width: '100%',
-              height: '80px',
-              backgroundColor: '#F3F4F6',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px dashed #D1D5DB',
-              fontStyle: 'italic',
-              color: '#6B7280',
+              position: 'absolute',
+              top: '80px',
+              right: '24px',
+              padding: '8px 12px',
+              background: '#FFFFFF',
+              border: '1px solid #E5E7EB',
+              borderRadius: '4px',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+              fontSize: '12px',
+              fontWeight: 500,
+              color: '#1A1A2E',
+              zIndex: 10,
             }}
           >
-            [Overall Gantt Chart — To Be Inserted]
+            Preview - {completedCount} / 27 complete
           </div>
-        </SectionWrapper>
 
-        {/* SECTION 17: SHUTDOWN GANTT */}
-        <SectionWrapper
-          sectionKey="shutdown_gantt"
-          isActive={isActive('shutdown_gantt')}
-          isHovered={hoveredSection === 'shutdown_gantt'}
-          onMouseEnter={() => setHoveredSection('shutdown_gantt')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('shutdown_gantt')}
-          sectionRef={(el) => (sectionRefs.current['shutdown_gantt'] = el)}
-          style={sectionStyle('shutdown_gantt')}
-        >
-          <h2 style={headingStyle}>
-            17. Shutdown Gantt Chart
-          </h2>
           <div
+            className="document-preview-print"
             style={{
-              width: '100%',
-              height: '80px',
-              backgroundColor: '#F3F4F6',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px dashed #D1D5DB',
-              fontStyle: 'italic',
-              color: '#6B7280',
+              flex: 1,
+              overflowY: 'auto',
+              padding: '24px 0',
+              transform: `scale(${zoom})`,
+              transformOrigin: 'top center',
+              transition: 'transform 0.2s ease',
             }}
           >
-            [Shutdown Gantt Chart — To Be Inserted]
+            <div
+              style={{
+                width: '816px',
+                minHeight: '1056px',
+                backgroundColor: '#FFFFFF',
+                margin: '0 auto',
+                padding: '97px',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                fontFamily: "'Times New Roman', serif",
+                fontSize: '11pt',
+                lineHeight: '1.5',
+              }}
+            >
+              <SectionWrapper
+                sectionKey="cover"
+                isActive={isActive('cover')}
+                isHovered={hoveredSection === 'cover'}
+                onMouseEnter={() => setHoveredSection('cover')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('cover')}
+                sectionRef={(el) => (sectionRefs.current.cover = el)}
+                style={{
+                  ...sectionStyle('cover'),
+                  border: '2px solid #000000',
+                  width: '78%',
+                  minHeight: '360px',
+                  margin: '0 auto 48px',
+                  padding: '44px 32px',
+                  textAlign: 'center',
+                }}
+              >
+                <h1
+                  style={{
+                    fontFamily: 'Arial, sans-serif',
+                    fontSize: '18pt',
+                    fontWeight: 'bold',
+                    marginBottom: '20px',
+                  }}
+                >
+                  TECHNICAL SPECIFICATION
+                </h1>
+                <p
+                  style={{
+                    fontFamily: 'Arial, sans-serif',
+                    fontSize: '20pt',
+                    fontWeight: 'bold',
+                    marginBottom: '14px',
+                  }}
+                >
+                  {coverSolutionName || '{SolutionFullName}'}
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'Arial, sans-serif',
+                    fontSize: '14pt',
+                    fontWeight: 'bold',
+                    marginBottom: '10px',
+                  }}
+                >
+                  FOR
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'Arial, sans-serif',
+                    fontSize: '14pt',
+                    fontWeight: 'bold',
+                    marginBottom: '6px',
+                  }}
+                >
+                  {coverClientName || '{CLIENTNAME}'}
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'Arial, sans-serif',
+                    fontSize: '14pt',
+                    fontWeight: 'bold',
+                    marginBottom: '28px',
+                  }}
+                >
+                  {coverClientLocation || '{CLIENTLOCATION}'}
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'Arial, sans-serif',
+                    fontSize: '12pt',
+                    marginBottom: '12px',
+                  }}
+                >
+                  (Ref No - {coverRefNumber})
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'Arial, sans-serif',
+                    fontSize: '12pt',
+                    fontWeight: 'bold',
+                    marginBottom: '6px',
+                  }}
+                >
+                  {coverDate} Ver. {coverVersion}
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'Arial, sans-serif',
+                    fontSize: '12pt',
+                    fontWeight: 'bold',
+                    marginBottom: '6px',
+                  }}
+                >
+                  Hitachi India Pvt Ltd.
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'Arial, sans-serif',
+                    fontSize: '12pt',
+                    marginBottom: 0,
+                  }}
+                >
+                  www.hitachi.co.in | sales.paeg@hitachi.co.in
+                </p>
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="revision_history"
+                isActive={isActive('revision_history')}
+                isHovered={hoveredSection === 'revision_history'}
+                onMouseEnter={() => setHoveredSection('revision_history')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('revision_history')}
+                sectionRef={(el) => (sectionRefs.current.revision_history = el)}
+                style={sectionStyle('revision_history')}
+              >
+                <h2 style={heading2RedStyle}>REVISION HISTORY:</h2>
+                <table style={tableStyle}>
+                  <thead>
+                    <tr>
+                      <th style={tableHeaderStyle}>Sr. No.</th>
+                      <th style={tableHeaderStyle}>Revised By</th>
+                      <th style={tableHeaderStyle}>Checked By</th>
+                      <th style={tableHeaderStyle}>Approved By (QMS)</th>
+                      <th style={tableHeaderStyle}>Details</th>
+                      <th style={tableHeaderStyle}>Date</th>
+                      <th style={tableHeaderStyle}>Rev No.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {revisionRows.map((row: any, index: number) => (
+                      <tr key={`revision-row-${index}`}>
+                        <td style={tableCellStyle}>{row.sr_no || index + 1}</td>
+                        <td style={tableCellStyle}>{row.revised_by || ''}</td>
+                        <td style={tableCellStyle}>{row.checked_by || ''}</td>
+                        <td style={tableCellStyle}>{row.approved_by || ''}</td>
+                        <td style={tableCellStyle}>{row.details || ''}</td>
+                        <td style={tableCellStyle}>{row.date || ''}</td>
+                        <td style={tableCellStyle}>{row.rev_no || ''}</td>
+                      </tr>
+                    ))}
+                    {revisionRows.length < 4 &&
+                      Array.from({ length: 4 - revisionRows.length }).map((_, index) => (
+                        <tr key={`empty-revision-row-${index}`}>
+                          <td style={tableCellStyle}>&nbsp;</td>
+                          <td style={tableCellStyle}>&nbsp;</td>
+                          <td style={tableCellStyle}>&nbsp;</td>
+                          <td style={tableCellStyle}>&nbsp;</td>
+                          <td style={tableCellStyle}>&nbsp;</td>
+                          <td style={tableCellStyle}>&nbsp;</td>
+                          <td style={tableCellStyle}>&nbsp;</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+                <p style={{ color: '#EE0000', fontSize: '9pt', marginBottom: '4px' }}>
+                  Copyright © 2026 Hitachi India Pvt. Ltd.
+                </p>
+                <p style={{ ...noteParagraphStyle, color: '#EE0000', fontSize: '8.5pt', lineHeight: '1.3' }}>
+                  All rights in this work are strictly reserved by the producer and the owner. Any unauthorized use of this material—including, but not limited to, copying, reproduction, hiring, lending, public performance, broadcasting (including communication to the public or via the internet), or transmission by any distribution or diffusion service, whether in whole or in part—is strictly prohibited. This work contains confidential and/or proprietary information. The information and ideas contained herein are provided solely for the use of the intended recipient. All content remains the exclusive property of Hitachi India and may not be disclosed, shared, or communicated to any third party, in any form or by any means, without prior written authorization.
+                </p>
+              </SectionWrapper>
+
+              <div style={{ marginBottom: '32px' }}>
+                <h2 style={heading2RedStyle}>TABLE OF CONTENTS</h2>
+                <p style={placeholderStyle}>[Auto-generated table of contents]</p>
+              </div>
+
+              <SectionWrapper
+                sectionKey="executive_summary"
+                isActive={isActive('executive_summary')}
+                isHovered={hoveredSection === 'executive_summary'}
+                onMouseEnter={() => setHoveredSection('executive_summary')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('executive_summary')}
+                sectionRef={(el) => (sectionRefs.current.executive_summary = el)}
+                style={sectionStyle('executive_summary')}
+              >
+                <h1 style={heading1BurgundyStyle}>EXECUTIVE SUMMARY</h1>
+                {renderTemplateParagraphs(EXECUTIVE_SUMMARY_PARAGRAPHS)}
+                <p style={bodyParagraphStyle}>Some of our clients include:</p>
+                <table
+                  style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    marginBottom: '18px',
+                  }}
+                >
+                  <tbody>
+                    {[0, 1].map((rowIndex) => (
+                      <tr key={`logo-row-${rowIndex}`}>
+                        {[0, 1, 2].map((columnIndex) => (
+                          <td
+                            key={`logo-cell-${rowIndex}-${columnIndex}`}
+                            style={{
+                              border: '1px solid #D1D5DB',
+                              height: '54px',
+                              textAlign: 'center',
+                              color: '#9CA3AF',
+                              fontSize: '9pt',
+                            }}
+                          >
+                            {rowIndex === 0 && columnIndex === 0 ? 'HITACHI' : 'Client Logo'}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </SectionWrapper>
+
+              <h1 style={heading1RedStyle}>GENERAL OVERVIEW</h1>
+
+              <SectionWrapper
+                sectionKey="introduction"
+                isActive={isActive('introduction')}
+                isHovered={hoveredSection === 'introduction'}
+                onMouseEnter={() => setHoveredSection('introduction')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('introduction')}
+                sectionRef={(el) => (sectionRefs.current.introduction = el)}
+                style={sectionStyle('introduction')}
+              >
+                <h2 style={heading2BlackStyle}>INTRODUCTION</h2>
+                {renderTemplateParagraphs(INTRODUCTION_PARAGRAPHS)}
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="abbreviations"
+                isActive={isActive('abbreviations')}
+                isHovered={hoveredSection === 'abbreviations'}
+                onMouseEnter={() => setHoveredSection('abbreviations')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('abbreviations')}
+                sectionRef={(el) => (sectionRefs.current.abbreviations = el)}
+                style={sectionStyle('abbreviations')}
+              >
+                <h2 style={heading2RedStyle}>ABBREVIATIONS USED</h2>
+                <table style={tableStyle}>
+                  <thead>
+                    <tr>
+                      <th style={{ ...tableHeaderStyle, width: '60px' }}>Sr. No.</th>
+                      <th style={{ ...tableHeaderStyle, width: '140px' }}>Abbreviation</th>
+                      <th style={tableHeaderStyle}>Full Form / Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(documentContent.abbreviations.rows || []).map(
+                      (row: any, index: number) => (
+                        <tr key={`abbr-${index}`}>
+                          <td style={tableCellStyle}>{row.sr_no || index + 1}</td>
+                          <td style={tableCellStyle}>{row.abbreviation || ''}</td>
+                          <td style={tableCellStyle}>{row.description || ''}</td>
+                        </tr>
+                      )
+                    )}
+                    {(!documentContent.abbreviations.rows ||
+                      documentContent.abbreviations.rows.length === 0) && (
+                      <tr>
+                        <td colSpan={3} style={tableCellStyle}>
+                          <span style={placeholderStyle}>[No abbreviations defined]</span>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="process_flow"
+                isActive={isActive('process_flow')}
+                isHovered={hoveredSection === 'process_flow'}
+                onMouseEnter={() => setHoveredSection('process_flow')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('process_flow')}
+                sectionRef={(el) => (sectionRefs.current.process_flow = el)}
+                style={sectionStyle('process_flow')}
+              >
+                <h2 style={heading2RedStyle}>PROCESS FLOW</h2>
+                <p style={bodyParagraphStyle}>
+                  {documentContent.processFlow.text ? (
+                    stripHtml(documentContent.processFlow.text)
+                  ) : (
+                    <span style={placeholderStyle}>[Enter process flow description]</span>
+                  )}
+                </p>
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="overview"
+                isActive={isActive('overview')}
+                isHovered={hoveredSection === 'overview'}
+                onMouseEnter={() => setHoveredSection('overview')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('overview')}
+                sectionRef={(el) => (sectionRefs.current.overview = el)}
+                style={sectionStyle('overview')}
+              >
+                <h2 style={heading2RedStyle}>
+                  OVERVIEW OF {(solutionName || '{SolutionName}').toUpperCase()}
+                </h2>
+                <p style={bodyParagraphStyle}>
+                  {documentContent.processFlow.text ? (
+                    stripHtml(documentContent.processFlow.text)
+                  ) : (
+                    <span style={placeholderStyle}>[Process flow summary will appear here]</span>
+                  )}
+                </p>
+                <p style={bodyParagraphStyle}>
+                  {resolveTemplateText(
+                    'This proposal outlines the technical feature of {{SolutionName}}',
+                    templateReplacements
+                  )}
+                </p>
+                <p style={labelParagraphStyle}>System Objective:</p>
+                <p style={bodyParagraphStyle}>
+                  {documentContent.overview.system_objective ? (
+                    stripHtml(documentContent.overview.system_objective)
+                  ) : (
+                    <span style={placeholderStyle}>[Enter system objective]</span>
+                  )}
+                </p>
+                <p style={labelParagraphStyle}>Existing System Architecture:</p>
+                <p style={bodyParagraphStyle}>
+                  {documentContent.overview.existing_system ? (
+                    stripHtml(documentContent.overview.existing_system)
+                  ) : (
+                    <span style={placeholderStyle}>[Enter existing system architecture]</span>
+                  )}
+                </p>
+                <p style={labelParagraphStyle}>Integration:</p>
+                <p style={bodyParagraphStyle}>
+                  {documentContent.overview.integration ? (
+                    stripHtml(documentContent.overview.integration)
+                  ) : (
+                    <span style={placeholderStyle}>[Enter integration details]</span>
+                  )}
+                </p>
+                <p style={labelParagraphStyle}>Benefits:</p>
+                <p style={labelParagraphStyle}>Tangible benefits</p>
+                <p style={bodyParagraphStyle}>
+                  {documentContent.overview.tangible_benefits ? (
+                    stripHtml(documentContent.overview.tangible_benefits)
+                  ) : (
+                    <span style={placeholderStyle}>[Enter tangible benefits]</span>
+                  )}
+                </p>
+                <p style={labelParagraphStyle}>Intangible benefits</p>
+                <p style={bodyParagraphStyle}>
+                  {documentContent.overview.intangible_benefits ? (
+                    stripHtml(documentContent.overview.intangible_benefits)
+                  ) : (
+                    <span style={placeholderStyle}>[Enter intangible benefits]</span>
+                  )}
+                </p>
+              </SectionWrapper>
+
+              <h1 style={heading1RedStyle}>OFFERINGS</h1>
+
+              <SectionWrapper
+                sectionKey="features"
+                isActive={isActive('features')}
+                isHovered={hoveredSection === 'features'}
+                onMouseEnter={() => setHoveredSection('features')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('features')}
+                sectionRef={(el) => (sectionRefs.current.features = el)}
+                style={sectionStyle('features')}
+              >
+                <h2 style={heading2RedStyle}>DESIGN SCOPE OF WORK</h2>
+                <p style={bodyParagraphStyle}>
+                  {resolveTemplateText('Implementation of {{SolutionName}}', templateReplacements)}
+                </p>
+                {featureItems.length > 0 ? (
+                  featureItems.map((feature: any, index: number) => (
+                    <div key={feature.id || `feature-${index}`} style={{ marginBottom: '14px' }}>
+                      <h2 style={heading2BlackStyle}>
+                        {feature.title || `Feature ${index + 1}`}
+                      </h2>
+                      <p style={bodyParagraphStyle}>
+                        {feature.description ? (
+                          stripHtml(feature.description)
+                        ) : (
+                          <span style={placeholderStyle}>[Enter feature description]</span>
+                        )}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p style={placeholderStyle}>[No features defined yet]</p>
+                )}
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="remote_support"
+                isActive={isActive('remote_support')}
+                isHovered={hoveredSection === 'remote_support'}
+                onMouseEnter={() => setHoveredSection('remote_support')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('remote_support')}
+                sectionRef={(el) => (sectionRefs.current.remote_support = el)}
+                style={sectionStyle('remote_support')}
+              >
+                <h2 style={heading2BlackStyle}>REMOTE SUPPORT SYSTEM</h2>
+                {renderTemplateParagraphs(REMOTE_SUPPORT_PARAGRAPHS)}
+                {documentContent.remoteSupport.text && (
+                  <p style={bodyParagraphStyle}>{stripHtml(documentContent.remoteSupport.text)}</p>
+                )}
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="documentation_control"
+                isActive={isActive('documentation_control')}
+                isHovered={hoveredSection === 'documentation_control'}
+                onMouseEnter={() => setHoveredSection('documentation_control')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('documentation_control')}
+                sectionRef={(el) => (sectionRefs.current.documentation_control = el)}
+                style={sectionStyle('documentation_control')}
+              >
+                <h2 style={heading2RedStyle}>DOCUMENTATION CONTROL</h2>
+                <p style={bodyParagraphStyle}>
+                  {resolveTemplateText(
+                    'SELLER shall provide the following technical documentation of the complete {{SolutionName}} solution:',
+                    templateReplacements
+                  )}
+                </p>
+                {[...DOCUMENTATION_CONTROL_ITEMS, ...documentationControlCustom].map(
+                  (item, index) => (
+                    <p key={`documentation-item-${index}`} style={listParagraphStyle}>
+                      {resolveTemplateText(item, templateReplacements)}
+                    </p>
+                  )
+                )}
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="customer_training"
+                isActive={isActive('customer_training')}
+                isHovered={hoveredSection === 'customer_training'}
+                onMouseEnter={() => setHoveredSection('customer_training')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('customer_training')}
+                sectionRef={(el) => (sectionRefs.current.customer_training = el)}
+                style={sectionStyle('customer_training')}
+              >
+                <h2 style={heading2RedStyle}>CUSTOMER TRAINING</h2>
+                <p style={bodyParagraphStyle}>
+                  {resolveTemplateText(
+                    'SELLER shall provide training at site during commissioning to a maximum of {{TrainingPersons}} people for a maximum of {{TrainingDays}} days. Training shall cover mutually agreed topics on {{SolutionName}} application. Training shall comprise of classroom training at site.',
+                    templateReplacements
+                  )}
+                </p>
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="system_config"
+                isActive={isActive('system_config')}
+                isHovered={hoveredSection === 'system_config'}
+                onMouseEnter={() => setHoveredSection('system_config')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('system_config')}
+                sectionRef={(el) => (sectionRefs.current.system_config = el)}
+                style={sectionStyle('system_config')}
+              >
+                <h2 style={heading2RedStyle}>SYSTEM CONFIGURATION (FOR REFERENCE)</h2>
+                <p style={bodyParagraphStyle}>
+                  {resolveTemplateText(
+                    'The reference system configuration of {{SolutionName}} is shown below:',
+                    templateReplacements
+                  )}
+                </p>
+                {renderImageOrPlaceholder(
+                  'architecture',
+                  '[Architecture diagram to be inserted]',
+                  'Architecture diagram'
+                )}
+                <p style={noteParagraphStyle}>
+                  Note: The above architecture is provided for illustrative purposes only
+                  and is subject to modification during detailed engineering to optimize
+                  overall system performance and functionality
+                </p>
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="fat_condition"
+                isActive={isActive('fat_condition')}
+                isHovered={hoveredSection === 'fat_condition'}
+                onMouseEnter={() => setHoveredSection('fat_condition')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('fat_condition')}
+                sectionRef={(el) => (sectionRefs.current.fat_condition = el)}
+                style={sectionStyle('fat_condition')}
+              >
+                <h2 style={heading2RedStyle}>FAT CONDITION</h2>
+                <p style={bodyParagraphStyle}>
+                  {documentContent.fatCondition.text ? (
+                    stripHtml(documentContent.fatCondition.text)
+                  ) : (
+                    <span style={placeholderStyle}>[Enter FAT condition text]</span>
+                  )}
+                </p>
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="tech_stack"
+                isActive={isActive('tech_stack')}
+                isHovered={hoveredSection === 'tech_stack'}
+                onMouseEnter={() => setHoveredSection('tech_stack')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('tech_stack')}
+                sectionRef={(el) => (sectionRefs.current.tech_stack = el)}
+                style={sectionStyle('tech_stack')}
+              >
+                <h1 style={heading1RedStyle}>TECHNOLOGY STACK</h1>
+                <p style={{ ...bodyParagraphStyle, textAlign: 'left' }}>
+                  The technology stack for various components is as follows:
+                </p>
+                <table style={tableStyle}>
+                  <thead>
+                    <tr>
+                      <th style={{ ...tableHeaderStyle, width: '60px' }}>Sr. No.</th>
+                      <th style={tableHeaderStyle}>Components</th>
+                      <th style={tableHeaderStyle}>Technology Used</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {techRows.length > 0 ? (
+                      techRows.map((row: any, index: number) => (
+                        <tr key={`tech-row-${index}`}>
+                          <td style={tableCellStyle}>{row.sr_no || index + 1}</td>
+                          <td style={tableCellStyle}>{row.component || ''}</td>
+                          <td style={tableCellStyle}>
+                            <div>{row.technology || ''}</div>
+                            {index === 0 && row.note && (
+                              <div style={{ ...noteParagraphStyle, marginBottom: 0, marginTop: '6px' }}>
+                                {row.note}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} style={tableCellStyle}>
+                          <span style={placeholderStyle}>[Technology stack will appear here]</span>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="hardware_specs"
+                isActive={isActive('hardware_specs')}
+                isHovered={hoveredSection === 'hardware_specs'}
+                onMouseEnter={() => setHoveredSection('hardware_specs')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('hardware_specs')}
+                sectionRef={(el) => (sectionRefs.current.hardware_specs = el)}
+                style={sectionStyle('hardware_specs')}
+              >
+                <h3 style={heading3RedStyle}>4.1 BASIC HARDWARE SPECIFICATIONS</h3>
+                <p style={{ ...bodyParagraphStyle, textAlign: 'left' }}>
+                  {resolveTemplateText(
+                    'Following is the list of Hardware required for {{SolutionName}} Application.',
+                    templateReplacements
+                  )}
+                </p>
+                <table style={tableStyle}>
+                  <thead>
+                    <tr>
+                      <th style={{ ...tableHeaderStyle, width: '60px' }}>Sr. No.</th>
+                      <th style={tableHeaderStyle}>Equipment Name</th>
+                      <th style={tableHeaderStyle}>Specifications</th>
+                      <th style={tableHeaderStyle}>Maker</th>
+                      <th style={{ ...tableHeaderStyle, width: '110px' }}>
+                        Quantity (Nos.)
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {hardwareRows.length > 0 ? (
+                      hardwareRows.map((row: any, index: number) => (
+                        <tr key={`hardware-row-${index}`}>
+                          <td style={tableCellStyle}>{row.sr_no || index + 1}</td>
+                          <td style={tableCellStyle}>{row.name || ''}</td>
+                          <td style={tableCellStyle}>{renderSpecLines(row)}</td>
+                          <td style={tableCellStyle}>
+                            {row.maker || <span style={placeholderStyle}>[Maker]</span>}
+                          </td>
+                          <td style={tableCellStyle}>
+                            {row.qty || <span style={placeholderStyle}>[Qty]</span>}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} style={tableCellStyle}>
+                          <span style={placeholderStyle}>
+                            [Hardware specifications will appear here]
+                          </span>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="software_specs"
+                isActive={isActive('software_specs')}
+                isHovered={hoveredSection === 'software_specs'}
+                onMouseEnter={() => setHoveredSection('software_specs')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('software_specs')}
+                sectionRef={(el) => (sectionRefs.current.software_specs = el)}
+                style={sectionStyle('software_specs')}
+              >
+                <h3 style={heading3RedStyle}>4.2 BASIC SOFTWARE SPECIFICATION</h3>
+                <p style={{ ...bodyParagraphStyle, textAlign: 'left' }}>
+                  {resolveTemplateText(
+                    'Below are the Software Specifications for the Proposed {{SolutionName}} system.',
+                    templateReplacements
+                  )}
+                </p>
+                <table style={tableStyle}>
+                  <thead>
+                    <tr>
+                      <th style={{ ...tableHeaderStyle, width: '60px' }}>SR. NO.</th>
+                      <th style={tableHeaderStyle}>EQUIPMENT/SOFTWARE NAME</th>
+                      <th style={tableHeaderStyle}>MAKER</th>
+                      <th style={{ ...tableHeaderStyle, width: '120px' }}>
+                        QUANTITY (NOS.)
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {softwareRows.length > 0 ? (
+                      softwareRows.map((row: any, index: number) => (
+                        <tr key={`software-row-${index}`}>
+                          <td style={tableCellStyle}>{row.sr_no || index + 1}</td>
+                          <td style={tableCellStyle}>{formatSoftwareName(row, index)}</td>
+                          <td style={tableCellStyle}>
+                            {row.maker || <span style={placeholderStyle}>[Maker]</span>}
+                          </td>
+                          <td style={tableCellStyle}>{row.qty || ''}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} style={tableCellStyle}>
+                          <span style={placeholderStyle}>
+                            [Software specifications will appear here]
+                          </span>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="third_party_sw"
+                isActive={isActive('third_party_sw')}
+                isHovered={hoveredSection === 'third_party_sw'}
+                onMouseEnter={() => setHoveredSection('third_party_sw')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('third_party_sw')}
+                sectionRef={(el) => (sectionRefs.current.third_party_sw = el)}
+                style={sectionStyle('third_party_sw')}
+              >
+                <h3 style={heading3RedStyle}>4.3 THIRD PARTY SOFTWARE REQUIREMENTS</h3>
+                <p style={bodyParagraphStyle}>
+                  {documentContent.thirdPartySw.sw4_name ? (
+                    documentContent.thirdPartySw.sw4_name
+                  ) : (
+                    <span style={placeholderStyle}>[Enter third party software requirement]</span>
+                  )}
+                </p>
+                <p style={bodyParagraphStyle}>
+                  Remote Link: To provide a suitable level of response to operation &
+                  process execution problems and queries raised on site, SELLER requires
+                  a network connection via broadband / VPN /
+                  Remote connectivity.
+                </p>
+              </SectionWrapper>
+
+              <h1 style={heading1RedStyle}>SCHEDULE</h1>
+
+              <SectionWrapper
+                sectionKey="overall_gantt"
+                isActive={isActive('overall_gantt')}
+                isHovered={hoveredSection === 'overall_gantt'}
+                onMouseEnter={() => setHoveredSection('overall_gantt')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('overall_gantt')}
+                sectionRef={(el) => (sectionRefs.current.overall_gantt = el)}
+                style={sectionStyle('overall_gantt')}
+              >
+                {renderImageOrPlaceholder(
+                  'gantt_overall',
+                  '[Overall Gantt chart to be inserted]',
+                  'Overall Gantt chart'
+                )}
+                <p style={noteParagraphStyle}>
+                  {resolveTemplateText(
+                    'Note: After Approval on System Design Document SELLER will take 4 Months for Software development. In the event of a delay in System design document approvals from the Customer, it will lead to an overall delay in the delivery. Above delivery schedule is for {{SolutionName}} application',
+                    templateReplacements
+                  )}
+                </p>
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="shutdown_gantt"
+                isActive={isActive('shutdown_gantt')}
+                isHovered={hoveredSection === 'shutdown_gantt'}
+                onMouseEnter={() => setHoveredSection('shutdown_gantt')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('shutdown_gantt')}
+                sectionRef={(el) => (sectionRefs.current.shutdown_gantt = el)}
+                style={sectionStyle('shutdown_gantt')}
+              >
+                {renderImageOrPlaceholder(
+                  'gantt_shutdown',
+                  '[Shutdown Gantt chart to be inserted]',
+                  'Shutdown Gantt chart'
+                )}
+                <p style={labelParagraphStyle}>NOTE:</p>
+                <p style={noteParagraphStyle}>
+                  {resolveTemplateText(
+                    '{{SolutionName}} Application Deployment & commissioning is subject to site readiness from BUYER. The above shutdown schedule provided is for reference only. The final shutdown schedule will be determined through discussion and mutual agreement between the BUYER & SELLER',
+                    templateReplacements
+                  )}
+                </p>
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="supervisors"
+                isActive={isActive('supervisors')}
+                isHovered={hoveredSection === 'supervisors'}
+                onMouseEnter={() => setHoveredSection('supervisors')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('supervisors')}
+                sectionRef={(el) => (sectionRefs.current.supervisors = el)}
+                style={sectionStyle('supervisors')}
+              >
+                <h3 style={heading3RedStyle}>SUPERVISORS:</h3>
+                <p style={bodyParagraphStyle}>
+                  The following site-supervisor will be deputed to the site for the
+                  commissioning, deployment & training at site:
+                </p>
+                <p style={listParagraphStyle}>
+                  {resolveTemplateText('Project Manager: {{PMDays}} Days', templateReplacements)}
+                </p>
+                <p style={listParagraphStyle}>
+                  {resolveTemplateText(
+                    '{{SolutionName}} Developer: {{DevDays}} Days',
+                    templateReplacements
+                  )}
+                </p>
+                <p style={listParagraphStyle}>
+                  {resolveTemplateText(
+                    'Commissioning SV (QA SV): {{CommDays}} Days',
+                    templateReplacements
+                  )}
+                </p>
+                <p style={bodyParagraphStyle}>
+                  {resolveTemplateText(
+                    'Total {{TotalManDays}} man-days (Inclusive of on-site training).',
+                    templateReplacements
+                  )}
+                </p>
+              </SectionWrapper>
+
+              <h1 style={heading1RedStyle}>SCOPE OF SUPPLY</h1>
+
+              <SectionWrapper
+                sectionKey="scope_definitions"
+                isActive={isActive('scope_definitions')}
+                isHovered={hoveredSection === 'scope_definitions'}
+                onMouseEnter={() => setHoveredSection('scope_definitions')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('scope_definitions')}
+                sectionRef={(el) => (sectionRefs.current.scope_definitions = el)}
+                style={sectionStyle('scope_definitions')}
+              >
+                <h2 style={heading2BlackStyle}>SCOPE OF SUPPLY DEFINITIONS</h2>
+                {renderTemplateParagraphs(SCOPE_SUPPLY_DEFINITION_LINES)}
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="division_of_eng"
+                isActive={isActive('division_of_eng')}
+                isHovered={hoveredSection === 'division_of_eng'}
+                onMouseEnter={() => setHoveredSection('division_of_eng')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('division_of_eng')}
+                sectionRef={(el) => (sectionRefs.current.division_of_eng = el)}
+                style={sectionStyle('division_of_eng')}
+              >
+                <h2 style={heading2RedStyle}>
+                  DIVISION OF ENGINEERING, SOFTWARE DEVELOPMENT, &
+                  ERECTION/COMMISSIONING SERVICES
+                </h2>
+                <table
+                  style={{
+                    ...tableStyle,
+                    tableLayout: 'fixed',
+                  }}
+                >
+                  <tbody>
+                    {resolvedMatrixRows.map((row, rowIndex) => {
+                      const isHeaderRow = rowIndex <= 1;
+                      const isGroupRow = !isHeaderRow && row[0] && !row[0].startsWith('-');
+
+                      return (
+                        <tr key={`matrix-row-${rowIndex}`}>
+                          {row.map((cell, cellIndex) => {
+                            const cellStyle =
+                              cellIndex === 1 ? matrixItemCellStyle : matrixCellStyle;
+
+                            return (
+                              <td
+                                key={`matrix-cell-${rowIndex}-${cellIndex}`}
+                                style={{
+                                  ...cellStyle,
+                                  fontWeight: isHeaderRow || isGroupRow ? 'bold' : 'normal',
+                                  backgroundColor:
+                                    isHeaderRow || isGroupRow ? '#F9FAFB' : '#FFFFFF',
+                                }}
+                              >
+                                {cell || '\u00A0'}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <p style={labelParagraphStyle}>Note:</p>
+                <p style={noteParagraphStyle}>
+                  1) Any additional requirements beyond the scope mentioned above
+                  shall be discussed and mutually agreed upon. A separate proposal
+                  will be submitted for such additional requirements.
+                </p>
+                <p style={noteParagraphStyle}>
+                  2) Firewall Configuration will be managed by BUYER.
+                </p>
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="value_addition"
+                isActive={isActive('value_addition')}
+                isHovered={hoveredSection === 'value_addition'}
+                onMouseEnter={() => setHoveredSection('value_addition')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('value_addition')}
+                sectionRef={(el) => (sectionRefs.current.value_addition = el)}
+                style={sectionStyle('value_addition')}
+              >
+                <h2 style={heading2RedStyle}>VALUE ADDITION</h2>
+                <p style={bodyParagraphStyle}>
+                  {resolveTemplateText(VALUE_ADDITION_INTRO, templateReplacements)}
+                </p>
+                <p style={bodyParagraphStyle}>
+                  {documentContent.valueAddition.text ? (
+                    stripHtml(documentContent.valueAddition.text)
+                  ) : (
+                    <span style={placeholderStyle}>[Enter value addition details]</span>
+                  )}
+                </p>
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="work_completion"
+                isActive={isActive('work_completion')}
+                isHovered={hoveredSection === 'work_completion'}
+                onMouseEnter={() => setHoveredSection('work_completion')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('work_completion')}
+                sectionRef={(el) => (sectionRefs.current.work_completion = el)}
+                style={sectionStyle('work_completion')}
+              >
+                <h2 style={heading2RedStyle}>WORK COMPLETION CERTIFICATE</h2>
+                <p style={bodyParagraphStyle}>Work Completion Criteria:</p>
+                {[...WORK_COMPLETION_CRITERIA, ...workCompletionCustom].map((item, index) => (
+                  <p key={`completion-criterion-${index}`} style={listParagraphStyle}>
+                    {resolveTemplateText(item, templateReplacements)}
+                  </p>
+                ))}
+                {renderTemplateParagraphs(WORK_COMPLETION_PARAGRAPHS)}
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="buyer_obligations"
+                isActive={isActive('buyer_obligations')}
+                isHovered={hoveredSection === 'buyer_obligations'}
+                onMouseEnter={() => setHoveredSection('buyer_obligations')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('buyer_obligations')}
+                sectionRef={(el) => (sectionRefs.current.buyer_obligations = el)}
+                style={sectionStyle('buyer_obligations')}
+              >
+                <h2 style={heading2RedStyle}>BUYER OBLIGATIONS</h2>
+                <p style={bodyParagraphStyle}>The BUYER should fulfil the following obligations</p>
+                {[...BUYER_OBLIGATION_ITEMS, ...buyerObligationCustom].map((item, index) => (
+                  <p key={`buyer-obligation-${index}`} style={listParagraphStyle}>
+                    {resolveTemplateText(item, templateReplacements)}
+                  </p>
+                ))}
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="exclusion_list"
+                isActive={isActive('exclusion_list')}
+                isHovered={hoveredSection === 'exclusion_list'}
+                onMouseEnter={() => setHoveredSection('exclusion_list')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('exclusion_list')}
+                sectionRef={(el) => (sectionRefs.current.exclusion_list = el)}
+                style={sectionStyle('exclusion_list')}
+              >
+                <h2 style={heading2RedStyle}>EXCLUSION LIST</h2>
+                {renderTemplateParagraphs(EXCLUSION_INTRO_PARAGRAPHS)}
+                {resolvedExclusionItems.map((item, index) => (
+                  <p key={`exclusion-item-${index}`} style={listParagraphStyle}>
+                    {resolveTemplateText(item, templateReplacements)}
+                  </p>
+                ))}
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="buyer_prerequisites"
+                isActive={isActive('buyer_prerequisites')}
+                isHovered={hoveredSection === 'buyer_prerequisites'}
+                onMouseEnter={() => setHoveredSection('buyer_prerequisites')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('buyer_prerequisites')}
+                sectionRef={(el) => (sectionRefs.current.buyer_prerequisites = el)}
+                style={sectionStyle('buyer_prerequisites')}
+              >
+                <h2 style={heading2RedStyle}>BUYER PREREQUISITES:</h2>
+                {buyerPrerequisites.length > 0 ? (
+                  buyerPrerequisites.map((item, index) => (
+                    <p key={`buyer-prereq-${index}`} style={listParagraphStyle}>
+                      {item}
+                    </p>
+                  ))
+                ) : (
+                  <p style={placeholderStyle}>[Enter buyer prerequisites]</p>
+                )}
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="binding_conditions"
+                isActive={isActive('binding_conditions')}
+                isHovered={hoveredSection === 'binding_conditions'}
+                onMouseEnter={() => setHoveredSection('binding_conditions')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('binding_conditions')}
+                sectionRef={(el) => (sectionRefs.current.binding_conditions = el)}
+                style={sectionStyle('binding_conditions')}
+              >
+                <h2 style={heading2BlueStyle}>BINDING CONDITIONS:</h2>
+                {renderTemplateParagraphs(BINDING_CONDITIONS_PARAGRAPHS)}
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="cybersecurity"
+                isActive={isActive('cybersecurity')}
+                isHovered={hoveredSection === 'cybersecurity'}
+                onMouseEnter={() => setHoveredSection('cybersecurity')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('cybersecurity')}
+                sectionRef={(el) => (sectionRefs.current.cybersecurity = el)}
+                style={sectionStyle('cybersecurity')}
+              >
+                <h2 style={heading2BlueStyle}>CYBERSECURITY DISCLAIMER</h2>
+                {renderTemplateParagraphs(CYBERSECURITY_DISCLAIMER_PARAGRAPHS)}
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="disclaimer"
+                isActive={isActive('disclaimer')}
+                isHovered={hoveredSection === 'disclaimer'}
+                onMouseEnter={() => setHoveredSection('disclaimer')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('disclaimer')}
+                sectionRef={(el) => (sectionRefs.current.disclaimer = el)}
+                style={sectionStyle('disclaimer')}
+              >
+                <h1 style={heading1BlueStyle}>DISCLAIMER</h1>
+                {DISCLAIMER_SECTIONS.map((section) => (
+                  <div key={section.title} style={{ marginBottom: '18px' }}>
+                    <h2 style={heading2BlueStyle}>{section.title}</h2>
+                    {renderTemplateParagraphs(section.paragraphs)}
+                  </div>
+                ))}
+              </SectionWrapper>
+
+              <SectionWrapper
+                sectionKey="poc"
+                isActive={isActive('poc')}
+                isHovered={hoveredSection === 'poc'}
+                onMouseEnter={() => setHoveredSection('poc')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick('poc')}
+                sectionRef={(el) => (sectionRefs.current.poc = el)}
+                style={sectionStyle('poc')}
+              >
+                <h1 style={heading1BlueStyle}>COMPLIMENTRY PROOF OF CONCEPTS (PoC)</h1>
+                {renderTemplateParagraphs(POC_PARAGRAPHS)}
+                <p style={bodyParagraphStyle}>The following solution will be part of the PoC:</p>
+                <p style={{ ...heading2BlackStyle, marginBottom: '10px' }}>
+                  {documentContent.poc.name || '[POC Name]'}
+                </p>
+                <p style={bodyParagraphStyle}>
+                  {documentContent.poc.description ? (
+                    stripHtml(documentContent.poc.description)
+                  ) : (
+                    <span style={placeholderStyle}>[Enter PoC description]</span>
+                  )}
+                </p>
+              </SectionWrapper>
+
+              <p
+                style={{
+                  marginTop: '36px',
+                  textAlign: 'center',
+                  fontFamily: 'Arial, sans-serif',
+                  fontSize: '11pt',
+                }}
+              >
+                End of Technical Proposal
+              </p>
+            </div>
           </div>
-        </SectionWrapper>
-
-        {/* SECTION 18: SUPERVISORS */}
-        <SectionWrapper
-          sectionKey="supervisors"
-          isActive={isActive('supervisors')}
-          isHovered={hoveredSection === 'supervisors'}
-          onMouseEnter={() => setHoveredSection('supervisors')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('supervisors')}
-          sectionRef={(el) => (sectionRefs.current['supervisors'] = el)}
-          style={sectionStyle('supervisors')}
-        >
-          <h2 style={headingStyle}>
-            18. Supervisors
-          </h2>
-          <p>
-            PM: <strong>{documentContent.supervisors?.pm_days || 'X'}</strong> days | Dev:{' '}
-            <strong>{documentContent.supervisors?.dev_days || 'Y'}</strong> days | Comm:{' '}
-            <strong>{documentContent.supervisors?.comm_days || 'Z'}</strong> days | Total:{' '}
-            <strong>{documentContent.supervisors?.total_man_days || 'N'}</strong> man-days
-          </p>
-        </SectionWrapper>
-      </Page>
-
-      <PageBreak />
-
-      {/* PAGE 9: Scope Definitions, Division of Engineering, Value Addition */}
-      <Page pageNumber={9}>
-        <SectionWrapper
-          sectionKey="scope_definitions"
-          isActive={isActive('scope_definitions')}
-          isHovered={hoveredSection === 'scope_definitions'}
-          onMouseEnter={() => setHoveredSection('scope_definitions')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('scope_definitions')}
-          sectionRef={(el) => (sectionRefs.current['scope_definitions'] = el)}
-          style={sectionStyle('scope_definitions')}
-        >
-          <h2 style={headingStyle}>
-            19. Scope Definitions
-          </h2>
-          <p style={optionalPlaceholderStyle}>[Scope definitions content]</p>
-        </SectionWrapper>
-
-        <SectionWrapper
-          sectionKey="division_of_eng"
-          isActive={isActive('division_of_eng')}
-          isHovered={hoveredSection === 'division_of_eng'}
-          onMouseEnter={() => setHoveredSection('division_of_eng')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('division_of_eng')}
-          sectionRef={(el) => (sectionRefs.current['division_of_eng'] = el)}
-          style={sectionStyle('division_of_eng')}
-        >
-          <h2 style={headingStyle}>
-            20. Division of Engineering
-          </h2>
-          <p style={optionalPlaceholderStyle}>[Division of engineering content]</p>
-        </SectionWrapper>
-
-        <SectionWrapper
-          sectionKey="value_addition"
-          isActive={isActive('value_addition')}
-          isHovered={hoveredSection === 'value_addition'}
-          onMouseEnter={() => setHoveredSection('value_addition')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('value_addition')}
-          sectionRef={(el) => (sectionRefs.current['value_addition'] = el)}
-          style={sectionStyle('value_addition')}
-        >
-          <h2 style={headingStyle}>
-            21. Value Addition
-          </h2>
-          <p style={optionalPlaceholderStyle}>[Value addition content]</p>
-        </SectionWrapper>
-      </Page>
-
-      <PageBreak />
-
-      {/* PAGE 10: Work Completion, Buyer Obligations, Exclusion List, Buyer Prerequisites */}
-      <Page pageNumber={10}>
-        <SectionWrapper
-          sectionKey="work_completion"
-          isActive={isActive('work_completion')}
-          isHovered={hoveredSection === 'work_completion'}
-          onMouseEnter={() => setHoveredSection('work_completion')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('work_completion')}
-          sectionRef={(el) => (sectionRefs.current['work_completion'] = el)}
-          style={sectionStyle('work_completion')}
-        >
-          <h2 style={headingStyle}>
-            22. Work Completion
-          </h2>
-          <p style={optionalPlaceholderStyle}>[Work completion content]</p>
-        </SectionWrapper>
-
-        <SectionWrapper
-          sectionKey="buyer_obligations"
-          isActive={isActive('buyer_obligations')}
-          isHovered={hoveredSection === 'buyer_obligations'}
-          onMouseEnter={() => setHoveredSection('buyer_obligations')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('buyer_obligations')}
-          sectionRef={(el) => (sectionRefs.current['buyer_obligations'] = el)}
-          style={sectionStyle('buyer_obligations')}
-        >
-          <h2 style={headingStyle}>
-            23. Buyer Obligations
-          </h2>
-          <p style={optionalPlaceholderStyle}>[Buyer obligations content]</p>
-        </SectionWrapper>
-
-        <SectionWrapper
-          sectionKey="exclusion_list"
-          isActive={isActive('exclusion_list')}
-          isHovered={hoveredSection === 'exclusion_list'}
-          onMouseEnter={() => setHoveredSection('exclusion_list')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('exclusion_list')}
-          sectionRef={(el) => (sectionRefs.current['exclusion_list'] = el)}
-          style={sectionStyle('exclusion_list')}
-        >
-          <h2 style={headingStyle}>
-            24. Exclusion List
-          </h2>
-          <p style={optionalPlaceholderStyle}>[Exclusion list content]</p>
-        </SectionWrapper>
-
-        <SectionWrapper
-          sectionKey="buyer_prerequisites"
-          isActive={isActive('buyer_prerequisites')}
-          isHovered={hoveredSection === 'buyer_prerequisites'}
-          onMouseEnter={() => setHoveredSection('buyer_prerequisites')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('buyer_prerequisites')}
-          sectionRef={(el) => (sectionRefs.current['buyer_prerequisites'] = el)}
-          style={sectionStyle('buyer_prerequisites')}
-        >
-          <h2 style={headingStyle}>
-            25. Buyer Prerequisites
-          </h2>
-          <p style={optionalPlaceholderStyle}>[Buyer prerequisites content]</p>
-        </SectionWrapper>
-      </Page>
-
-      <PageBreak />
-
-      {/* PAGE 11: Binding Conditions, Cybersecurity, Disclaimer, PoC */}
-      <Page pageNumber={11}>
-        <SectionWrapper
-          sectionKey="binding_conditions"
-          isActive={isActive('binding_conditions')}
-          isHovered={hoveredSection === 'binding_conditions'}
-          onMouseEnter={() => setHoveredSection('binding_conditions')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('binding_conditions')}
-          sectionRef={(el) => (sectionRefs.current['binding_conditions'] = el)}
-          style={sectionStyle('binding_conditions')}
-        >
-          <h2 style={headingStyle}>
-            26. Binding Conditions
-          </h2>
-          <p style={optionalPlaceholderStyle}>🔒 [Standard legal content — locked]</p>
-        </SectionWrapper>
-
-        <SectionWrapper
-          sectionKey="cybersecurity"
-          isActive={isActive('cybersecurity')}
-          isHovered={hoveredSection === 'cybersecurity'}
-          onMouseEnter={() => setHoveredSection('cybersecurity')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('cybersecurity')}
-          sectionRef={(el) => (sectionRefs.current['cybersecurity'] = el)}
-          style={sectionStyle('cybersecurity')}
-        >
-          <h2 style={headingStyle}>
-            27. Cybersecurity
-          </h2>
-          <p style={optionalPlaceholderStyle}>🔒 [Standard legal content — locked]</p>
-        </SectionWrapper>
-
-        <SectionWrapper
-          sectionKey="disclaimer"
-          isActive={isActive('disclaimer')}
-          isHovered={hoveredSection === 'disclaimer'}
-          onMouseEnter={() => setHoveredSection('disclaimer')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('disclaimer')}
-          sectionRef={(el) => (sectionRefs.current['disclaimer'] = el)}
-          style={sectionStyle('disclaimer')}
-        >
-          <h2 style={headingStyle}>
-            28. Disclaimer
-          </h2>
-          <p style={optionalPlaceholderStyle}>🔒 [Standard legal content — locked]</p>
-        </SectionWrapper>
-
-        <SectionWrapper
-          sectionKey="poc"
-          isActive={isActive('poc')}
-          isHovered={hoveredSection === 'poc'}
-          onMouseEnter={() => setHoveredSection('poc')}
-          onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleSectionClick('poc')}
-          sectionRef={(el) => (sectionRefs.current['poc'] = el)}
-          style={sectionStyle('poc')}
-        >
-          <h2 style={headingStyle}>
-            29. Proof of Concept
-          </h2>
-          <p style={{ fontWeight: 'bold' }}>{documentContent.poc?.name || '[POC Name]'}</p>
-          <p>
-            {documentContent.poc?.description
-              ? truncate(documentContent.poc.description, 100)
-              : <span style={optionalPlaceholderStyle}>[Enter POC description]</span>}
-          </p>
-        </SectionWrapper>
-      </Page>
-    </div>
-  </div>
-</>
-  );
-});
+        </div>
+      </>
+    );
+  }
+);
 
 DocumentPreview.displayName = 'DocumentPreview';
 
 export default DocumentPreview;
-
