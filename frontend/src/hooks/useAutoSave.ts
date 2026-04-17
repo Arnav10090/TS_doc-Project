@@ -10,7 +10,8 @@ interface UseAutoSaveReturn {
 export const useAutoSave = (
   projectId: string,
   sectionKey: string,
-  delay: number = 800
+  delay: number = 800,
+  onContentChange?: (content: Record<string, any>) => void
 ): UseAutoSaveReturn => {
   const [status, setStatus] = useState<AutoSaveStatus>('idle')
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -18,6 +19,11 @@ export const useAutoSave = (
 
   const save = useCallback(
     (content: Record<string, any>) => {
+      // Immediately notify parent of content change (for live preview)
+      if (onContentChange) {
+        onContentChange(content)
+      }
+
       // Clear existing timer
       if (timerRef.current) {
         clearTimeout(timerRef.current)
@@ -47,7 +53,7 @@ export const useAutoSave = (
         }
       }, delay)
     },
-    [projectId, sectionKey, delay]
+    [projectId, sectionKey, delay, onContentChange]
   )
 
   return { save, status }

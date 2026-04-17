@@ -7,9 +7,10 @@ import type { CoverContent } from '../../types';
 
 interface CoverSectionProps {
   projectId: string;
+  onContentChange?: (content: Record<string, any>) => void;
 }
 
-const CoverSection: React.FC<CoverSectionProps> = ({ projectId }) => {
+const CoverSection: React.FC<CoverSectionProps> = ({ projectId, onContentChange }) => {
   const [content, setContent] = useState<CoverContent>({
     solution_full_name: '',
     client_name: '',
@@ -19,7 +20,15 @@ const CoverSection: React.FC<CoverSectionProps> = ({ projectId }) => {
     doc_version: '',
   });
   const [loading, setLoading] = useState(true);
-  const { save, status } = useAutoSave(projectId, 'cover', 800);
+  
+  // Create callback that wraps onContentChange
+  const handleAutoSaveChange = (updatedContent: Record<string, any>) => {
+    if (onContentChange) {
+      onContentChange(updatedContent);
+    }
+  };
+  
+  const { save, status } = useAutoSave(projectId, 'cover', 800, handleAutoSaveChange);
   // Note: Cover section should NOT update Zustand store
   // solutionName (short name) is set from project.solution_name on initial load
   // Cover section only edits solution_full_name which is a different field
