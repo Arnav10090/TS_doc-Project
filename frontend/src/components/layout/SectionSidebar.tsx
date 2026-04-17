@@ -161,7 +161,7 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
   return (
     <aside
       style={{
-        width: '260px',
+        width: '200px',
         position: 'fixed',
         left: 0,
         top: '56px',
@@ -217,7 +217,7 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
           <div key={group.category}>
             <div
               style={{
-                padding: '12px 16px 8px',
+                padding: '8px 16px 8px',
                 fontSize: '11px',
                 fontWeight: 700,
                 color: '#6B7280',
@@ -270,7 +270,7 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
                   >
                     <span
                       style={{
-                        fontSize: '14px',
+                        fontSize: '13px',
                         fontWeight: isActive ? 600 : 500,
                         color: isActive ? '#E60012' : '#1A1A2E',
                       }}
