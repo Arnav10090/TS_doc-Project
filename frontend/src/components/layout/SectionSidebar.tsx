@@ -10,6 +10,11 @@ interface SectionSidebarProps {
   activeSectionKey: string | null;
   onSectionClick: (sectionKey: string) => void;
   visitedSections?: Set<string>;
+  width: number;
+  showResizeHandle?: boolean;
+  isResizing?: boolean;
+  onResizeStart?: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onResizeStep?: (delta: number) => void;
 }
 
 interface SectionInfo {
@@ -97,6 +102,11 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
   activeSectionKey,
   onSectionClick,
   visitedSections = new Set(),
+  width,
+  showResizeHandle = false,
+  isResizing = false,
+  onResizeStart,
+  onResizeStep,
 }) => {
   const sectionCompletion = useProjectStore((state) => state.sectionCompletion);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -158,10 +168,26 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
     onSectionClick(sectionKey);
   };
 
+  const handleResizeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!onResizeStep) {
+      return;
+    }
+
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      onResizeStep(-16);
+    }
+
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      onResizeStep(16);
+    }
+  };
+
   return (
     <aside
       style={{
-        width: '200px',
+        width,
         position: 'fixed',
         left: 0,
         top: '56px',
@@ -173,6 +199,43 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
         overflow: 'hidden',
       }}
     >
+      {showResizeHandle && onResizeStart && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize left sidebar"
+          tabIndex={0}
+          onPointerDown={onResizeStart}
+          onKeyDown={handleResizeKeyDown}
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: '-6px',
+            bottom: 0,
+            width: '12px',
+            cursor: 'col-resize',
+            zIndex: 30,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            touchAction: 'none',
+          }}
+        >
+          <div
+            style={{
+              width: '2px',
+              height: '56px',
+              borderRadius: '999px',
+              backgroundColor: isResizing ? '#E60012' : '#D1D5DB',
+              boxShadow: isResizing
+                ? '0 0 0 3px rgba(230, 0, 18, 0.12)'
+                : '0 0 0 3px rgba(255, 255, 255, 0.95)',
+              transition: 'background-color 0.2s ease, box-shadow 0.2s ease',
+            }}
+          />
+        </div>
+      )}
+
       {/* Progress Indicator */}
       <div
         style={{

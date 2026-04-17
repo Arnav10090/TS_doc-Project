@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { getSection } from '../../api/sections';
 import { updateProject } from '../../api/projects';
 import { useAutoSave } from '../../hooks/useAutoSave';
-import { useProjectStore } from '../../store/project.store';
 import type { CoverContent } from '../../types';
 
 interface CoverSectionProps {
