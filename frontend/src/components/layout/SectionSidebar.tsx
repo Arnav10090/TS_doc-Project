@@ -10,6 +10,7 @@ interface SectionSidebarProps {
   activeSectionKey: string | null;
   onSectionClick: (sectionKey: string) => void;
   visitedSections?: Set<string>;
+  sectionContents?: Record<string, Record<string, any>>;
   width: number;
   showResizeHandle?: boolean;
   isResizing?: boolean;
@@ -102,6 +103,7 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
   activeSectionKey,
   onSectionClick,
   visitedSections = new Set(),
+  sectionContents,
   width,
   showResizeHandle = false,
   isResizing = false,
@@ -121,7 +123,7 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
     }
   ).length;
 
-  const totalCompletable = 27;
+  const totalCompletable = sectionContents ? Object.keys(sectionContents).length - 4 : 27;
   const completionPercentage = Math.round((completedCount / totalCompletable) * 100);
 
   const getSectionStatus = (sectionKey: string): 'complete' | 'visited' | 'not_started' => {
@@ -276,80 +278,88 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
 
       {/* Section Groups */}
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingBottom: '16px' }}>
-        {SECTION_GROUPS.map((group) => (
-          <div key={group.category}>
-            <div
-              style={{
-                padding: '8px 16px 8px',
-                fontSize: '11px',
-                fontWeight: 700,
-                color: '#6B7280',
-                letterSpacing: '0.5px',
-                textTransform: 'uppercase',
-              }}
-            >
-              {group.category}
-            </div>
-            {group.sections.map((section) => {
-              const isActive = activeSectionKey === section.key;
-              const status = getSectionStatus(section.key);
+        {SECTION_GROUPS.map((group) => {
+          const visibleSections = group.sections.filter(section => sectionContents?.[section.key]);
+          
+          if (visibleSections.length === 0) {
+            return null;
+          }
+          
+          return (
+            <div key={group.category}>
+              <div
+                style={{
+                  padding: '8px 16px 8px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: '#6B7280',
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {group.category}
+              </div>
+              {visibleSections.map((section) => {
+                const isActive = activeSectionKey === section.key;
+                const status = getSectionStatus(section.key);
 
-              return (
-                <button
-                  key={section.key}
-                  onClick={() => onSectionClick(section.key)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '8px',
-                    border: 'none',
-                    backgroundColor: isActive ? '#FFF0F0' : 'transparent',
-                    borderLeft: isActive ? '3px solid #E60012' : '3px solid transparent',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.backgroundColor = '#F5F7FA';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
-                  }}
-                >
-                  <div
+                return (
+                  <button
+                    key={section.key}
+                    onClick={() => onSectionClick(section.key)}
                     style={{
+                      width: '100%',
+                      padding: '10px 16px',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      flex: 1,
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                      border: 'none',
+                      backgroundColor: isActive ? '#FFF0F0' : 'transparent',
+                      borderLeft: isActive ? '3px solid #E60012' : '3px solid transparent',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = '#F5F7FA';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }
                     }}
                   >
-                    <span
+                    <div
                       style={{
-                        fontSize: '13px',
-                        fontWeight: isActive ? 600 : 500,
-                        color: isActive ? '#E60012' : '#1A1A2E',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        flex: 1,
                       }}
                     >
-                      {section.label}
-                    </span>
-                    {section.locked && (
-                      <span style={{ fontSize: '12px' }}>🔒</span>
-                    )}
-                  </div>
-                  <CompletionBadge status={status} />
-                </button>
-              );
-            })}
-          </div>
-        ))}
+                      <span
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: isActive ? 600 : 500,
+                          color: isActive ? '#E60012' : '#1A1A2E',
+                        }}
+                      >
+                        {section.label}
+                      </span>
+                      {section.locked && (
+                        <span style={{ fontSize: '12px' }}>🔒</span>
+                      )}
+                    </div>
+                    <CompletionBadge status={status} />
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
 
       {/* Missing Sections Alert */}

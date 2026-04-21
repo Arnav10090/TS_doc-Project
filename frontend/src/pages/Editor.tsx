@@ -367,6 +367,7 @@ const EditorPage = () => {
           activeSectionKey={activeSectionKey}
           onSectionClick={handleSectionClick}
           visitedSections={visitedSections}
+          sectionContents={sectionContents}
           width={leftSidebarWidth}
           showResizeHandle={!isNarrowScreen}
           isResizing={resizingPanel === 'left'}
