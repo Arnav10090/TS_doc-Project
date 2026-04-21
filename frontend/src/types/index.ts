@@ -32,6 +32,7 @@ export interface ProjectSummary {
   client_location: string
   created_at: string
   completion_percentage: number
+  total_sections: number
 }
 
 // Section Data Types

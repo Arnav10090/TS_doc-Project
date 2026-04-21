@@ -1,0 +1,118 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration test
+  - **Property 1: Bug Condition** - Deleted Sections Removed from Sidebar
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the bug exists
+  - **Scoped PBT Approach**: For deterministic bugs, scope the property to the concrete failing case(s) to ensure reproducibility
+  - Test that when a section key does not exist in `sectionContents`, the SectionSidebar SHALL NOT render a navigation item for that section
+  - Test concrete cases:
+    - Delete "features" section → verify sidebar does NOT render "Features" navigation item
+    - Delete "executive_summary" section → verify sidebar does NOT render "Executive Summary" navigation item
+    - Delete all sections in "TECHNOLOGY STACK" category → verify category header does NOT appear
+  - The test assertions should match the Expected Behavior Properties from design:
+    - For any section key NOT in `sectionContents`, sidebar SHALL NOT render navigation item
+    - Deleted sections SHALL immediately disappear from sidebar navigation
+  - Run test on UNFIXED code
+  - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the bug exists)
+  - Document counterexamples found to understand root cause (e.g., "Deleted 'features' section but sidebar still renders 'Features' navigation item")
+  - Mark task complete when test is written, run, and failure is documented
+  - _Requirements: 2.1, 2.2, 2.3_
+
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - Existing Section Rendering
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED code for sections that DO exist in `sectionContents`
+  - Write property-based tests capturing observed behavior patterns from Preservation Requirements:
+    - Existing sections render correctly with navigation items
+    - Status badges show 'complete', 'visited', or 'not_started' correctly
+    - Active section highlighting works with red background (#FFF0F0) and red border (#E60012)
+    - Locked sections display lock icon (🔒) correctly
+    - Completion statistics exclude auto-complete sections (binding_conditions, cybersecurity, disclaimer, scope_definitions)
+    - Category headers display in uppercase with proper styling
+    - Generate button validates required sections correctly
+    - Click handlers and navigation logic work correctly
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8_
+
+- [x] 3. Fix for sidebar deleted sections display
+
+  - [x] 3.1 Pass sectionContents prop from Editor.tsx to SectionSidebar
+    - Open `frontend/src/pages/Editor.tsx`
+    - Locate the `<SectionSidebar>` JSX element
+    - Add `sectionContents={sectionContents}` prop to the component
+    - This enables the sidebar to access the current section data
+    - _Bug_Condition: isBugCondition(input) where input.sectionKey NOT IN keys(input.sectionContents) AND sidebarRendersNavigationItem(input.sectionKey)_
+    - _Expected_Behavior: For any section key NOT in sectionContents, sidebar SHALL NOT render navigation item_
+    - _Preservation: All existing sidebar functionality (completion stats, status badges, active highlighting, locked icons, category headers, generate button) must remain unchanged_
+    - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8_
+
+  - [x] 3.2 Add sectionContents to SectionSidebarProps interface
+    - Open `frontend/src/components/layout/SectionSidebar.tsx`
+    - Locate the `SectionSidebarProps` interface
+    - Add `sectionContents?: Record<string, Record<string, any>>` to the interface
+    - Make it optional with default value to maintain backward compatibility
+    - _Bug_Condition: isBugCondition(input) where input.sectionKey NOT IN keys(input.sectionContents) AND sidebarRendersNavigationItem(input.sectionKey)_
+    - _Expected_Behavior: For any section key NOT in sectionContents, sidebar SHALL NOT render navigation item_
+    - _Preservation: All existing sidebar functionality must remain unchanged_
+    - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8_
+
+  - [x] 3.3 Filter sections before rendering to only show existing sections
+    - In `SectionSidebar.tsx`, locate the section rendering logic
+    - Before mapping over `group.sections`, add filtering logic:
+      - `const visibleSections = group.sections.filter(section => sectionContents?.[section.key])`
+    - Update the map to use `visibleSections` instead of `group.sections`
+    - Use optional chaining `sectionContents?.[section.key]` for safety
+    - This ensures only sections that exist in `sectionContents` are rendered
+    - _Bug_Condition: isBugCondition(input) where input.sectionKey NOT IN keys(input.sectionContents) AND sidebarRendersNavigationItem(input.sectionKey)_
+    - _Expected_Behavior: For any section key NOT in sectionContents, sidebar SHALL NOT render navigation item_
+    - _Preservation: All existing sidebar functionality must remain unchanged_
+    - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8_
+
+  - [x] 3.4 Conditionally render category headers only if sections exist
+    - In `SectionSidebar.tsx`, locate the category header rendering logic
+    - Calculate `visibleSections` for each category group
+    - Wrap the category header and sections in a conditional:
+      - `{visibleSections.length > 0 && (...)}`
+    - This prevents empty categories from appearing when all sections are deleted
+    - _Bug_Condition: isBugCondition(input) where input.sectionKey NOT IN keys(input.sectionContents) AND sidebarRendersNavigationItem(input.sectionKey)_
+    - _Expected_Behavior: Category headers SHALL only appear if at least one section in that category exists_
+    - _Preservation: Category headers must continue to display in uppercase with proper styling for existing sections_
+    - _Requirements: 2.1, 2.2, 2.3, 3.7_
+
+  - [x] 3.5 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Deleted Sections Removed from Sidebar
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
+    - Verify that deleted sections no longer appear in sidebar navigation
+    - Verify that empty categories do not render
+    - _Requirements: 2.1, 2.2, 2.3_
+
+  - [x] 3.6 Verify preservation tests still pass
+    - **Property 2: Preservation** - Existing Section Rendering
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all existing functionality still works:
+      - Existing sections render correctly
+      - Status badges display correctly
+      - Active highlighting works
+      - Locked icons display correctly
+      - Completion statistics calculate correctly
+      - Category headers display correctly
+      - Generate button validates correctly
+      - Navigation works correctly
+
+- [x] 4. Checkpoint - Ensure all tests pass
+  - Run all tests (bug condition + preservation)
+  - Verify bug is fixed: deleted sections do not appear in sidebar
+  - Verify no regressions: all existing functionality works correctly
+  - If any issues arise, ask the user for guidance

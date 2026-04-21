@@ -40,6 +40,7 @@ class ProjectSummary(BaseModel):
     client_location: str
     created_at: datetime
     completion_percentage: int
+    total_sections: int
     
     class Config:
         from_attributes = True

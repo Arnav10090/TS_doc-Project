@@ -31,7 +31,10 @@ async def create_project(
     # Calculate completion for new project (will be 0%)
     completion_map = calculate_section_completion({})
     
-    # Exclude 4 sections from the 27 completable count
+    # Calculate dynamic total (for new project, fallback to 27)
+    total_sections = 27  # New projects start with full template
+    
+    # Exclude 4 sections from the completable count
     excluded_sections = {'binding_conditions', 'cybersecurity', 'disclaimer', 'scope_definitions'}
     completed_count = sum(
         1 for k, v in completion_map.items() 
@@ -52,9 +55,9 @@ async def create_project(
         created_at=project.created_at,
         updated_at=project.updated_at,
         completion_summary=CompletionSummary(
-            total=27,
+            total=total_sections,
             completed=completed_count,
-            percentage=int((completed_count / 27) * 100),
+            percentage=int((completed_count / total_sections) * 100) if total_sections > 0 else 0,
         ),
         section_completion=completion_map,
     )
@@ -71,13 +74,16 @@ async def get_all_projects(db: AsyncSession = Depends(get_db)):
         sections_dict = {s.section_key: s.content for s in project.sections}
         completion_map = calculate_section_completion(sections_dict)
         
-        # Exclude 4 sections from the 27 completable count
+        # Calculate dynamic total from sections_dict
+        total_sections = len(sections_dict) - 4
+        
+        # Exclude 4 sections from the completable count
         excluded_sections = {'binding_conditions', 'cybersecurity', 'disclaimer', 'scope_definitions'}
         completed_count = sum(
             1 for k, v in completion_map.items() 
             if v and k not in excluded_sections
         )
-        completion_percentage = int((completed_count / 27) * 100)
+        completion_percentage = int((completed_count / total_sections) * 100) if total_sections > 0 else 0
         
         result.append(
             ProjectSummary(
@@ -87,6 +93,7 @@ async def get_all_projects(db: AsyncSession = Depends(get_db)):
                 client_location=project.client_location,
                 created_at=project.created_at,
                 completion_percentage=completion_percentage,
+                total_sections=total_sections,
             )
         )
     
@@ -106,7 +113,10 @@ async def get_project(project_id: UUID, db: AsyncSession = Depends(get_db)):
     sections_dict = {s.section_key: s.content for s in project.sections}
     completion_map = calculate_section_completion(sections_dict)
     
-    # Exclude 4 sections from the 27 completable count
+    # Calculate dynamic total from sections_dict
+    total_sections = len(sections_dict) - 4 if sections_dict else 27
+    
+    # Exclude 4 sections from the completable count
     excluded_sections = {'binding_conditions', 'cybersecurity', 'disclaimer', 'scope_definitions'}
     completed_count = sum(
         1 for k, v in completion_map.items() 
@@ -127,9 +137,9 @@ async def get_project(project_id: UUID, db: AsyncSession = Depends(get_db)):
         created_at=project.created_at,
         updated_at=project.updated_at,
         completion_summary=CompletionSummary(
-            total=27,
+            total=total_sections,
             completed=completed_count,
-            percentage=int((completed_count / 27) * 100),
+            percentage=int((completed_count / total_sections) * 100) if total_sections > 0 else 0,
         ),
         section_completion=completion_map,
     )
@@ -150,7 +160,10 @@ async def update_project(
     sections_dict = {s.section_key: s.content for s in project.sections}
     completion_map = calculate_section_completion(sections_dict)
     
-    # Exclude 4 sections from the 27 completable count
+    # Calculate dynamic total from sections_dict
+    total_sections = len(sections_dict) - 4 if sections_dict else 27
+    
+    # Exclude 4 sections from the completable count
     excluded_sections = {'binding_conditions', 'cybersecurity', 'disclaimer', 'scope_definitions'}
     completed_count = sum(
         1 for k, v in completion_map.items() 
@@ -171,9 +184,9 @@ async def update_project(
         created_at=project.created_at,
         updated_at=project.updated_at,
         completion_summary=CompletionSummary(
-            total=27,
+            total=total_sections,
             completed=completed_count,
-            percentage=int((completed_count / 27) * 100),
+            percentage=int((completed_count / total_sections) * 100) if total_sections > 0 else 0,
         ),
         section_completion=completion_map,
     )

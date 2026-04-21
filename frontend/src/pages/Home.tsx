@@ -138,7 +138,7 @@ const HomePage = () => {
                     />
                   </div>
                   <span className="text-xs font-semibold text-text-muted">
-                    {Math.round((project.completion_percentage / 100) * 27)} / 27 sections
+                    {Math.round((project.completion_percentage / 100) * project.total_sections)} / {project.total_sections} sections
                   </span>
                 </div>
 
