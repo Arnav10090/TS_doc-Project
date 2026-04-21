@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getSection } from '../../api/sections';
+import SectionHeader from '../shared/SectionHeader';
 import { SCOPE_DEFINITIONS_CONTENT } from '../../constants/lockedSections';
 import { useProjectStore } from '../../store/project.store';
 
@@ -8,6 +10,7 @@ interface ScopeDefinitionsSectionProps {
 }
 
 const ScopeDefinitionsSection: React.FC<ScopeDefinitionsSectionProps> = ({ projectId }) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const { clientName } = useProjectStore();
 
@@ -33,6 +36,10 @@ const ScopeDefinitionsSection: React.FC<ScopeDefinitionsSectionProps> = ({ proje
 
   const resolvedContent = resolveContent(SCOPE_DEFINITIONS_CONTENT);
 
+  const handleDelete = () => {
+    navigate(`/editor/${projectId}#cover`);
+  };
+
   if (loading) {
     return <div style={{ padding: '24px' }}>Loading...</div>;
   }
@@ -44,14 +51,13 @@ const ScopeDefinitionsSection: React.FC<ScopeDefinitionsSectionProps> = ({ proje
       borderRadius: '8px',
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
     }}>
-      <h2 style={{
-        fontSize: '24px',
-        fontWeight: 600,
-        color: '#1A1A2E',
-        marginBottom: '24px',
-      }}>
-        Scope Definitions
-      </h2>
+      <SectionHeader
+        projectId={projectId}
+        sectionKey="scope_definitions"
+        title="Scope Definitions"
+        showDeleteButton={true}
+        onDelete={handleDelete}
+      />
 
       <div
         style={{

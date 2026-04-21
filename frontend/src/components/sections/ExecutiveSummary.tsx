@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getSection } from '../../api/sections';
 import { useAutoSave } from '../../hooks/useAutoSave';
+import SectionHeader from '../shared/SectionHeader';
 import RichTextEditor from '../shared/RichTextEditor';
 import { EXECUTIVE_SUMMARY_BOILERPLATE, CLIENT_LOGOS_TABLE } from '../../constants/lockedSections';
 import type { ExecutiveSummaryContent } from '../../types';
@@ -10,6 +12,7 @@ interface ExecutiveSummaryProps {
 }
 
 const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ projectId }) => {
+  const navigate = useNavigate();
   const [content, setContent] = useState<ExecutiveSummaryContent>({
     para1: '',
   });
@@ -39,6 +42,10 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ projectId }) => {
     save(updated);
   };
 
+  const handleDelete = () => {
+    navigate(`/editor/${projectId}#cover`);
+  };
+
   if (loading) {
     return <div style={{ padding: '24px' }}>Loading...</div>;
   }
@@ -50,30 +57,14 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ projectId }) => {
       borderRadius: '8px',
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
     }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '24px',
-      }}>
-        <h2 style={{
-          fontSize: '24px',
-          fontWeight: 600,
-          color: '#1A1A2E',
-          margin: 0,
-        }}>
-          Executive Summary
-        </h2>
-        {status === 'saving' && (
-          <span style={{ color: '#6B7280', fontSize: '14px' }}>Saving...</span>
-        )}
-        {status === 'saved' && (
-          <span style={{ color: '#10B981', fontSize: '14px' }}>Saved ✓</span>
-        )}
-        {status === 'error' && (
-          <span style={{ color: '#E60012', fontSize: '14px' }}>Error saving</span>
-        )}
-      </div>
+      <SectionHeader
+        projectId={projectId}
+        sectionKey="executive_summary"
+        title="Executive Summary"
+        showDeleteButton={true}
+        onDelete={handleDelete}
+        status={status}
+      />
 
       {/* Locked Boilerplate Section */}
       <div style={{

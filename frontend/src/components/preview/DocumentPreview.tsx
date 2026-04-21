@@ -68,6 +68,38 @@ const resolveTemplateText = (
 const filterFilledItems = (items?: string[]) =>
   (items || []).map((item) => item.trim()).filter(Boolean);
 
+const PageBreak: React.FC = () => (
+  <div
+    className="page-break"
+    style={{
+      pageBreakAfter: 'always',
+      breakAfter: 'page',
+      height: '48px',
+      margin: '48px -97px',
+      backgroundColor: '#E8E8E8',
+      borderTop: '1px solid #D1D5DB',
+      borderBottom: '1px solid #D1D5DB',
+      position: 'relative',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.06)',
+    }}
+  >
+    <span
+      style={{
+        fontSize: '10px',
+        color: '#9CA3AF',
+        fontStyle: 'italic',
+        fontWeight: 500,
+        letterSpacing: '2px',
+      }}
+    >
+      • • •
+    </span>
+  </div>
+);
+
 const SectionWrapper: React.FC<SectionWrapperProps> = ({
   isActive,
   isHovered,
@@ -122,6 +154,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       const saved = localStorage.getItem('documentPreviewZoom');
       return saved ? parseFloat(saved) : 1;
     });
+
+    // Counter management for section and subsection numbering
+    const sectionCounter = useRef<number>(0);
+    const subsectionCounter = useRef<number>(0);
 
     const completedCount = useMemo(() => {
       const excludedSections = [
@@ -416,69 +452,82 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       }),
     });
 
+    // ─── STYLE CONSTANTS (updated to match TS_Template_original.docx) ───────
+
+    // Document font: Hitachi Sans with Arial fallback (matches template font)
+    const DOC_FONT = "'Hitachi Sans', Arial, sans-serif";
+
     const heading1BurgundyStyle: React.CSSProperties = {
-      fontFamily: 'Arial, sans-serif',
+      fontFamily: DOC_FONT,
       fontSize: '16pt',
       fontWeight: 'bold',
-      color: '#943634',
-      marginBottom: '16px',
+      color: '#000000',          // Changed to black
+      marginTop: '16px',         // 12pt space-before (matches template)
+      marginBottom: '12px',
       textTransform: 'uppercase',
     };
 
     const heading1RedStyle: React.CSSProperties = {
-      fontFamily: 'Arial, sans-serif',
+      fontFamily: DOC_FONT,
       fontSize: '16pt',
       fontWeight: 'bold',
-      color: '#EE0000',
-      marginBottom: '16px',
+      color: '#000000',          // Changed to black
+      marginTop: '16px',
+      marginBottom: '12px',
       textTransform: 'uppercase',
     };
 
     const heading1BlueStyle: React.CSSProperties = {
-      fontFamily: 'Arial, sans-serif',
+      fontFamily: DOC_FONT,
       fontSize: '16pt',
       fontWeight: 'bold',
-      color: '#4F81BD',
-      marginBottom: '16px',
+      color: '#000000',          // Changed to black
+      marginTop: '16px',
+      marginBottom: '12px',
       textTransform: 'uppercase',
     };
 
     const heading2BlackStyle: React.CSSProperties = {
-      fontFamily: 'Arial, sans-serif',
+      fontFamily: DOC_FONT,
       fontSize: '12pt',
       fontWeight: 'bold',
       color: '#000000',
-      marginBottom: '12px',
+      marginTop: '12px',
+      marginBottom: '10px',
     };
 
     const heading2RedStyle: React.CSSProperties = {
-      fontFamily: 'Arial, sans-serif',
+      fontFamily: DOC_FONT,
       fontSize: '12pt',
       fontWeight: 'bold',
-      color: '#EE0000',
-      marginBottom: '12px',
+      color: '#000000',          // Changed to black
+      marginTop: '12px',
+      marginBottom: '10px',
       textTransform: 'uppercase',
     };
 
     const heading2BlueStyle: React.CSSProperties = {
-      fontFamily: 'Arial, sans-serif',
+      fontFamily: DOC_FONT,
       fontSize: '12pt',
       fontWeight: 'bold',
-      color: '#4F81BD',
-      marginBottom: '12px',
+      color: '#000000',          // Changed to black
+      marginTop: '12px',
+      marginBottom: '10px',
       textTransform: 'uppercase',
     };
 
     const heading3RedStyle: React.CSSProperties = {
-      fontFamily: 'Arial, sans-serif',
+      fontFamily: DOC_FONT,
       fontSize: '11pt',
       fontWeight: 'bold',
-      color: '#EE0000',
+      color: '#000000',          // Changed to black
+      marginTop: '10px',
       marginBottom: '8px',
     };
 
+    // Body text: justified alignment matches template (WD_ALIGN_PARAGRAPH.JUSTIFY)
     const bodyParagraphStyle: React.CSSProperties = {
-      marginBottom: '10px',
+      marginBottom: '8px',
       textAlign: 'justify',
     };
 
@@ -498,7 +547,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       marginBottom: '8px',
       fontSize: '10pt',
       fontStyle: 'italic',
-      color: '#6B7280',
+      color: '#4F81BD',          // Blue color for notes
       textAlign: 'left',
     };
 
@@ -509,12 +558,12 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       marginBottom: '12px',
     };
 
+    // Base table header - no background (overridden per-table below)
     const tableHeaderStyle: React.CSSProperties = {
       fontWeight: 'bold',
       padding: '4px 8px',
       border: '1px solid #000',
       textAlign: 'left',
-      backgroundColor: '#FFFFFF',
       verticalAlign: 'top',
     };
 
@@ -633,6 +682,30 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       }
     };
 
+    // Helper functions for section and subsection numbering
+    const resetCounters = () => {
+      sectionCounter.current = 0;
+      subsectionCounter.current = 0;
+    };
+
+    const getNextSectionNumber = (): number => {
+      sectionCounter.current += 1;
+      subsectionCounter.current = 0;
+      return sectionCounter.current;
+    };
+
+    const getNextSubsectionNumber = (): number => {
+      subsectionCounter.current += 1;
+      return subsectionCounter.current;
+    };
+
+    const formatHeadingWithNumber = (text: string, number: string): string => {
+      return `${number} ${text}`;
+    };
+
+    // Reset counters at the start of each render
+    resetCounters();
+
     return (
       <>
         <style>{`
@@ -650,6 +723,29 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
             }
             .preview-toolbar, .completion-badge {
               display: none !important;
+            }
+            /* Ensure page breaks work in print and hide visual indicator */
+            .page-break {
+              page-break-after: always;
+              break-after: page;
+              height: 0 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              border: none !important;
+              background: none !important;
+              box-shadow: none !important;
+            }
+            .page-break span {
+              display: none !important;
+            }
+          }
+          
+          @media screen {
+            /* Show page break indicator on screen only */
+            .page-break {
+              background-color: #E8E8E8;
+              border-top: 1px solid #D1D5DB;
+              border-bottom: 1px solid #D1D5DB;
             }
           }
         `}</style>
@@ -764,6 +860,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               transition: 'transform 0.2s ease',
             }}
           >
+            {/* ── A4/Letter page: 21.59cm wide, 2.54cm margins = 96px margin ── */}
             <div
               style={{
                 width: '816px',
@@ -772,11 +869,13 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 margin: '0 auto',
                 padding: '97px',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                fontFamily: "'Times New Roman', serif",
+                // Hitachi Sans is the template font; Arial is the web fallback
+                fontFamily: DOC_FONT,
                 fontSize: '11pt',
                 lineHeight: '1.5',
               }}
             >
+              {/* ── COVER PAGE ── */}
               <SectionWrapper
                 sectionKey="cover"
                 isActive={isActive('cover')}
@@ -787,7 +886,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.cover = el)}
                 style={{
                   ...sectionStyle('cover'),
+                  // Cover box: black border, cream/yellow background (matches Word template)
                   border: '2px solid #000000',
+                  backgroundColor: '#FFFFF0',
                   width: '78%',
                   minHeight: '360px',
                   margin: '0 auto 48px',
@@ -797,7 +898,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               >
                 <h1
                   style={{
-                    fontFamily: 'Arial, sans-serif',
+                    fontFamily: DOC_FONT,
                     fontSize: '18pt',
                     fontWeight: 'bold',
                     marginBottom: '20px',
@@ -807,7 +908,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </h1>
                 <p
                   style={{
-                    fontFamily: 'Arial, sans-serif',
+                    fontFamily: DOC_FONT,
                     fontSize: '20pt',
                     fontWeight: 'bold',
                     marginBottom: '14px',
@@ -817,7 +918,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
                 <p
                   style={{
-                    fontFamily: 'Arial, sans-serif',
+                    fontFamily: DOC_FONT,
                     fontSize: '14pt',
                     fontWeight: 'bold',
                     marginBottom: '10px',
@@ -827,7 +928,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
                 <p
                   style={{
-                    fontFamily: 'Arial, sans-serif',
+                    fontFamily: DOC_FONT,
                     fontSize: '14pt',
                     fontWeight: 'bold',
                     marginBottom: '6px',
@@ -837,7 +938,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
                 <p
                   style={{
-                    fontFamily: 'Arial, sans-serif',
+                    fontFamily: DOC_FONT,
                     fontSize: '14pt',
                     fontWeight: 'bold',
                     marginBottom: '28px',
@@ -847,7 +948,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
                 <p
                   style={{
-                    fontFamily: 'Arial, sans-serif',
+                    fontFamily: DOC_FONT,
                     fontSize: '12pt',
                     marginBottom: '12px',
                   }}
@@ -856,7 +957,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
                 <p
                   style={{
-                    fontFamily: 'Arial, sans-serif',
+                    fontFamily: DOC_FONT,
                     fontSize: '12pt',
                     fontWeight: 'bold',
                     marginBottom: '6px',
@@ -866,7 +967,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
                 <p
                   style={{
-                    fontFamily: 'Arial, sans-serif',
+                    fontFamily: DOC_FONT,
                     fontSize: '12pt',
                     fontWeight: 'bold',
                     marginBottom: '6px',
@@ -876,7 +977,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
                 <p
                   style={{
-                    fontFamily: 'Arial, sans-serif',
+                    fontFamily: DOC_FONT,
                     fontSize: '12pt',
                     marginBottom: 0,
                   }}
@@ -885,6 +986,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
               </SectionWrapper>
 
+              {/* Page Break: End of Page 1 (Cover) */}
+              <PageBreak />
+
+              {/* ── REVISION HISTORY ── */}
               <SectionWrapper
                 sectionKey="revision_history"
                 isActive={isActive('revision_history')}
@@ -895,10 +1000,12 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.revision_history = el)}
                 style={sectionStyle('revision_history')}
               >
+                {/* "REVISION HISTORY:" is Normal style + #EE0000 bold in template */}
                 <h2 style={heading2RedStyle}>REVISION HISTORY:</h2>
                 <table style={tableStyle}>
                   <thead>
                     <tr>
+                      {/* Revision history table has NO header shading in template */}
                       <th style={tableHeaderStyle}>Sr. No.</th>
                       <th style={tableHeaderStyle}>Revised By</th>
                       <th style={tableHeaderStyle}>Checked By</th>
@@ -934,10 +1041,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                       ))}
                   </tbody>
                 </table>
-                <p style={{ color: '#EE0000', fontSize: '9pt', marginBottom: '4px' }}>
+                <p style={{ color: '#000000', fontSize: '9pt', marginBottom: '4px' }}>
                   Copyright © 2026 Hitachi India Pvt. Ltd.
                 </p>
-                <p style={{ ...noteParagraphStyle, color: '#EE0000', fontSize: '8.5pt', lineHeight: '1.3' }}>
+                <p style={{ ...noteParagraphStyle, color: '#000000', fontSize: '8.5pt', lineHeight: '1.3' }}>
                   All rights in this work are strictly reserved by the producer and the owner. Any unauthorized use of this material—including, but not limited to, copying, reproduction, hiring, lending, public performance, broadcasting (including communication to the public or via the internet), or transmission by any distribution or diffusion service, whether in whole or in part—is strictly prohibited. This work contains confidential and/or proprietary information. The information and ideas contained herein are provided solely for the use of the intended recipient. All content remains the exclusive property of Hitachi India and may not be disclosed, shared, or communicated to any third party, in any form or by any means, without prior written authorization.
                 </p>
               </SectionWrapper>
@@ -947,6 +1054,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 <p style={placeholderStyle}>[Auto-generated table of contents]</p>
               </div>
 
+              {/* Page Break: End of Page 2-4 (Revision History / Legal / TOC) */}
+              <PageBreak />
+
+              {/* ── EXECUTIVE SUMMARY ── */}
               <SectionWrapper
                 sectionKey="executive_summary"
                 isActive={isActive('executive_summary')}
@@ -957,7 +1068,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.executive_summary = el)}
                 style={sectionStyle('executive_summary')}
               >
-                <h1 style={heading1BurgundyStyle}>EXECUTIVE SUMMARY</h1>
+                {/* Heading 1, burgundy #943634 — matches template */}
+                <h1 style={heading1BurgundyStyle}>
+                  {formatHeadingWithNumber('EXECUTIVE SUMMARY', `${getNextSectionNumber()}.`)}
+                </h1>
                 {renderTemplateParagraphs(EXECUTIVE_SUMMARY_PARAGRAPHS)}
                 <p style={bodyParagraphStyle}>Some of our clients include:</p>
                 <table
@@ -990,8 +1104,15 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </table>
               </SectionWrapper>
 
-              <h1 style={heading1RedStyle}>GENERAL OVERVIEW</h1>
+              {/* Page Break: End of Page 5 (Executive Summary) */}
+              <PageBreak />
 
+              {/* ── GENERAL OVERVIEW heading (Heading 1, #EE0000) ── */}
+              <h1 style={heading1RedStyle}>
+                {formatHeadingWithNumber('GENERAL OVERVIEW', `${getNextSectionNumber()}.`)}
+              </h1>
+
+              {/* ── INTRODUCTION ── */}
               <SectionWrapper
                 sectionKey="introduction"
                 isActive={isActive('introduction')}
@@ -1002,10 +1123,14 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.introduction = el)}
                 style={sectionStyle('introduction')}
               >
-                <h2 style={heading2BlackStyle}>INTRODUCTION</h2>
+                {/* Heading 2, no color (black) — matches template */}
+                <h2 style={heading2BlackStyle}>
+                  {formatHeadingWithNumber('INTRODUCTION', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 {renderTemplateParagraphs(INTRODUCTION_PARAGRAPHS)}
               </SectionWrapper>
 
+              {/* ── ABBREVIATIONS ── */}
               <SectionWrapper
                 sectionKey="abbreviations"
                 isActive={isActive('abbreviations')}
@@ -1016,13 +1141,16 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.abbreviations = el)}
                 style={sectionStyle('abbreviations')}
               >
-                <h2 style={heading2RedStyle}>ABBREVIATIONS USED</h2>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('ABBREVIATIONS USED', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 <table style={tableStyle}>
                   <thead>
                     <tr>
-                      <th style={{ ...tableHeaderStyle, width: '60px' }}>Sr. No.</th>
-                      <th style={{ ...tableHeaderStyle, width: '140px' }}>Abbreviation</th>
-                      <th style={tableHeaderStyle}>Full Form / Description</th>
+                      {/* Abbreviations table: header shade = #D9D9D9 (from template) */}
+                      <th style={{ ...tableHeaderStyle, width: '60px', backgroundColor: '#D9D9D9' }}>Sr. No.</th>
+                      <th style={{ ...tableHeaderStyle, width: '140px', backgroundColor: '#D9D9D9' }}>Abbreviation</th>
+                      <th style={{ ...tableHeaderStyle, backgroundColor: '#D9D9D9' }}>Full Form / Description</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1047,6 +1175,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </table>
               </SectionWrapper>
 
+              {/* ── PROCESS FLOW ── */}
               <SectionWrapper
                 sectionKey="process_flow"
                 isActive={isActive('process_flow')}
@@ -1057,7 +1186,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.process_flow = el)}
                 style={sectionStyle('process_flow')}
               >
-                <h2 style={heading2RedStyle}>PROCESS FLOW</h2>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('PROCESS FLOW', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 <p style={bodyParagraphStyle}>
                   {documentContent.processFlow.text ? (
                     stripHtml(documentContent.processFlow.text)
@@ -1067,6 +1198,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
               </SectionWrapper>
 
+              {/* ── OVERVIEW ── */}
               <SectionWrapper
                 sectionKey="overview"
                 isActive={isActive('overview')}
@@ -1078,7 +1210,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 style={sectionStyle('overview')}
               >
                 <h2 style={heading2RedStyle}>
-                  OVERVIEW OF {(solutionName || '{SolutionName}').toUpperCase()}
+                  {formatHeadingWithNumber(`OVERVIEW OF ${(solutionName || '{SolutionName}').toUpperCase()}`, `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
                 </h2>
                 <p style={bodyParagraphStyle}>
                   {documentContent.processFlow.text ? (
@@ -1136,8 +1268,15 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
               </SectionWrapper>
 
-              <h1 style={heading1RedStyle}>OFFERINGS</h1>
+              {/* Page Break: End of Page 6-8 (General Overview) */}
+              <PageBreak />
 
+              {/* ── OFFERINGS heading (Heading 1, #EE0000) ── */}
+              <h1 style={heading1RedStyle}>
+                {formatHeadingWithNumber('OFFERINGS', `${getNextSectionNumber()}.`)}
+              </h1>
+
+              {/* ── FEATURES ── */}
               <SectionWrapper
                 sectionKey="features"
                 isActive={isActive('features')}
@@ -1148,13 +1287,16 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.features = el)}
                 style={sectionStyle('features')}
               >
-                <h2 style={heading2RedStyle}>DESIGN SCOPE OF WORK</h2>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('DESIGN SCOPE OF WORK', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 <p style={bodyParagraphStyle}>
                   {resolveTemplateText('Implementation of {{SolutionName}}', templateReplacements)}
                 </p>
                 {featureItems.length > 0 ? (
                   featureItems.map((feature: any, index: number) => (
                     <div key={feature.id || `feature-${index}`} style={{ marginBottom: '14px' }}>
+                      {/* Feature titles: Heading 2, no color (black) — matches template */}
                       <h2 style={heading2BlackStyle}>
                         {feature.title || `Feature ${index + 1}`}
                       </h2>
@@ -1172,6 +1314,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 )}
               </SectionWrapper>
 
+              {/* ── REMOTE SUPPORT ── */}
               <SectionWrapper
                 sectionKey="remote_support"
                 isActive={isActive('remote_support')}
@@ -1182,13 +1325,17 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.remote_support = el)}
                 style={sectionStyle('remote_support')}
               >
-                <h2 style={heading2BlackStyle}>REMOTE SUPPORT SYSTEM</h2>
+                {/* Heading 2, #EE0000 — matches template (was incorrectly black before) */}
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('REMOTE SUPPORT SYSTEM', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 {renderTemplateParagraphs(REMOTE_SUPPORT_PARAGRAPHS)}
                 {documentContent.remoteSupport.text && (
                   <p style={bodyParagraphStyle}>{stripHtml(documentContent.remoteSupport.text)}</p>
                 )}
               </SectionWrapper>
 
+              {/* ── DOCUMENTATION CONTROL ── */}
               <SectionWrapper
                 sectionKey="documentation_control"
                 isActive={isActive('documentation_control')}
@@ -1199,7 +1346,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.documentation_control = el)}
                 style={sectionStyle('documentation_control')}
               >
-                <h2 style={heading2RedStyle}>DOCUMENTATION CONTROL</h2>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('DOCUMENTATION CONTROL', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 <p style={bodyParagraphStyle}>
                   {resolveTemplateText(
                     'SELLER shall provide the following technical documentation of the complete {{SolutionName}} solution:',
@@ -1215,6 +1364,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 )}
               </SectionWrapper>
 
+              {/* ── CUSTOMER TRAINING ── */}
               <SectionWrapper
                 sectionKey="customer_training"
                 isActive={isActive('customer_training')}
@@ -1225,7 +1375,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.customer_training = el)}
                 style={sectionStyle('customer_training')}
               >
-                <h2 style={heading2RedStyle}>CUSTOMER TRAINING</h2>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('CUSTOMER TRAINING', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 <p style={bodyParagraphStyle}>
                   {resolveTemplateText(
                     'SELLER shall provide training at site during commissioning to a maximum of {{TrainingPersons}} people for a maximum of {{TrainingDays}} days. Training shall cover mutually agreed topics on {{SolutionName}} application. Training shall comprise of classroom training at site.',
@@ -1234,6 +1386,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
               </SectionWrapper>
 
+              {/* ── SYSTEM CONFIGURATION ── */}
               <SectionWrapper
                 sectionKey="system_config"
                 isActive={isActive('system_config')}
@@ -1244,7 +1397,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.system_config = el)}
                 style={sectionStyle('system_config')}
               >
-                <h2 style={heading2RedStyle}>SYSTEM CONFIGURATION (FOR REFERENCE)</h2>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('SYSTEM CONFIGURATION (FOR REFERENCE)', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 <p style={bodyParagraphStyle}>
                   {resolveTemplateText(
                     'The reference system configuration of {{SolutionName}} is shown below:',
@@ -1263,6 +1418,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
               </SectionWrapper>
 
+              {/* ── FAT CONDITION ── */}
               <SectionWrapper
                 sectionKey="fat_condition"
                 isActive={isActive('fat_condition')}
@@ -1273,7 +1429,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.fat_condition = el)}
                 style={sectionStyle('fat_condition')}
               >
-                <h2 style={heading2RedStyle}>FAT CONDITION</h2>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('FAT CONDITION', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 <p style={bodyParagraphStyle}>
                   {documentContent.fatCondition.text ? (
                     stripHtml(documentContent.fatCondition.text)
@@ -1283,6 +1441,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
               </SectionWrapper>
 
+              {/* Page Break: End of Page 9-11 (Offerings) */}
+              <PageBreak />
+
+              {/* ── TECHNOLOGY STACK (Heading 1, #EE0000) ── */}
               <SectionWrapper
                 sectionKey="tech_stack"
                 isActive={isActive('tech_stack')}
@@ -1293,16 +1455,19 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.tech_stack = el)}
                 style={sectionStyle('tech_stack')}
               >
-                <h1 style={heading1RedStyle}>TECHNOLOGY STACK</h1>
+                <h1 style={heading1RedStyle}>
+                  {formatHeadingWithNumber('TECHNOLOGY STACK', `${getNextSectionNumber()}.`)}
+                </h1>
                 <p style={{ ...bodyParagraphStyle, textAlign: 'left' }}>
                   The technology stack for various components is as follows:
                 </p>
                 <table style={tableStyle}>
                   <thead>
                     <tr>
-                      <th style={{ ...tableHeaderStyle, width: '60px' }}>Sr. No.</th>
-                      <th style={tableHeaderStyle}>Components</th>
-                      <th style={tableHeaderStyle}>Technology Used</th>
+                      {/* Tech stack table: header shade = #BFBFBF (from template) */}
+                      <th style={{ ...tableHeaderStyle, width: '60px', backgroundColor: '#BFBFBF' }}>Sr. No.</th>
+                      <th style={{ ...tableHeaderStyle, backgroundColor: '#BFBFBF' }}>Components</th>
+                      <th style={{ ...tableHeaderStyle, backgroundColor: '#BFBFBF' }}>Technology Used</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1332,6 +1497,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </table>
               </SectionWrapper>
 
+              {/* ── HARDWARE SPECS (Heading 3, #EE0000) ── */}
               <SectionWrapper
                 sectionKey="hardware_specs"
                 isActive={isActive('hardware_specs')}
@@ -1342,7 +1508,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.hardware_specs = el)}
                 style={sectionStyle('hardware_specs')}
               >
-                <h3 style={heading3RedStyle}>4.1 BASIC HARDWARE SPECIFICATIONS</h3>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('HARDWARE SPECIFICATIONS', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 <p style={{ ...bodyParagraphStyle, textAlign: 'left' }}>
                   {resolveTemplateText(
                     'Following is the list of Hardware required for {{SolutionName}} Application.',
@@ -1352,11 +1520,12 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 <table style={tableStyle}>
                   <thead>
                     <tr>
-                      <th style={{ ...tableHeaderStyle, width: '60px' }}>Sr. No.</th>
-                      <th style={tableHeaderStyle}>Equipment Name</th>
-                      <th style={tableHeaderStyle}>Specifications</th>
-                      <th style={tableHeaderStyle}>Maker</th>
-                      <th style={{ ...tableHeaderStyle, width: '110px' }}>
+                      {/* Hardware specs table: header shade = #BFBFBF (from template) */}
+                      <th style={{ ...tableHeaderStyle, width: '60px', backgroundColor: '#BFBFBF' }}>Sr. No.</th>
+                      <th style={{ ...tableHeaderStyle, backgroundColor: '#BFBFBF' }}>Equipment Name</th>
+                      <th style={{ ...tableHeaderStyle, backgroundColor: '#BFBFBF' }}>Specifications</th>
+                      <th style={{ ...tableHeaderStyle, backgroundColor: '#BFBFBF' }}>Maker</th>
+                      <th style={{ ...tableHeaderStyle, width: '110px', backgroundColor: '#BFBFBF' }}>
                         Quantity (Nos.)
                       </th>
                     </tr>
@@ -1389,6 +1558,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </table>
               </SectionWrapper>
 
+              {/* ── SOFTWARE SPECS (Heading 3, #EE0000) ── */}
               <SectionWrapper
                 sectionKey="software_specs"
                 isActive={isActive('software_specs')}
@@ -1399,7 +1569,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.software_specs = el)}
                 style={sectionStyle('software_specs')}
               >
-                <h3 style={heading3RedStyle}>4.2 BASIC SOFTWARE SPECIFICATION</h3>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('SOFTWARE SPECIFICATIONS', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 <p style={{ ...bodyParagraphStyle, textAlign: 'left' }}>
                   {resolveTemplateText(
                     'Below are the Software Specifications for the Proposed {{SolutionName}} system.',
@@ -1409,10 +1581,11 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 <table style={tableStyle}>
                   <thead>
                     <tr>
-                      <th style={{ ...tableHeaderStyle, width: '60px' }}>SR. NO.</th>
-                      <th style={tableHeaderStyle}>EQUIPMENT/SOFTWARE NAME</th>
-                      <th style={tableHeaderStyle}>MAKER</th>
-                      <th style={{ ...tableHeaderStyle, width: '120px' }}>
+                      {/* Software specs table: header shade = #BFBFBF (from template) */}
+                      <th style={{ ...tableHeaderStyle, width: '60px', backgroundColor: '#BFBFBF' }}>SR. NO.</th>
+                      <th style={{ ...tableHeaderStyle, backgroundColor: '#BFBFBF' }}>EQUIPMENT/SOFTWARE NAME</th>
+                      <th style={{ ...tableHeaderStyle, backgroundColor: '#BFBFBF' }}>MAKER</th>
+                      <th style={{ ...tableHeaderStyle, width: '120px', backgroundColor: '#BFBFBF' }}>
                         QUANTITY (NOS.)
                       </th>
                     </tr>
@@ -1442,6 +1615,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </table>
               </SectionWrapper>
 
+              {/* ── THIRD PARTY SW (Heading 3, #EE0000) ── */}
               <SectionWrapper
                 sectionKey="third_party_sw"
                 isActive={isActive('third_party_sw')}
@@ -1452,7 +1626,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.third_party_sw = el)}
                 style={sectionStyle('third_party_sw')}
               >
-                <h3 style={heading3RedStyle}>4.3 THIRD PARTY SOFTWARE REQUIREMENTS</h3>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('THIRD PARTY SOFTWARE', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 <p style={bodyParagraphStyle}>
                   {documentContent.thirdPartySw.sw4_name ? (
                     documentContent.thirdPartySw.sw4_name
@@ -1468,8 +1644,15 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
               </SectionWrapper>
 
-              <h1 style={heading1RedStyle}>SCHEDULE</h1>
+              {/* Page Break: End of Page 12-14 (Technology Stack) */}
+              <PageBreak />
 
+              {/* ── SCHEDULE (Heading 1, #EE0000) ── */}
+              <h1 style={heading1RedStyle}>
+                {formatHeadingWithNumber('SCHEDULE', `${getNextSectionNumber()}.`)}
+              </h1>
+
+              {/* ── OVERALL GANTT ── */}
               <SectionWrapper
                 sectionKey="overall_gantt"
                 isActive={isActive('overall_gantt')}
@@ -1480,6 +1663,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.overall_gantt = el)}
                 style={sectionStyle('overall_gantt')}
               >
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('OVERALL GANTT CHART', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 {renderImageOrPlaceholder(
                   'gantt_overall',
                   '[Overall Gantt chart to be inserted]',
@@ -1493,6 +1679,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
               </SectionWrapper>
 
+              {/* ── SHUTDOWN GANTT ── */}
               <SectionWrapper
                 sectionKey="shutdown_gantt"
                 isActive={isActive('shutdown_gantt')}
@@ -1503,6 +1690,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.shutdown_gantt = el)}
                 style={sectionStyle('shutdown_gantt')}
               >
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('SHUTDOWN GANTT CHART', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 {renderImageOrPlaceholder(
                   'gantt_shutdown',
                   '[Shutdown Gantt chart to be inserted]',
@@ -1517,6 +1707,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
               </SectionWrapper>
 
+              {/* ── SUPERVISORS (Heading 3, #EE0000) ── */}
               <SectionWrapper
                 sectionKey="supervisors"
                 isActive={isActive('supervisors')}
@@ -1555,8 +1746,15 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
               </SectionWrapper>
 
-              <h1 style={heading1RedStyle}>SCOPE OF SUPPLY</h1>
+              {/* Page Break: End of Page 15 (Schedule) */}
+              <PageBreak />
 
+              {/* ── SCOPE OF SUPPLY (Heading 1, #EE0000) ── */}
+              <h1 style={heading1RedStyle}>
+                {formatHeadingWithNumber('SCOPE OF SUPPLY', `${getNextSectionNumber()}.`)}
+              </h1>
+
+              {/* ── SCOPE DEFINITIONS (Heading 2, black — no color in template) ── */}
               <SectionWrapper
                 sectionKey="scope_definitions"
                 isActive={isActive('scope_definitions')}
@@ -1567,10 +1765,13 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.scope_definitions = el)}
                 style={sectionStyle('scope_definitions')}
               >
-                <h2 style={heading2BlackStyle}>SCOPE OF SUPPLY DEFINITIONS</h2>
+                <h2 style={heading2BlackStyle}>
+                  {formatHeadingWithNumber('SCOPE OF SUPPLY DEFINITIONS', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 {renderTemplateParagraphs(SCOPE_SUPPLY_DEFINITION_LINES)}
               </SectionWrapper>
 
+              {/* ── DIVISION OF ENGINEERING ── */}
               <SectionWrapper
                 sectionKey="division_of_eng"
                 isActive={isActive('division_of_eng')}
@@ -1582,8 +1783,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 style={sectionStyle('division_of_eng')}
               >
                 <h2 style={heading2RedStyle}>
-                  DIVISION OF ENGINEERING, SOFTWARE DEVELOPMENT, &
-                  ERECTION/COMMISSIONING SERVICES
+                  {formatHeadingWithNumber('DIVISION OF ENGINEERING, SOFTWARE DEVELOPMENT, & ERECTION/COMMISSIONING SERVICES', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
                 </h2>
                 <table
                   style={{
@@ -1602,14 +1802,19 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                             const cellStyle =
                               cellIndex === 1 ? matrixItemCellStyle : matrixCellStyle;
 
+                            // Responsibility matrix header: shade = #2E75B5 (blue) from template
+                            const headerBg = isHeaderRow ? '#2E75B5' : undefined;
+                            const headerColor = isHeaderRow ? '#FFFFFF' : undefined;
+                            const groupBg = (!isHeaderRow && isGroupRow) ? '#F3F3F3' : undefined;
+
                             return (
                               <td
                                 key={`matrix-cell-${rowIndex}-${cellIndex}`}
                                 style={{
                                   ...cellStyle,
                                   fontWeight: isHeaderRow || isGroupRow ? 'bold' : 'normal',
-                                  backgroundColor:
-                                    isHeaderRow || isGroupRow ? '#F9FAFB' : '#FFFFFF',
+                                  backgroundColor: headerBg || groupBg || '#FFFFFF',
+                                  color: headerColor || undefined,
                                 }}
                               >
                                 {cell || '\u00A0'}
@@ -1632,6 +1837,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
               </SectionWrapper>
 
+              {/* ── VALUE ADDITION ── */}
               <SectionWrapper
                 sectionKey="value_addition"
                 isActive={isActive('value_addition')}
@@ -1642,7 +1848,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.value_addition = el)}
                 style={sectionStyle('value_addition')}
               >
-                <h2 style={heading2RedStyle}>VALUE ADDITION</h2>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('VALUE ADDITION', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 <p style={bodyParagraphStyle}>
                   {resolveTemplateText(VALUE_ADDITION_INTRO, templateReplacements)}
                 </p>
@@ -1655,6 +1863,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </p>
               </SectionWrapper>
 
+              {/* ── WORK COMPLETION ── */}
               <SectionWrapper
                 sectionKey="work_completion"
                 isActive={isActive('work_completion')}
@@ -1665,7 +1874,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.work_completion = el)}
                 style={sectionStyle('work_completion')}
               >
-                <h2 style={heading2RedStyle}>WORK COMPLETION CERTIFICATE</h2>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('WORK COMPLETION CERTIFICATE', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 <p style={bodyParagraphStyle}>Work Completion Criteria:</p>
                 {[...WORK_COMPLETION_CRITERIA, ...workCompletionCustom].map((item, index) => (
                   <p key={`completion-criterion-${index}`} style={listParagraphStyle}>
@@ -1675,6 +1886,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 {renderTemplateParagraphs(WORK_COMPLETION_PARAGRAPHS)}
               </SectionWrapper>
 
+              {/* ── BUYER OBLIGATIONS ── */}
               <SectionWrapper
                 sectionKey="buyer_obligations"
                 isActive={isActive('buyer_obligations')}
@@ -1685,7 +1897,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.buyer_obligations = el)}
                 style={sectionStyle('buyer_obligations')}
               >
-                <h2 style={heading2RedStyle}>BUYER OBLIGATIONS</h2>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('BUYER OBLIGATIONS', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 <p style={bodyParagraphStyle}>The BUYER should fulfil the following obligations</p>
                 {[...BUYER_OBLIGATION_ITEMS, ...buyerObligationCustom].map((item, index) => (
                   <p key={`buyer-obligation-${index}`} style={listParagraphStyle}>
@@ -1694,6 +1908,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 ))}
               </SectionWrapper>
 
+              {/* ── EXCLUSION LIST ── */}
               <SectionWrapper
                 sectionKey="exclusion_list"
                 isActive={isActive('exclusion_list')}
@@ -1704,7 +1919,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.exclusion_list = el)}
                 style={sectionStyle('exclusion_list')}
               >
-                <h2 style={heading2RedStyle}>EXCLUSION LIST</h2>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('EXCLUSION LIST', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 {renderTemplateParagraphs(EXCLUSION_INTRO_PARAGRAPHS)}
                 {resolvedExclusionItems.map((item, index) => (
                   <p key={`exclusion-item-${index}`} style={listParagraphStyle}>
@@ -1713,6 +1930,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 ))}
               </SectionWrapper>
 
+              {/* ── BUYER PREREQUISITES ── */}
               <SectionWrapper
                 sectionKey="buyer_prerequisites"
                 isActive={isActive('buyer_prerequisites')}
@@ -1723,7 +1941,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.buyer_prerequisites = el)}
                 style={sectionStyle('buyer_prerequisites')}
               >
-                <h2 style={heading2RedStyle}>BUYER PREREQUISITES:</h2>
+                <h2 style={heading2RedStyle}>
+                  {formatHeadingWithNumber('BUYER PREREQUISITES:', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 {buyerPrerequisites.length > 0 ? (
                   buyerPrerequisites.map((item, index) => (
                     <p key={`buyer-prereq-${index}`} style={listParagraphStyle}>
@@ -1735,6 +1955,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 )}
               </SectionWrapper>
 
+              {/* ── BINDING CONDITIONS (Heading 2, #4F81BD) ── */}
               <SectionWrapper
                 sectionKey="binding_conditions"
                 isActive={isActive('binding_conditions')}
@@ -1745,10 +1966,13 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.binding_conditions = el)}
                 style={sectionStyle('binding_conditions')}
               >
-                <h2 style={heading2BlueStyle}>BINDING CONDITIONS:</h2>
+                <h2 style={heading2BlueStyle}>
+                  {formatHeadingWithNumber('BINDING CONDITIONS:', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 {renderTemplateParagraphs(BINDING_CONDITIONS_PARAGRAPHS)}
               </SectionWrapper>
 
+              {/* ── CYBERSECURITY (Heading 2, #4F81BD) ── */}
               <SectionWrapper
                 sectionKey="cybersecurity"
                 isActive={isActive('cybersecurity')}
@@ -1759,10 +1983,16 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.cybersecurity = el)}
                 style={sectionStyle('cybersecurity')}
               >
-                <h2 style={heading2BlueStyle}>CYBERSECURITY DISCLAIMER</h2>
+                <h2 style={heading2BlueStyle}>
+                  {formatHeadingWithNumber('CYBERSECURITY DISCLAIMER', `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                </h2>
                 {renderTemplateParagraphs(CYBERSECURITY_DISCLAIMER_PARAGRAPHS)}
               </SectionWrapper>
 
+              {/* Page Break: End of Page 16-23 (Scope of Supply) */}
+              <PageBreak />
+
+              {/* ── DISCLAIMER (Heading 1, #4F81BD) ── */}
               <SectionWrapper
                 sectionKey="disclaimer"
                 isActive={isActive('disclaimer')}
@@ -1773,15 +2003,24 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.disclaimer = el)}
                 style={sectionStyle('disclaimer')}
               >
-                <h1 style={heading1BlueStyle}>DISCLAIMER</h1>
+                <h1 style={heading1BlueStyle}>
+                  {formatHeadingWithNumber('DISCLAIMER', `${getNextSectionNumber()}.`)}
+                </h1>
                 {DISCLAIMER_SECTIONS.map((section) => (
                   <div key={section.title} style={{ marginBottom: '18px' }}>
-                    <h2 style={heading2BlueStyle}>{section.title}</h2>
+                    {/* Disclaimer subsections: Heading 2, no color (black) — matches template */}
+                    <h2 style={heading2BlackStyle}>
+                      {formatHeadingWithNumber(section.title, `${sectionCounter.current}.${getNextSubsectionNumber()}`)}
+                    </h2>
                     {renderTemplateParagraphs(section.paragraphs)}
                   </div>
                 ))}
               </SectionWrapper>
 
+              {/* Page Break: End of Page 24-25 (Disclaimer) */}
+              <PageBreak />
+
+              {/* ── PROOF OF CONCEPT (Heading 1, #4F81BD) ── */}
               <SectionWrapper
                 sectionKey="poc"
                 isActive={isActive('poc')}
@@ -1792,7 +2031,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.poc = el)}
                 style={sectionStyle('poc')}
               >
-                <h1 style={heading1BlueStyle}>COMPLIMENTRY PROOF OF CONCEPTS (PoC)</h1>
+                <h1 style={heading1BlueStyle}>
+                  {formatHeadingWithNumber('COMPLIMENTRY PROOF OF CONCEPTS (PoC)', `${getNextSectionNumber()}.`)}
+                </h1>
                 {renderTemplateParagraphs(POC_PARAGRAPHS)}
                 <p style={bodyParagraphStyle}>The following solution will be part of the PoC:</p>
                 <p style={{ ...heading2BlackStyle, marginBottom: '10px' }}>
@@ -1811,7 +2052,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 style={{
                   marginTop: '36px',
                   textAlign: 'center',
-                  fontFamily: 'Arial, sans-serif',
+                  fontFamily: DOC_FONT,
                   fontSize: '11pt',
                 }}
               >

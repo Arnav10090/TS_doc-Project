@@ -110,3 +110,27 @@ async def upsert_section(
         content=section.content,
         updated_at=section.updated_at,
     )
+
+
+@router.delete("/{project_id}/sections/{section_key}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_section(
+    project_id: UUID,
+    section_key: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a section by key."""
+    if section_key not in VALID_SECTION_KEYS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid section_key. Must be one of: {', '.join(VALID_SECTION_KEYS)}",
+        )
+    
+    # Prevent deletion of cover section
+    if section_key == "cover":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete the cover section",
+        )
+    
+    await service.delete_section(db, project_id, section_key)
+    return None

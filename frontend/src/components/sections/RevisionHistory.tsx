@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getSection } from '../../api/sections';
 import { useAutoSave } from '../../hooks/useAutoSave';
+import SectionHeader from '../shared/SectionHeader';
 import EditableTable from '../shared/EditableTable';
 import type { RevisionHistoryContent, RevisionHistoryRow } from '../../types';
 
@@ -19,6 +21,7 @@ const DEFAULT_ROW: RevisionHistoryRow = {
 };
 
 const RevisionHistory: React.FC<RevisionHistoryProps> = ({ projectId }) => {
+  const navigate = useNavigate();
   const [content, setContent] = useState<RevisionHistoryContent>({
     rows: [DEFAULT_ROW],
   });
@@ -77,6 +80,10 @@ const RevisionHistory: React.FC<RevisionHistoryProps> = ({ projectId }) => {
     save(updated);
   };
 
+  const handleDelete = () => {
+    navigate(`/editor/${projectId}#cover`);
+  };
+
   if (loading) {
     return <div style={{ padding: '24px' }}>Loading...</div>;
   }
@@ -86,9 +93,9 @@ const RevisionHistory: React.FC<RevisionHistoryProps> = ({ projectId }) => {
     { key: 'revised_by', label: 'Revised By' },
     { key: 'checked_by', label: 'Checked By' },
     { key: 'approved_by', label: 'Approved By' },
-    { key: 'details', label: 'Details', multiline: true },
-    { key: 'date', label: 'Date' },
-    { key: 'rev_no', label: 'Rev. No.' },
+    { key: 'details', label: 'Details', multiline: true, readOnly: true },
+    { key: 'date', label: 'Date', readOnly: true },
+    { key: 'rev_no', label: 'Rev. No.', readOnly: true },
   ];
 
   return (
@@ -98,30 +105,14 @@ const RevisionHistory: React.FC<RevisionHistoryProps> = ({ projectId }) => {
       borderRadius: '8px',
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
     }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '24px',
-      }}>
-        <h2 style={{
-          fontSize: '24px',
-          fontWeight: 600,
-          color: '#1A1A2E',
-          margin: 0,
-        }}>
-          Revision History
-        </h2>
-        {status === 'saving' && (
-          <span style={{ color: '#6B7280', fontSize: '14px' }}>Saving...</span>
-        )}
-        {status === 'saved' && (
-          <span style={{ color: '#10B981', fontSize: '14px' }}>Saved ✓</span>
-        )}
-        {status === 'error' && (
-          <span style={{ color: '#E60012', fontSize: '14px' }}>Error saving</span>
-        )}
-      </div>
+      <SectionHeader
+        projectId={projectId}
+        sectionKey="revision_history"
+        title="Revision History"
+        showDeleteButton={true}
+        onDelete={handleDelete}
+        status={status}
+      />
 
       <EditableTable
         columns={columns}

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getSection } from '../../api/sections';
 import { useAutoSave } from '../../hooks/useAutoSave';
+import SectionHeader from '../shared/SectionHeader';
 import type { ThirdPartySoftwareContent } from '../../types';
 
 interface ThirdPartySwSectionProps {
@@ -8,6 +10,7 @@ interface ThirdPartySwSectionProps {
 }
 
 const ThirdPartySwSection: React.FC<ThirdPartySwSectionProps> = ({ projectId }) => {
+  const navigate = useNavigate();
   const [content, setContent] = useState<ThirdPartySoftwareContent>({
     sw4_name: '',
   });
@@ -37,6 +40,10 @@ const ThirdPartySwSection: React.FC<ThirdPartySwSectionProps> = ({ projectId }) 
     save(updated);
   };
 
+  const handleDelete = () => {
+    navigate(`/editor/${projectId}#cover`);
+  };
+
   if (loading) {
     return <div style={{ padding: '24px' }}>Loading...</div>;
   }
@@ -48,30 +55,14 @@ const ThirdPartySwSection: React.FC<ThirdPartySwSectionProps> = ({ projectId }) 
       borderRadius: '8px',
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
     }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '24px',
-      }}>
-        <h2 style={{
-          fontSize: '24px',
-          fontWeight: 600,
-          color: '#1A1A2E',
-          margin: 0,
-        }}>
-          Third-Party Software
-        </h2>
-        {status === 'saving' && (
-          <span style={{ color: '#6B7280', fontSize: '14px' }}>Saving...</span>
-        )}
-        {status === 'saved' && (
-          <span style={{ color: '#10B981', fontSize: '14px' }}>Saved ✓</span>
-        )}
-        {status === 'error' && (
-          <span style={{ color: '#E60012', fontSize: '14px' }}>Error saving</span>
-        )}
-      </div>
+      <SectionHeader
+        projectId={projectId}
+        sectionKey="third_party_sw"
+        title="Third-Party Software"
+        showDeleteButton={true}
+        onDelete={handleDelete}
+        status={status}
+      />
 
       <div style={{ marginBottom: '16px' }}>
         <label style={{

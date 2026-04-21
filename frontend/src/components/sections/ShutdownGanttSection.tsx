@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getSection } from '../../api/sections';
 import { getAiPrompt } from '../../api/ai_prompts';
+import SectionHeader from '../shared/SectionHeader';
 import DiagramUpload from '../shared/DiagramUpload';
 import AiPromptModal from '../shared/AiPromptModal';
 import toast from 'react-hot-toast';
@@ -11,6 +13,7 @@ interface ShutdownGanttSectionProps {
 }
 
 const ShutdownGanttSection: React.FC<ShutdownGanttSectionProps> = ({ projectId }) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [promptData, setPromptData] = useState<AiPromptResponse | null>(null);
@@ -44,6 +47,10 @@ const ShutdownGanttSection: React.FC<ShutdownGanttSectionProps> = ({ projectId }
     }
   };
 
+  const handleDelete = () => {
+    navigate(`/editor/${projectId}#cover`);
+  };
+
   if (loading) {
     return <div style={{ padding: '24px' }}>Loading...</div>;
   }
@@ -55,14 +62,13 @@ const ShutdownGanttSection: React.FC<ShutdownGanttSectionProps> = ({ projectId }
       borderRadius: '8px',
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
     }}>
-      <h2 style={{
-        fontSize: '24px',
-        fontWeight: 600,
-        color: '#1A1A2E',
-        marginBottom: '24px',
-      }}>
-        Shutdown Gantt Chart
-      </h2>
+      <SectionHeader
+        projectId={projectId}
+        sectionKey="shutdown_gantt"
+        title="Shutdown Gantt Chart"
+        showDeleteButton={true}
+        onDelete={handleDelete}
+      />
 
       {/* AI Prompt Generation Section */}
       <div style={{ marginBottom: '32px' }}>

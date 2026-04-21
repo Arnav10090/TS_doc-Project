@@ -4,6 +4,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { getProjectById } from '../api/projects'
 import { getAllSections } from '../api/sections'
 import { useProjectStore } from '../store/project.store'
+import { EditorProvider } from '../contexts/EditorContext'
 import Header from '../components/layout/Header'
 import SectionSidebar from '../components/layout/SectionSidebar'
 import SectionInputPanel from '../components/layout/SectionInputPanel'
@@ -242,6 +243,26 @@ const EditorPage = () => {
     }))
   }, [])
 
+  const refreshSections = useCallback(async () => {
+    if (!projectId) return;
+    
+    try {
+      // Reload all sections from the API
+      const sections = await getAllSections(projectId);
+      const visited = new Set(sections.map((s) => s.section_key));
+      setVisitedSections(visited);
+
+      // Rebuild section contents map
+      const contentsMap: Record<string, Record<string, any>> = {};
+      sections.forEach((section) => {
+        contentsMap[section.section_key] = section.content || {};
+      });
+      setSectionContents(contentsMap);
+    } catch (error) {
+      console.error('Error refreshing sections:', error);
+    }
+  }, [projectId]);
+
   const handleSidebarResizeStep = useCallback(
     (side: ResizablePanel, delta: number) => {
       if (isNarrowScreen) {
@@ -330,8 +351,9 @@ const EditorPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      <Header />
+    <EditorProvider refreshSections={refreshSections}>
+      <div className="min-h-screen bg-bg">
+        <Header />
       
       <div
         style={{
@@ -426,6 +448,7 @@ const EditorPage = () => {
           projectId={projectId} 
           activeSectionKey={activeSectionKey}
           onContentChange={handleSectionContentChange}
+          onRefresh={refreshSections}
           width={rightPanelWidth}
           leftOffset={leftSidebarWidth}
           isNarrowScreen={isNarrowScreen}
@@ -437,6 +460,7 @@ const EditorPage = () => {
         />
       </div>
     </div>
+    </EditorProvider>
   )
 }
 

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getSection } from '../../api/sections';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import { useProjectStore } from '../../store/project.store';
 import RichTextEditor from '../shared/RichTextEditor';
+import SectionHeader from '../shared/SectionHeader';
 import type { OverviewContent } from '../../types';
 
 interface OverviewSectionProps {
@@ -10,6 +12,7 @@ interface OverviewSectionProps {
 }
 
 const OverviewSection: React.FC<OverviewSectionProps> = ({ projectId }) => {
+  const navigate = useNavigate();
   const [content, setContent] = useState<OverviewContent>({
     system_objective: '',
     existing_system: '',
@@ -44,6 +47,11 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ projectId }) => {
     save(updated);
   };
 
+  const handleDelete = () => {
+    // Navigate back to project editor or another section
+    navigate(`/editor/${projectId}#cover`);
+  };
+
   if (loading) {
     return <div style={{ padding: '24px' }}>Loading...</div>;
   }
@@ -55,30 +63,14 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({ projectId }) => {
       borderRadius: '8px',
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
     }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '24px',
-      }}>
-        <h2 style={{
-          fontSize: '24px',
-          fontWeight: 600,
-          color: '#1A1A2E',
-          margin: 0,
-        }}>
-          Overview of {solutionName || 'Solution'}
-        </h2>
-        {status === 'saving' && (
-          <span style={{ color: '#6B7280', fontSize: '14px' }}>Saving...</span>
-        )}
-        {status === 'saved' && (
-          <span style={{ color: '#10B981', fontSize: '14px' }}>Saved ✓</span>
-        )}
-        {status === 'error' && (
-          <span style={{ color: '#E60012', fontSize: '14px' }}>Error saving</span>
-        )}
-      </div>
+      <SectionHeader
+        projectId={projectId}
+        sectionKey="overview"
+        title={`Overview of ${solutionName || 'Solution'}`}
+        showDeleteButton={true}
+        onDelete={handleDelete}
+        status={status}
+      />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
         {/* System Objective */}

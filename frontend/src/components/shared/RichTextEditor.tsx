@@ -42,7 +42,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
       }}>
         <button
           type="button"
-          onClick={() => editor.chain().focus().toggleBold().run()}
+          onClick={(e) => {
+            e.preventDefault();
+            editor.chain().focus().toggleBold().run();
+          }}
           className={editor.isActive('bold') ? 'active' : ''}
           style={{
             padding: '4px 8px',
@@ -52,12 +55,16 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
             cursor: 'pointer',
             fontWeight: 'bold',
           }}
+          title="Bold"
         >
           B
         </button>
         <button
           type="button"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
+          onClick={(e) => {
+            e.preventDefault();
+            editor.chain().focus().toggleItalic().run();
+          }}
           className={editor.isActive('italic') ? 'active' : ''}
           style={{
             padding: '4px 8px',
@@ -67,12 +74,16 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
             cursor: 'pointer',
             fontStyle: 'italic',
           }}
+          title="Italic"
         >
           I
         </button>
         <button
           type="button"
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          onClick={(e) => {
+            e.preventDefault();
+            editor.chain().focus().toggleUnderline().run();
+          }}
           className={editor.isActive('underline') ? 'active' : ''}
           style={{
             padding: '4px 8px',
@@ -82,12 +93,34 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
             cursor: 'pointer',
             textDecoration: 'underline',
           }}
+          title="Underline"
         >
           U
         </button>
         <button
           type="button"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          onClick={(e) => {
+            e.preventDefault();
+            const { state } = editor;
+            const { selection } = state;
+            const { $from } = selection;
+            
+            // Check if we're in a different type of list
+            const inOrderedList = editor.isActive('orderedList');
+            
+            if (inOrderedList) {
+              // If in ordered list, split out and create bullet list
+              editor.chain()
+                .focus()
+                .splitListItem('listItem')
+                .liftListItem('listItem')
+                .toggleBulletList()
+                .run();
+            } else {
+              // Just toggle bullet list normally
+              editor.chain().focus().toggleBulletList().run();
+            }
+          }}
           className={editor.isActive('bulletList') ? 'active' : ''}
           style={{
             padding: '4px 8px',
@@ -96,12 +129,34 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
             backgroundColor: editor.isActive('bulletList') ? '#FFF0F0' : '#FFFFFF',
             cursor: 'pointer',
           }}
+          title="Bullet List"
         >
           • List
         </button>
         <button
           type="button"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          onClick={(e) => {
+            e.preventDefault();
+            const { state } = editor;
+            const { selection } = state;
+            const { $from } = selection;
+            
+            // Check if we're in a different type of list
+            const inBulletList = editor.isActive('bulletList');
+            
+            if (inBulletList) {
+              // If in bullet list, split out and create ordered list
+              editor.chain()
+                .focus()
+                .splitListItem('listItem')
+                .liftListItem('listItem')
+                .toggleOrderedList()
+                .run();
+            } else {
+              // Just toggle ordered list normally
+              editor.chain().focus().toggleOrderedList().run();
+            }
+          }}
           className={editor.isActive('orderedList') ? 'active' : ''}
           style={{
             padding: '4px 8px',
@@ -110,12 +165,17 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
             backgroundColor: editor.isActive('orderedList') ? '#FFF0F0' : '#FFFFFF',
             cursor: 'pointer',
           }}
+          title="Numbered List"
         >
           1. List
         </button>
         <button
           type="button"
-          onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
+          onClick={(e) => {
+            e.preventDefault();
+            // Clear all content in the editor
+            editor.chain().focus().clearContent().run();
+          }}
           style={{
             padding: '4px 8px',
             border: '1px solid #E5E7EB',
@@ -123,6 +183,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
             backgroundColor: '#FFFFFF',
             cursor: 'pointer',
           }}
+          title="Clear All Content"
         >
           Clear
         </button>

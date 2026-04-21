@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getSection } from '../../api/sections';
+import SectionHeader from '../shared/SectionHeader';
 import LockedSection from '../shared/LockedSection';
 import { BINDING_CONDITIONS_CONTENT } from '../../constants/lockedSections';
 
@@ -8,6 +10,7 @@ interface BindingConditionsSectionProps {
 }
 
 const BindingConditionsSection: React.FC<BindingConditionsSectionProps> = ({ projectId }) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,6 +28,10 @@ const BindingConditionsSection: React.FC<BindingConditionsSectionProps> = ({ pro
     loadSection();
   }, [projectId]);
 
+  const handleDelete = () => {
+    navigate(`/editor/${projectId}#cover`);
+  };
+
   if (loading) {
     return <div style={{ padding: '24px' }}>Loading...</div>;
   }
@@ -36,14 +43,13 @@ const BindingConditionsSection: React.FC<BindingConditionsSectionProps> = ({ pro
       borderRadius: '8px',
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
     }}>
-      <h2 style={{
-        fontSize: '24px',
-        fontWeight: 600,
-        color: '#1A1A2E',
-        marginBottom: '24px',
-      }}>
-        Binding Conditions
-      </h2>
+      <SectionHeader
+        projectId={projectId}
+        sectionKey="binding_conditions"
+        title="Binding Conditions"
+        showDeleteButton={true}
+        onDelete={handleDelete}
+      />
 
       <LockedSection
         content={BINDING_CONDITIONS_CONTENT}

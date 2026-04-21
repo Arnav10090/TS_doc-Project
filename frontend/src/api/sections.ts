@@ -24,3 +24,12 @@ export const upsertSection = async (
   )
   return response.data
 }
+
+export const deleteSection = async (
+  projectId: string,
+  sectionKey: string
+): Promise<void> => {
+  await apiClient.delete(
+    `/api/v1/projects/${projectId}/sections/${sectionKey}`
+  )
+}
