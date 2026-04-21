@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getSection } from '../../api/sections';
 import { useAutoSave } from '../../hooks/useAutoSave';
+import SectionHeader from '../shared/SectionHeader';
 import type { IntroductionContent } from '../../types';
 
 interface IntroductionSectionProps {
@@ -12,6 +14,7 @@ const INTRODUCTION_TEXT = `This Technical Specification document has been prepar
 Hitachi India Pvt. Ltd. is pleased to present this comprehensive technical specification that demonstrates our understanding of the requirements and our capability to deliver a robust, scalable, and future-ready solution.`;
 
 const IntroductionSection: React.FC<IntroductionSectionProps> = ({ projectId }) => {
+  const navigate = useNavigate();
   const [content, setContent] = useState<IntroductionContent>({
     tender_reference: '',
     tender_date: '',
@@ -40,6 +43,10 @@ const IntroductionSection: React.FC<IntroductionSectionProps> = ({ projectId }) 
     const updated = { ...content, [field]: value };
     setContent(updated);
     save(updated);
+  };
+
+  const handleDelete = () => {
+    navigate(`/editor/${projectId}#cover`);
   };
 
   const renderIntroductionText = () => {
@@ -95,30 +102,14 @@ const IntroductionSection: React.FC<IntroductionSectionProps> = ({ projectId }) 
       borderRadius: '8px',
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
     }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '24px',
-      }}>
-        <h2 style={{
-          fontSize: '24px',
-          fontWeight: 600,
-          color: '#1A1A2E',
-          margin: 0,
-        }}>
-          Introduction
-        </h2>
-        {status === 'saving' && (
-          <span style={{ color: '#6B7280', fontSize: '14px' }}>Saving...</span>
-        )}
-        {status === 'saved' && (
-          <span style={{ color: '#10B981', fontSize: '14px' }}>Saved ✓</span>
-        )}
-        {status === 'error' && (
-          <span style={{ color: '#E60012', fontSize: '14px' }}>Error saving</span>
-        )}
-      </div>
+      <SectionHeader
+        projectId={projectId}
+        sectionKey="introduction"
+        title="Introduction"
+        showDeleteButton={true}
+        onDelete={handleDelete}
+        status={status}
+      />
 
       {/* Read-only introduction text with highlighted placeholders */}
       <div style={{

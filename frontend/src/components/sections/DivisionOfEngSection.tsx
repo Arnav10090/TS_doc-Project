@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getSection } from '../../api/sections';
 import { useAutoSave } from '../../hooks/useAutoSave';
+import SectionHeader from '../shared/SectionHeader';
 import { RESPONSIBILITY_MATRIX_CONTENT } from '../../constants/lockedSections';
 import { useProjectStore } from '../../store/project.store';
 import type { DivisionOfEngContent } from '../../types';
@@ -10,6 +12,7 @@ interface DivisionOfEngSectionProps {
 }
 
 const DivisionOfEngSection: React.FC<DivisionOfEngSectionProps> = ({ projectId }) => {
+  const navigate = useNavigate();
   const [content, setContent] = useState<DivisionOfEngContent>({
     training_days: '',
     training_persons: '',
@@ -41,6 +44,10 @@ const DivisionOfEngSection: React.FC<DivisionOfEngSectionProps> = ({ projectId }
     save(updated);
   };
 
+  const handleDelete = () => {
+    navigate(`/editor/${projectId}#cover`);
+  };
+
   // Resolve placeholders in content
   const resolveContent = (text: string): string => {
     return text.replace(/\{\{SolutionName\}\}/g, solutionName || '[Solution Name]');
@@ -59,30 +66,14 @@ const DivisionOfEngSection: React.FC<DivisionOfEngSectionProps> = ({ projectId }
       borderRadius: '8px',
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
     }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '24px',
-      }}>
-        <h2 style={{
-          fontSize: '24px',
-          fontWeight: 600,
-          color: '#1A1A2E',
-          margin: 0,
-        }}>
-          Division of Engineering Responsibility
-        </h2>
-        {status === 'saving' && (
-          <span style={{ color: '#6B7280', fontSize: '14px' }}>Saving...</span>
-        )}
-        {status === 'saved' && (
-          <span style={{ color: '#10B981', fontSize: '14px' }}>Saved ✓</span>
-        )}
-        {status === 'error' && (
-          <span style={{ color: '#E60012', fontSize: '14px' }}>Error saving</span>
-        )}
-      </div>
+      <SectionHeader
+        projectId={projectId}
+        sectionKey="division_of_eng"
+        title="Division of Engineering Responsibility"
+        showDeleteButton={true}
+        onDelete={handleDelete}
+        status={status}
+      />
 
       {/* Responsibility Matrix */}
       <div style={{ marginBottom: '32px' }}>

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getSection } from '../../api/sections';
 import { updateProject } from '../../api/projects';
 import { useAutoSave } from '../../hooks/useAutoSave';
+import SectionHeader from '../shared/SectionHeader';
 import type { CoverContent } from '../../types';
 
 interface CoverSectionProps {
@@ -10,6 +12,7 @@ interface CoverSectionProps {
 }
 
 const CoverSection: React.FC<CoverSectionProps> = ({ projectId, onContentChange }) => {
+  const navigate = useNavigate();
   const [content, setContent] = useState<CoverContent>({
     solution_full_name: '',
     client_name: '',
@@ -66,6 +69,10 @@ const CoverSection: React.FC<CoverSectionProps> = ({ projectId, onContentChange 
     }
   };
 
+  const handleDelete = () => {
+    navigate(`/editor/${projectId}#cover`);
+  };
+
   if (loading) {
     return <div style={{ padding: '24px' }}>Loading...</div>;
   }
@@ -77,30 +84,14 @@ const CoverSection: React.FC<CoverSectionProps> = ({ projectId, onContentChange 
       borderRadius: '8px',
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
     }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '24px',
-      }}>
-        <h2 style={{
-          fontSize: '24px',
-          fontWeight: 600,
-          color: '#1A1A2E',
-          margin: 0,
-        }}>
-          Cover Page
-        </h2>
-        {status === 'saving' && (
-          <span style={{ color: '#6B7280', fontSize: '14px' }}>Saving...</span>
-        )}
-        {status === 'saved' && (
-          <span style={{ color: '#10B981', fontSize: '14px' }}>Saved ✓</span>
-        )}
-        {status === 'error' && (
-          <span style={{ color: '#E60012', fontSize: '14px' }}>Error saving</span>
-        )}
-      </div>
+      <SectionHeader
+        projectId={projectId}
+        sectionKey="cover"
+        title="Cover Page"
+        showDeleteButton={false}
+        onDelete={handleDelete}
+        status={status}
+      />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {/* Solution Full Name */}

@@ -39,6 +39,7 @@ interface SectionInputPanelProps {
   projectId: string;
   activeSectionKey: string;
   onContentChange?: (sectionKey: string, content: Record<string, any>) => void;
+  onRefresh?: () => void;
   width: number;
   leftOffset: number;
   isNarrowScreen: boolean;
