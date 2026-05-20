@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from uuid import UUID
+import re
 
 from app.database import get_db
 from app.sections import service
@@ -13,7 +14,7 @@ from app.sections.schemas import SectionDataCreate, SectionDataResponse
 
 router = APIRouter(prefix="/api/v1/projects", tags=["sections"])
 
-# All 31 valid section keys
+# All 31 valid predefined section keys
 VALID_SECTION_KEYS = [
     "cover",
     "revision_history",
@@ -48,6 +49,35 @@ VALID_SECTION_KEYS = [
     "poc",
 ]
 
+# Regex patterns for custom section keys
+CUSTOM_SECTION_PATTERN = re.compile(r'^custom_section_\d+_[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$')
+CUSTOM_SUBSECTION_PATTERN = re.compile(r'^custom_subsection_\d+_[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$')
+
+
+def is_valid_section_key(section_key: str) -> bool:
+    """
+    Validate section key against predefined keys and custom patterns.
+    
+    Args:
+        section_key: The section key to validate
+        
+    Returns:
+        True if the key is valid (predefined or matches custom pattern), False otherwise
+    """
+    # Check if it's a predefined section key
+    if section_key in VALID_SECTION_KEYS:
+        return True
+    
+    # Check if it matches custom section pattern
+    if CUSTOM_SECTION_PATTERN.match(section_key):
+        return True
+    
+    # Check if it matches custom subsection pattern
+    if CUSTOM_SUBSECTION_PATTERN.match(section_key):
+        return True
+    
+    return False
+
 
 @router.get("/{project_id}/sections", response_model=List[SectionDataResponse])
 async def get_all_sections(project_id: UUID, db: AsyncSession = Depends(get_db)):
@@ -70,10 +100,10 @@ async def get_section(
     project_id: UUID, section_key: str, db: AsyncSession = Depends(get_db)
 ):
     """Get a single section by key. Auto-creates with empty content if it doesn't exist."""
-    if section_key not in VALID_SECTION_KEYS:
+    if not is_valid_section_key(section_key):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid section_key. Must be one of: {', '.join(VALID_SECTION_KEYS)}",
+            detail=f"Invalid section_key. Must be one of the predefined keys ({', '.join(VALID_SECTION_KEYS)}) or match custom section pattern (custom_section_{{timestamp}}_{{uuid}} or custom_subsection_{{timestamp}}_{{uuid}})",
         )
     
     section = await service.get_section(db, project_id, section_key)
@@ -94,10 +124,10 @@ async def upsert_section(
     db: AsyncSession = Depends(get_db),
 ):
     """Create or update section data."""
-    if section_key not in VALID_SECTION_KEYS:
+    if not is_valid_section_key(section_key):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid section_key. Must be one of: {', '.join(VALID_SECTION_KEYS)}",
+            detail=f"Invalid section_key. Must be one of the predefined keys ({', '.join(VALID_SECTION_KEYS)}) or match custom section pattern (custom_section_{{timestamp}}_{{uuid}} or custom_subsection_{{timestamp}}_{{uuid}})",
         )
     
     section = await service.upsert_section(
@@ -119,10 +149,10 @@ async def delete_section(
     db: AsyncSession = Depends(get_db),
 ):
     """Delete a section by key."""
-    if section_key not in VALID_SECTION_KEYS:
+    if not is_valid_section_key(section_key):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid section_key. Must be one of: {', '.join(VALID_SECTION_KEYS)}",
+            detail=f"Invalid section_key. Must be one of the predefined keys ({', '.join(VALID_SECTION_KEYS)}) or match custom section pattern (custom_section_{{timestamp}}_{{uuid}} or custom_subsection_{{timestamp}}_{{uuid}})",
         )
     
     # Prevent deletion of cover section

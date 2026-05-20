@@ -4,6 +4,8 @@ import CompletionBadge from '../shared/CompletionBadge';
 import { generateDocument } from '../../api/generation';
 import { handleDocumentDownload } from '../../utils/downloadHelper';
 import toast from 'react-hot-toast';
+import { isCustomSectionKey } from '../../utils/customSectionUtils';
+import { CustomSectionContent } from '../../types/customSections';
 
 interface SectionSidebarProps {
   projectId: string;
@@ -114,16 +116,32 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [missingSections, setMissingSections] = useState<string[]>([]);
 
-  // Calculate completion statistics (27 completable sections)
+  // Filter custom sections from sectionContents
+  const customSections: Array<{ key: string; title: string }> = [];
+  if (sectionContents) {
+    Object.entries(sectionContents).forEach(([key, content]) => {
+      if (isCustomSectionKey(key)) {
+        const customContent = content as CustomSectionContent;
+        customSections.push({
+          key,
+          title: customContent.title || 'NEW SECTION'
+        });
+      }
+    });
+  }
+
+  // Calculate completion statistics (27 completable sections, excluding custom sections)
   const completedCount = Object.entries(sectionCompletion).filter(
     ([key, isComplete]) => {
       // Exclude 4 auto-complete sections from count
       const excludedSections = ['binding_conditions', 'cybersecurity', 'disclaimer', 'scope_definitions'];
-      return !excludedSections.includes(key) && isComplete;
+      // Exclude custom sections from completion count
+      return !excludedSections.includes(key) && !isCustomSectionKey(key) && isComplete;
     }
   ).length;
 
-  const totalCompletable = sectionContents ? Object.keys(sectionContents).length - 4 : 27;
+  // Always use 27 as the total completable sections (predefined only)
+  const totalCompletable = 27;
   const completionPercentage = Math.round((completedCount / totalCompletable) * 100);
 
   const getSectionStatus = (sectionKey: string): 'complete' | 'visited' | 'not_started' => {
@@ -360,6 +378,78 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
             </div>
           );
         })}
+
+        {/* CUSTOM SECTIONS Group */}
+        {customSections.length > 0 && (
+          <div>
+            <div
+              style={{
+                padding: '8px 16px 8px',
+                fontSize: '11px',
+                fontWeight: 700,
+                color: '#6B7280',
+                letterSpacing: '0.5px',
+                textTransform: 'uppercase',
+              }}
+            >
+              CUSTOM SECTIONS
+            </div>
+            {customSections.map((section) => {
+              const isActive = activeSectionKey === section.key;
+
+              return (
+                <button
+                  key={section.key}
+                  onClick={() => onSectionClick(section.key)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px',
+                    border: 'none',
+                    backgroundColor: isActive ? '#FFF0F0' : 'transparent',
+                    borderLeft: isActive ? '3px solid #E60012' : '3px solid transparent',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = '#F5F7FA';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      flex: 1,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '13px',
+                        fontWeight: isActive ? 600 : 500,
+                        color: isActive ? '#E60012' : '#1A1A2E',
+                      }}
+                    >
+                      {section.title}
+                    </span>
+                  </div>
+                  {/* No completion badge for custom sections */}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Missing Sections Alert */}

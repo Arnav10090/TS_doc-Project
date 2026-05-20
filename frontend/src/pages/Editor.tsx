@@ -119,6 +119,7 @@ const EditorPage = () => {
   const [loading, setLoading] = useState(true)
   const [visitedSections, setVisitedSections] = useState<Set<string>>(new Set())
   const [activeSectionKey, setActiveSectionKey] = useState<string>('cover')
+  const [activeSubsectionKey, setActiveSubsectionKey] = useState<string | null>(null)
   const [showPreview, setShowPreview] = useState(true)
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window === 'undefined' ? 1440 : window.innerWidth
@@ -133,6 +134,10 @@ const EditorPage = () => {
   )
   const [resizingPanel, setResizingPanel] = useState<ResizablePanel | null>(null)
   const resizeCleanupRef = useRef<(() => void) | null>(null)
+  const pendingSubsectionSelectionRef = useRef<{
+    sectionKey: string
+    subsectionKey: string
+  } | null>(null)
 
   useEffect(() => {
     if (!projectId) return
@@ -225,16 +230,50 @@ const EditorPage = () => {
   // Extract active section from URL hash or default to 'cover'
   useEffect(() => {
     const hash = location.hash.replace('#', '')
+    const pendingSubsectionSelection = pendingSubsectionSelectionRef.current
+
     if (hash) {
       setActiveSectionKey(hash)
+      if (pendingSubsectionSelection?.sectionKey === hash) {
+        setActiveSubsectionKey(pendingSubsectionSelection.subsectionKey)
+      } else {
+        setActiveSubsectionKey(null)
+      }
     } else {
       setActiveSectionKey('cover')
+      setActiveSubsectionKey(null)
     }
+
+    pendingSubsectionSelectionRef.current = null
   }, [location.hash])
 
   const handleSectionClick = (sectionKey: string) => {
+    pendingSubsectionSelectionRef.current = null
+    setActiveSectionKey(sectionKey)
+    setActiveSubsectionKey(null)
     navigate(`/editor/${projectId}#${sectionKey}`)
   }
+
+  const handleSubsectionClick = useCallback(
+    (sectionKey: string, subsectionKey: string) => {
+      const currentHash = location.hash.replace('#', '')
+
+      setActiveSectionKey(sectionKey)
+      setActiveSubsectionKey(subsectionKey)
+
+      if (currentHash === sectionKey) {
+        pendingSubsectionSelectionRef.current = null
+        return
+      }
+
+      pendingSubsectionSelectionRef.current = {
+        sectionKey,
+        subsectionKey,
+      }
+      navigate(`/editor/${projectId}#${sectionKey}`)
+    },
+    [location.hash, navigate, projectId]
+  )
 
   const handleSectionContentChange = useCallback((sectionKey: string, content: Record<string, any>) => {
     setSectionContents((prev) => ({
@@ -415,8 +454,10 @@ const EditorPage = () => {
             <DocumentPreview 
               projectId={projectId} 
               activeSectionKey={activeSectionKey}
+              activeSubsectionKey={activeSubsectionKey}
               sectionContents={sectionContents}
               onSectionClick={handleSectionClick}
+              onSubsectionClick={handleSubsectionClick}
             />
           </div>
         )}
@@ -448,7 +489,11 @@ const EditorPage = () => {
         <SectionInputPanel 
           projectId={projectId} 
           activeSectionKey={activeSectionKey}
+          activeSubsectionKey={activeSubsectionKey}
+          sectionContents={sectionContents}
           onContentChange={handleSectionContentChange}
+          onSectionNavigate={handleSectionClick}
+          onSubsectionSelect={setActiveSubsectionKey}
           onRefresh={refreshSections}
           width={rightPanelWidth}
           leftOffset={leftSidebarWidth}

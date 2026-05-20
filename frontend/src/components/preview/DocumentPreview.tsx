@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getImages } from "../../api/images";
 import { useProjectStore } from "../../store/project.store";
+import { useEditor } from "../../contexts/EditorContext";
 import {
   BINDING_CONDITIONS_PARAGRAPHS,
   BUYER_OBLIGATION_ITEMS,
@@ -19,12 +20,31 @@ import {
   WORK_COMPLETION_CRITERIA,
   WORK_COMPLETION_PARAGRAPHS,
 } from "./templateContent";
+import PageBreakWithButton from "./PageBreakWithButton";
+import SectionTypeModal from "../modals/SectionTypeModal";
+import {
+  CustomSectionContent,
+  CustomSubsection,
+  getImageItems,
+  getParagraphItems,
+  getTableItems,
+  isTableData,
+  isImageData,
+  isParagraphData,
+} from "../../types/customSections";
+import {
+  isCustomSectionKey,
+  generateTableHTML,
+  generateCustomSectionKey,
+} from "../../utils/customSectionUtils";
 
 interface DocumentPreviewProps {
   projectId: string;
   activeSectionKey: string | null;
+  activeSubsectionKey?: string | null;
   sectionContents: Record<string, Record<string, any>>;
   onSectionClick?: (sectionKey: string) => void;
+  onSubsectionClick?: (sectionKey: string, subsectionKey: string) => void;
 }
 
 type PreviewImageType = "architecture" | "gantt_overall" | "gantt_shutdown";
@@ -71,38 +91,6 @@ const resolveTemplateText = (
 const filterFilledItems = (items?: string[]) =>
   (items || []).map((item) => item.trim()).filter(Boolean);
 
-const PageBreak: React.FC = () => (
-  <div
-    className="page-break"
-    style={{
-      pageBreakAfter: "always",
-      breakAfter: "page",
-      height: "48px",
-      margin: "48px -97px",
-      backgroundColor: "#E8E8E8",
-      borderTop: "1px solid #D1D5DB",
-      borderBottom: "1px solid #D1D5DB",
-      position: "relative",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      boxShadow: "inset 0 2px 4px rgba(0, 0, 0, 0.06)",
-    }}
-  >
-    <span
-      style={{
-        fontSize: "10px",
-        color: "#9CA3AF",
-        fontStyle: "italic",
-        fontWeight: 500,
-        letterSpacing: "2px",
-      }}
-    >
-      • • •
-    </span>
-  </div>
-);
-
 const SectionWrapper: React.FC<SectionWrapperProps> = ({
   isActive,
   isHovered,
@@ -122,6 +110,7 @@ const SectionWrapper: React.FC<SectionWrapperProps> = ({
   >
     {isHovered && !isActive && (
       <div
+        className="section-hover-indicator"
         style={{
           position: "absolute",
           top: "4px",
@@ -141,7 +130,14 @@ const SectionWrapper: React.FC<SectionWrapperProps> = ({
 );
 
 const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
-  ({ projectId, activeSectionKey, sectionContents, onSectionClick }) => {
+  ({
+    projectId,
+    activeSectionKey,
+    activeSubsectionKey,
+    sectionContents,
+    onSectionClick,
+    onSubsectionClick,
+  }) => {
     const {
       solutionName,
       solutionFullName,
@@ -150,6 +146,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       sectionCompletion,
     } = useProjectStore();
 
+    const { refreshSections } = useEditor();
+
     const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const [hoveredSection, setHoveredSection] = useState<string | null>(null);
     const [imageUrls, setImageUrls] = useState<PreviewImageMap>({});
@@ -157,6 +155,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       const saved = localStorage.getItem("documentPreviewZoom");
       return saved ? parseFloat(saved) : 1;
     });
+
+    // State for Section Type Modal
+    const [isSectionTypeModalOpen, setIsSectionTypeModalOpen] = useState(false);
+    const [pendingInsertAfterKey, setPendingInsertAfterKey] = useState<string>('');
 
     // Counter management for section and subsection numbering
     const sectionCounter = useRef<number>(0);
@@ -186,10 +188,14 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
 
     useEffect(() => {
       if (activeSectionKey && sectionRefs.current[activeSectionKey]) {
-        sectionRefs.current[activeSectionKey]?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
+        const activeSectionElement = sectionRefs.current[activeSectionKey];
+
+        if (typeof activeSectionElement?.scrollIntoView === "function") {
+          activeSectionElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
       }
     }, [activeSectionKey]);
 
@@ -457,7 +463,87 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       ].filter(Boolean);
     }, [exclusionCustom]);
 
+    // Separate custom sections from predefined sections
+    const { customSections } = useMemo(() => {
+      const predefined: Record<string, Record<string, any>> = {};
+      const custom: Record<string, CustomSectionContent> = {};
+
+      Object.entries(sectionContents).forEach(([key, content]) => {
+        if (isCustomSectionKey(key)) {
+          custom[key] = content as CustomSectionContent;
+        } else {
+          predefined[key] = content;
+        }
+      });
+
+      return { predefinedSections: predefined, customSections: custom };
+    }, [sectionContents]);
+
+    const getCustomSectionsAfter = (afterKey: string) =>
+      Object.entries(customSections).filter(
+        ([_, content]) => content.insertAfterKey === afterKey,
+      );
+
+    const isInlineSubsectionSection = (content: CustomSectionContent) =>
+      content.displayMode === 'subsection';
+
+    // Inline subsections stay on the current page; only full sections get a page break.
+    const renderInsertionsAfter = (
+      afterKey: string,
+      appendBreakAfterLast: boolean = true,
+    ) => {
+      const sectionsToRender = getCustomSectionsAfter(afterKey);
+      const inlineSections = sectionsToRender.filter(([_, content]) =>
+        isInlineSubsectionSection(content),
+      );
+      const topLevelSections = sectionsToRender.filter(
+        ([_, content]) => !isInlineSubsectionSection(content),
+      );
+
+      if (sectionsToRender.length === 0) {
+        return appendBreakAfterLast ? (
+          <PageBreakWithButton
+            insertAfterKey={afterKey}
+            onAddClick={handleAddSectionClick}
+          />
+        ) : null;
+      }
+
+      return (
+        <>
+          {inlineSections.map(([sectionKey]) => (
+            <React.Fragment key={sectionKey}>
+              {renderInlineCustomSubsectionSection(sectionKey, sectionCounter.current)}
+              {renderInsertionsAfter(sectionKey, false)}
+            </React.Fragment>
+          ))}
+          {(topLevelSections.length > 0 || appendBreakAfterLast) && (
+            <PageBreakWithButton
+              insertAfterKey={afterKey}
+              onAddClick={handleAddSectionClick}
+            />
+          )}
+          {topLevelSections.map(([sectionKey], index) => {
+            const sectionNumber = getNextSectionNumber();
+            const hasFollowingSibling = index < topLevelSections.length - 1;
+
+            return (
+              <React.Fragment key={sectionKey}>
+                {renderCustomSection(sectionKey, sectionNumber)}
+                {renderInsertionsAfter(
+                  sectionKey,
+                  hasFollowingSibling || appendBreakAfterLast,
+                )}
+              </React.Fragment>
+            );
+          })}
+        </>
+      );
+    };
+
     const isActive = (sectionKey: string) => activeSectionKey === sectionKey;
+    const isActiveSubsection = (subsectionKey: string) =>
+      activeSubsectionKey === subsectionKey;
 
     const sectionStyle = (sectionKey: string): React.CSSProperties => ({
       position: "relative",
@@ -489,6 +575,19 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
         sectionKey === "cover" && {
           opacity: 0.9,
         }),
+    });
+
+    const subsectionStyle = (subsectionKey: string): React.CSSProperties => ({
+      position: "relative",
+      cursor: onSubsectionClick || onSectionClick ? "pointer" : "default",
+      padding: "8px 12px",
+      margin: "0 -12px 16px",
+      borderRadius: "4px",
+      transition: "all 0.2s ease",
+      ...(isActiveSubsection(subsectionKey) && {
+        background: "#FFF5F5",
+        outline: "2px solid #E60012",
+      }),
     });
 
     // ─── STYLE CONSTANTS (updated to match TS_Template_original.docx) ───────
@@ -721,6 +820,130 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       }
     };
 
+    const handleSubsectionClick = (
+      sectionKey: string,
+      subsectionKey: string,
+      event?: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>,
+    ) => {
+      event?.stopPropagation();
+
+      if (onSubsectionClick) {
+        onSubsectionClick(sectionKey, subsectionKey);
+        return;
+      }
+
+      handleSectionClick(sectionKey);
+    };
+
+    const handleAddSectionClick = (insertAfterKey: string) => {
+      setPendingInsertAfterKey(insertAfterKey);
+      setIsSectionTypeModalOpen(true);
+    };
+
+    const handleCreateSection = async (insertAfterKey: string) => {
+      const newSectionKey = generateCustomSectionKey();
+      const newSection: CustomSectionContent = {
+        title: '',
+        subsections: [],
+        insertAfterKey,
+        displayMode: 'section',
+      };
+
+      try {
+        const { upsertSection } = await import('../../api/sections');
+        await upsertSection(projectId, newSectionKey, newSection);
+        await refreshSections();
+
+        if (onSectionClick) {
+          onSectionClick(newSectionKey);
+        }
+
+        const toast = (await import('react-hot-toast')).default;
+        toast.success('New section created! Add a title to get started.');
+      } catch (error) {
+        console.error('Failed to create section:', error);
+        const toast = (await import('react-hot-toast')).default;
+        toast.error('Failed to create section');
+        throw error;
+      }
+    };
+
+    const handleCreateSubsection = async (
+      parentSectionKey: string,
+      subsection: CustomSubsection,
+    ) => {
+      const parentSection = customSections[parentSectionKey];
+
+      if (!parentSection) {
+        const inlineSubsectionKey = generateCustomSectionKey();
+        const inlineSubsectionSection: CustomSectionContent = {
+          title: '',
+          subsections: [subsection],
+          insertAfterKey: parentSectionKey,
+          displayMode: 'subsection',
+        };
+
+        try {
+          const { upsertSection } = await import('../../api/sections');
+          await upsertSection(projectId, inlineSubsectionKey, inlineSubsectionSection);
+          await refreshSections();
+
+          if (onSectionClick) {
+            onSectionClick(inlineSubsectionKey);
+          }
+
+          const toast = (await import('react-hot-toast')).default;
+          const contentLabel =
+            subsection.contentType === 'table'
+              ? 'Table'
+              : subsection.contentType === 'image'
+                ? 'Image'
+                : 'Paragraph';
+          toast.success(`${contentLabel} subsection created successfully.`);
+        } catch (error) {
+          console.error('Failed to create subsection:', error);
+          const toast = (await import('react-hot-toast')).default;
+          toast.error('Failed to create subsection');
+          throw error;
+        }
+        return;
+      }
+
+      const updatedSection: CustomSectionContent = {
+        ...parentSection,
+        subsections: [...parentSection.subsections, subsection],
+      };
+
+      try {
+        const { upsertSection } = await import('../../api/sections');
+        await upsertSection(projectId, parentSectionKey, updatedSection);
+        await refreshSections();
+
+        if (onSectionClick) {
+          onSectionClick(parentSectionKey);
+        }
+
+        const toast = (await import('react-hot-toast')).default;
+        const contentLabel =
+          subsection.contentType === 'table'
+            ? 'Table'
+            : subsection.contentType === 'image'
+              ? 'Image'
+              : 'Paragraph';
+        toast.success(`${contentLabel} subsection created successfully.`);
+      } catch (error) {
+        console.error('Failed to create subsection:', error);
+        const toast = (await import('react-hot-toast')).default;
+        toast.error('Failed to create subsection');
+        throw error;
+      }
+    };
+
+    const handleCloseModal = () => {
+      setIsSectionTypeModalOpen(false);
+      setPendingInsertAfterKey('');
+    };
+
     // Helper functions for section and subsection numbering
     const resetCounters = () => {
       sectionCounter.current = 0;
@@ -742,6 +965,176 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       return `${number} ${text}`;
     };
 
+    // Custom section rendering functions
+    const renderCustomSubsectionContent = (subsection: CustomSubsection) => {
+      const { contentType, data } = subsection;
+
+      if (contentType === 'table' && isTableData(data)) {
+        const tables = getTableItems(data);
+        if (tables.length === 0) {
+          return null;
+        }
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {tables.map((table, index) => (
+              <div
+                key={index}
+                dangerouslySetInnerHTML={{ __html: generateTableHTML(table) }}
+                style={{ marginBottom: '16px' }}
+              />
+            ))}
+          </div>
+        );
+      }
+
+      if (contentType === 'image' && isImageData(data)) {
+        const images = getImageItems(data);
+        if (images.length === 0) {
+          return null;
+        }
+
+        return (
+          <div
+            style={{
+              marginBottom: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}
+          >
+            {images.map((image, index) => (
+              <img
+                key={`${image.filename}-${index}`}
+                src={image.base64}
+                alt={image.filename}
+                style={{
+                  maxWidth: '100%',
+                  height: 'auto',
+                  display: 'block',
+                  alignSelf: 'center',
+                }}
+              />
+            ))}
+          </div>
+        );
+      }
+
+      if (contentType === 'paragraph' && isParagraphData(data)) {
+        const paragraphs = getParagraphItems(data);
+        if (paragraphs.length === 0) {
+          return null;
+        }
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {paragraphs.map((paragraph, index) => (
+              <div
+                key={index}
+                dangerouslySetInnerHTML={{ __html: paragraph.html }}
+                style={{
+                  marginBottom: '16px',
+                  textAlign: 'justify',
+                }}
+              />
+            ))}
+          </div>
+        );
+      }
+
+      return null;
+    };
+
+    const renderCustomSubsection = (
+      sectionKey: string,
+      subsection: CustomSubsection,
+      sectionNumber: number,
+      subsectionNumber: number
+    ) => {
+      return (
+        <div
+          key={subsection.key}
+          role="button"
+          tabIndex={0}
+          style={subsectionStyle(subsection.key)}
+          onClick={(event) =>
+            handleSubsectionClick(sectionKey, subsection.key, event)
+          }
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handleSubsectionClick(sectionKey, subsection.key, event);
+            }
+          }}
+        >
+          <h2 style={heading2BlackStyle}>
+            {sectionNumber}.{subsectionNumber} {subsection.name}
+          </h2>
+          {renderCustomSubsectionContent(subsection)}
+        </div>
+      );
+    };
+
+    const renderCustomSection = (
+      sectionKey: string,
+      sectionNumber: number
+    ) => {
+      const content = customSections[sectionKey];
+      if (!content) return null;
+
+      return (
+        <SectionWrapper
+          key={sectionKey}
+          sectionKey={sectionKey}
+          isActive={isActive(sectionKey)}
+          isHovered={hoveredSection === sectionKey}
+          onMouseEnter={() => setHoveredSection(sectionKey)}
+          onMouseLeave={() => setHoveredSection(null)}
+          onClick={() => handleSectionClick(sectionKey)}
+          sectionRef={(el) => (sectionRefs.current[sectionKey] = el)}
+          style={sectionStyle(sectionKey)}
+        >
+          <h1 style={heading1RedStyle}>
+            {sectionNumber}. {content.title || 'NEW SECTION'}
+          </h1>
+          {content.subsections.map((subsection, index) =>
+            renderCustomSubsection(sectionKey, subsection, sectionNumber, index + 1)
+          )}
+        </SectionWrapper>
+      );
+    };
+
+    const renderInlineCustomSubsectionSection = (
+      sectionKey: string,
+      sectionNumber: number,
+    ) => {
+      const content = customSections[sectionKey];
+      if (!content) return null;
+
+      return (
+        <SectionWrapper
+          key={sectionKey}
+          sectionKey={sectionKey}
+          isActive={isActive(sectionKey)}
+          isHovered={hoveredSection === sectionKey}
+          onMouseEnter={() => setHoveredSection(sectionKey)}
+          onMouseLeave={() => setHoveredSection(null)}
+          onClick={() => handleSectionClick(sectionKey)}
+          sectionRef={(el) => (sectionRefs.current[sectionKey] = el)}
+          style={sectionStyle(sectionKey)}
+        >
+          {content.subsections.map((subsection) =>
+            renderCustomSubsection(
+              sectionKey,
+              subsection,
+              sectionNumber,
+              getNextSubsectionNumber(),
+            ),
+          )}
+        </SectionWrapper>
+      );
+    };
+
     // Reset counters at the start of each render
     resetCounters();
 
@@ -761,6 +1154,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               top: 0;
             }
             .preview-toolbar, .completion-badge {
+              display: none !important;
+            }
+            /* Hide Add Section buttons in print mode */
+            .page-break-with-button, .add-section-button {
               display: none !important;
             }
             /* Ensure page breaks work in print and hide visual indicator */
@@ -1026,7 +1423,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
 
               {/* Page Break: End of Page 1 (Cover) */}
-              {sectionExists('revision_history') && <PageBreak />}
+              {sectionExists('revision_history') && renderInsertionsAfter('cover')}
 
               {/* ── REVISION HISTORY ── */}
               {sectionExists('revision_history') && (
@@ -1125,7 +1522,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </div>
 
               {/* Page Break: End of Page 2-4 (Revision History / Legal / TOC) */}
-              {sectionExists('executive_summary') && <PageBreak />}
+              {sectionExists('executive_summary') &&
+                renderInsertionsAfter('revision_history')}
 
               {/* ── EXECUTIVE SUMMARY ── */}
               <SectionWrapper
@@ -1182,8 +1580,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
 
               {/* Page Break: End of Page 5 (Executive Summary) */}
-              {(sectionExists('introduction') || sectionExists('abbreviations') || 
-                sectionExists('process_flow') || sectionExists('overview')) && <PageBreak />}
+              {(sectionExists('introduction') || sectionExists('abbreviations') ||
+                sectionExists('process_flow') || sectionExists('overview')) &&
+                renderInsertionsAfter('executive_summary')}
 
               {/* ── GENERAL OVERVIEW heading (Heading 1, #EE0000) ── */}
               {(sectionExists('introduction') || sectionExists('abbreviations') || 
@@ -1423,7 +1822,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionExists("documentation_control") ||
                 sectionExists("customer_training") ||
                 sectionExists("system_config") ||
-                sectionExists("fat_condition")) && <PageBreak />}
+                sectionExists("fat_condition")) &&
+                renderInsertionsAfter('overview')}
 
               {/* ── OFFERINGS heading (Heading 1, #EE0000) ── */}
               {(sectionExists("features") ||
@@ -1657,7 +2057,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* Page Break: End of Page 9-11 (Offerings) */}
-              {sectionExists('tech_stack') && <PageBreak />}
+              {sectionExists('tech_stack') && renderInsertionsAfter('fat_condition')}
 
               {/* ── TECHNOLOGY STACK (Heading 1, #EE0000) ── */}
               {sectionExists('tech_stack') && (
@@ -1991,7 +2391,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {/* Page Break: End of Page 12-14 (Technology Stack) */}
               {(sectionExists("overall_gantt") ||
                 sectionExists("shutdown_gantt") ||
-                sectionExists("supervisors")) && <PageBreak />}
+                sectionExists("supervisors")) &&
+                renderInsertionsAfter('third_party_sw')}
 
               {/* ── SCHEDULE (Heading 1, #EE0000) ── */}
               {(sectionExists("overall_gantt") ||
@@ -2115,11 +2516,12 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* Page Break: End of Page 15 (Schedule) */}
-              {(sectionExists('scope_definitions') || sectionExists('division_of_eng') || 
-                sectionExists('value_addition') || sectionExists('work_completion') || 
-                sectionExists('buyer_obligations') || sectionExists('exclusion_list') || 
-                sectionExists('buyer_prerequisites') || sectionExists('binding_conditions') || 
-                sectionExists('cybersecurity')) && <PageBreak />}
+              {(sectionExists('scope_definitions') || sectionExists('division_of_eng') ||
+                sectionExists('value_addition') || sectionExists('work_completion') ||
+                sectionExists('buyer_obligations') || sectionExists('exclusion_list') ||
+                sectionExists('buyer_prerequisites') || sectionExists('binding_conditions') ||
+                sectionExists('cybersecurity')) &&
+                renderInsertionsAfter('supervisors')}
 
               {/* ── SCOPE OF SUPPLY (Heading 1, #EE0000) ── */}
               {(sectionExists('scope_definitions') || sectionExists('division_of_eng') || 
@@ -2455,7 +2857,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* Page Break: End of Page 16-23 (Scope of Supply) */}
-              {sectionExists('disclaimer') && <PageBreak />}
+              {sectionExists('disclaimer') &&
+                renderInsertionsAfter('cybersecurity')}
 
               {/* ── DISCLAIMER (Heading 1, #4F81BD) ── */}
               {sectionExists('disclaimer') && (
@@ -2491,7 +2894,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* Page Break: End of Page 24-25 (Disclaimer) */}
-              {sectionExists('poc') && <PageBreak />}
+              {sectionExists('poc') && renderInsertionsAfter('disclaimer')}
 
               {/* ── PROOF OF CONCEPT (Heading 1, #4F81BD) ── */}
               {sectionExists('poc') && (
@@ -2530,6 +2933,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
+              {/* Render custom sections after poc (last section) */}
+              {renderInsertionsAfter('poc', false)}
+
               <p
                 style={{
                   marginTop: "36px",
@@ -2543,6 +2949,19 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
             </div>
           </div>
         </div>
+
+        {/* Section Type Modal */}
+        <SectionTypeModal
+          isOpen={isSectionTypeModalOpen}
+          insertAfterKey={pendingInsertAfterKey}
+          availableCustomSections={Object.entries(customSections).map(([key, content]) => ({
+            key,
+            title: content.title || 'NEW SECTION',
+          }))}
+          onClose={handleCloseModal}
+          onCreateSection={handleCreateSection}
+          onCreateSubsection={handleCreateSubsection}
+        />
       </>
     );
   },

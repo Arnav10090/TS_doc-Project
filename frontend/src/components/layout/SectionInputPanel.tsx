@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { isCustomSectionKey } from '../../utils/customSectionUtils';
+import CustomSectionInput from '../input/CustomSectionInput';
+import type { CustomSectionContent } from '../../types/customSections';
 
 // Import all 31 section components
 import {
@@ -38,7 +41,11 @@ import {
 interface SectionInputPanelProps {
   projectId: string;
   activeSectionKey: string;
+  activeSubsectionKey?: string | null;
+  sectionContents: Record<string, Record<string, any>>;
   onContentChange?: (sectionKey: string, content: Record<string, any>) => void;
+  onSectionNavigate?: (sectionKey: string) => void;
+  onSubsectionSelect?: (subsectionKey: string | null) => void;
   onRefresh?: () => void;
   width: number;
   leftOffset: number;
@@ -122,7 +129,11 @@ const SECTION_NAMES: Record<string, string> = {
 const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
   projectId,
   activeSectionKey,
+  activeSubsectionKey,
+  sectionContents,
   onContentChange,
+  onSectionNavigate,
+  onSubsectionSelect,
   width,
   leftOffset,
   isNarrowScreen,
@@ -132,8 +143,38 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
   onResizeStep,
   resizeKeyboardStep = 16,
 }) => {
-  const SectionComponent = SECTION_COMPONENTS[activeSectionKey] || SECTION_COMPONENTS['cover'];
-  const sectionName = SECTION_NAMES[activeSectionKey] || 'Section';
+  // Check if this is a custom section
+  const isCustomSection = isCustomSectionKey(activeSectionKey);
+  const customSectionContent = isCustomSection
+    ? (sectionContents[activeSectionKey] as CustomSectionContent | undefined)
+    : undefined;
+
+  useEffect(() => {
+    if (isCustomSection && !customSectionContent) {
+      onSectionNavigate?.('cover');
+    }
+  }, [customSectionContent, isCustomSection, onSectionNavigate]);
+  
+  // Get section name
+  const getSectionName = () => {
+    if (isCustomSection) {
+      if (customSectionContent?.displayMode === 'subsection') {
+        return customSectionContent.subsections[0]?.name || 'New Subsection';
+      }
+
+      const selectedSubsection = customSectionContent?.subsections.find(
+        (subsection) => subsection.key === activeSubsectionKey,
+      );
+      if (selectedSubsection) {
+        return selectedSubsection.name || 'New Subsection';
+      }
+
+      return customSectionContent?.title || 'New Section';
+    }
+    return SECTION_NAMES[activeSectionKey] || 'Section';
+  };
+
+  const sectionName = getSectionName();
 
   // Create a callback that includes the section key
   const handleContentChange = (content: Record<string, any>) => {
@@ -243,7 +284,35 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
           padding: '16px',
         }}
       >
-        <SectionComponent projectId={projectId} onContentChange={handleContentChange} />
+        {isCustomSection && customSectionContent ? (
+          <CustomSectionInput
+            projectId={projectId}
+            sectionKey={activeSectionKey}
+            activeSubsectionKey={activeSubsectionKey}
+            content={customSectionContent}
+            sectionContents={sectionContents}
+            onContentChange={handleContentChange}
+            onSectionNavigate={onSectionNavigate}
+            onSubsectionSelect={onSubsectionSelect}
+          />
+        ) : isCustomSection ? (
+          <div
+            style={{
+              fontSize: '14px',
+              color: '#6B7280',
+              lineHeight: 1.5,
+            }}
+          >
+            This section is no longer available. Redirecting to a valid section...
+          </div>
+        ) : (
+          <>
+            {(() => {
+              const SectionComponent = SECTION_COMPONENTS[activeSectionKey] || SECTION_COMPONENTS['cover'];
+              return <SectionComponent projectId={projectId} onContentChange={handleContentChange} />;
+            })()}
+          </>
+        )}
       </div>
     </aside>
   );

@@ -60,3 +60,64 @@ body {
 .ProseMirror u {
   text-decoration: underline;
 }
+
+/* Print Mode Styles */
+@media print {
+  /* Hide Add Section buttons in print mode */
+  .page-break-with-button,
+  .add-section-button {
+    display: none !important;
+  }
+
+  /* Hide preview toolbar in print mode */
+  .preview-toolbar {
+    display: none !important;
+  }
+
+  /* Hide completion badge in print mode */
+  .completion-badge {
+    display: none !important;
+  }
+
+  /* Hide section hover indicators in print mode */
+  div[style*="Click to edit"] {
+    display: none !important;
+  }
+
+  /* Hide click-to-edit prompts in print mode */
+  .section-hover-indicator {
+    display: none !important;
+  }
+
+  /* Ensure page breaks render correctly in print mode */
+  .page-break {
+    page-break-after: always;
+    break-after: page;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+    box-shadow: none !important;
+  }
+
+  .page-break span {
+    display: none !important;
+  }
+
+  /* Ensure document content is visible in print */
+  body * {
+    visibility: hidden;
+  }
+
+  .document-preview-print,
+  .document-preview-print * {
+    visibility: visible;
+  }
+
+  .document-preview-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+}
