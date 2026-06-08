@@ -1051,7 +1051,7 @@ describe('SectionSidebar - Preservation: Completion Calculation Unchanged', () =
       const visitedSections = new Set(['executive_summary']);
 
       // Act: Render the sidebar
-      const { container } = render(
+      render(
         <SectionSidebar
           {...mockProps}
           sectionContents={fullProjectSectionContents}

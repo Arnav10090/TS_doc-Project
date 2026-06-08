@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import RichTextEditor from './RichTextEditor';
 
@@ -13,7 +13,7 @@ describe('RichTextEditor', () => {
     expect(screen.getByTitle('Underline')).toBeInTheDocument();
     expect(screen.getByTitle('Bullet List')).toBeInTheDocument();
     expect(screen.getByTitle('Numbered List')).toBeInTheDocument();
-    expect(screen.getByTitle('Clear Formatting')).toBeInTheDocument();
+    expect(screen.getByTitle('Clear All Content')).toBeInTheDocument();
   });
 
   it('buttons have correct text content', () => {
@@ -35,12 +35,21 @@ describe('RichTextEditor', () => {
     const boldButton = screen.getByTitle('Bold');
     const bulletListButton = screen.getByTitle('Bullet List');
     const numberedListButton = screen.getByTitle('Numbered List');
-    const clearButton = screen.getByTitle('Clear Formatting');
+    const clearButton = screen.getByTitle('Clear All Content');
 
     // Verify buttons can be clicked without errors
     fireEvent.click(boldButton);
     fireEvent.click(bulletListButton);
     fireEvent.click(numberedListButton);
     fireEvent.click(clearButton);
+  });
+
+  it('publishes an empty value when clearing content', () => {
+    const mockOnChange = vi.fn();
+    render(<RichTextEditor value="<p>Existing text</p>" onChange={mockOnChange} />);
+
+    fireEvent.click(screen.getByTitle('Clear All Content'));
+
+    expect(mockOnChange).toHaveBeenCalledWith('');
   });
 });

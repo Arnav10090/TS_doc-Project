@@ -11,10 +11,20 @@ import base64
 
 from app.generation.completion import strip_html
 
+EDIT_METADATA_KEY = "__editMetadata"
+
+
+def strip_edit_metadata(content: Dict[str, Any]) -> Dict[str, Any]:
+    """Remove preview-only edit tracking metadata from section content."""
+    if not isinstance(content, dict):
+        return {}
+
+    return {key: value for key, value in content.items() if key != EDIT_METADATA_KEY}
+
 
 def s(sections_dict: Dict[str, Any], key: str) -> Dict[str, Any]:
     """Safely retrieve section content with fallback to empty dict."""
-    return sections_dict.get(key, {})
+    return strip_edit_metadata(sections_dict.get(key, {}))
 
 
 def is_custom_section_key(key: str) -> bool:
@@ -137,8 +147,10 @@ def process_custom_subsection(
     
     if content_type == 'table':
         processed['table_data'] = process_table_data(data)
+        processed['tables'] = processed['table_data'].get('tables', [])
     elif content_type == 'image':
         processed['image'] = process_image_data(data, template, upload_dir, project_id)
+        processed['images'] = process_images_data(data, template, upload_dir, project_id)
     elif content_type == 'paragraph':
         processed['paragraph_html'] = strip_html(data.get('html', ''))
     
@@ -155,13 +167,62 @@ def process_table_data(data: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with columns and rows
     """
-    columns = data.get('columns', [])
-    rows = data.get('rows', [])
+    raw_tables = data.get('tables')
+    if isinstance(raw_tables, list):
+        tables = [
+            {
+                'caption': table.get('caption', ''),
+                'columns': table.get('columns', []),
+                'rows': table.get('rows', []),
+            }
+            for table in raw_tables
+            if isinstance(table, dict)
+        ]
+    else:
+        tables = [
+            {
+                'caption': data.get('caption', ''),
+                'columns': data.get('columns', []),
+                'rows': data.get('rows', []),
+            }
+        ]
+    
+    first_table = tables[0] if tables else {'columns': [], 'rows': []}
     
     return {
-        'columns': columns,
-        'rows': rows
+        'caption': first_table.get('caption', ''),
+        'columns': first_table.get('columns', []),
+        'rows': first_table.get('rows', []),
+        'tables': tables,
     }
+
+
+def _get_image_items(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    images = data.get('images')
+    if isinstance(images, list):
+        return [image for image in images if isinstance(image, dict)]
+
+    if data.get('base64'):
+        return [data]
+
+    return []
+
+
+def process_images_data(
+    data: Dict[str, Any],
+    template: Any,
+    upload_dir: str,
+    project_id: str
+) -> List[Dict[str, Any]]:
+    """Process all image items for DOCX rendering."""
+    processed = []
+    for image in _get_image_items(data):
+        processed.append({
+            'caption': image.get('caption', ''),
+            'filename': image.get('filename', ''),
+            'image': process_image_data(image, template, upload_dir, project_id),
+        })
+    return processed
 
 
 def process_image_data(
@@ -213,6 +274,25 @@ def process_image_data(
         return "[Image — To Be Inserted]"
 
 
+def _strip_list(items: Any) -> List[str]:
+    """Return non-empty string items from a list-like value."""
+    if not isinstance(items, list):
+        return []
+
+    return [str(item).strip() for item in items if str(item).strip()]
+
+
+def _set_numbered_values(
+    context: Dict[str, Any],
+    prefix: str,
+    values: List[str],
+    count: int,
+) -> None:
+    """Populate Prefix1..PrefixN keys for fixed Word template placeholders."""
+    for index in range(count):
+        context[f"{prefix}{index + 1}"] = values[index] if index < len(values) else ""
+
+
 def build_context(
     project: Any,
     all_sections: Dict[str, Any],
@@ -229,6 +309,10 @@ def build_context(
     Returns:
         Context dictionary for template rendering
     """
+    all_sections = {
+        key: strip_edit_metadata(content)
+        for key, content in all_sections.items()
+    }
     context = {}
     
     # Map Project fields to context variables
@@ -273,7 +357,12 @@ def build_context(
     
     # Features
     features = s(all_sections, "features")
-    context["features"] = features.get("items", [])
+    feature_items = features.get("items", [])
+    context["features"] = feature_items
+    for index in range(6):
+        feature = feature_items[index] if index < len(feature_items) else {}
+        context[f"Feature{index + 1}Title"] = feature.get("title", "")
+        context[f"Feature{index + 1}Description"] = strip_html(feature.get("description", ""))
     
     # Remote support
     remote_support = s(all_sections, "remote_support")
@@ -300,6 +389,9 @@ def build_context(
     while len(rows) < 6:
         rows.append({"component": "", "technology": ""})
     context["ts_rows"] = rows[:6]
+    for index, row in enumerate(rows[:6], start=1):
+        context[f"TS{index}_Component"] = row.get("component", "")
+        context[f"TS{index}_Technology"] = row.get("technology", "")
     
     # Hardware specs - pad to 6 rows
     hardware_specs = s(all_sections, "hardware_specs")
@@ -314,6 +406,14 @@ def build_context(
             "qty": ""
         })
     context["hw_rows"] = rows[:6]
+    for index, row in enumerate(rows[:6], start=1):
+        context[f"HW{index}_Maker"] = row.get("maker", "")
+        context[f"HW{index}_Qty"] = row.get("qty", "")
+        context[f"HW{index}_Specs"] = row.get("specs_line1", "")
+        context[f"HW{index}_Specs_Line1"] = row.get("specs_line1", "")
+        context[f"HW{index}_Specs_Line2"] = row.get("specs_line2", "")
+        context[f"HW{index}_Specs_Line3"] = row.get("specs_line3", "")
+        context[f"HW{index}_Specs_Line4"] = row.get("specs_line4", "")
     
     # Software specs - pad to 9 rows with maker default "-"
     software_specs = s(all_sections, "software_specs")
@@ -325,10 +425,15 @@ def build_context(
         if not row.get("maker"):
             row["maker"] = "-"
     context["sw_rows"] = rows[:9]
+    for index, row in enumerate(rows[:9], start=1):
+        context[f"SW{index}_Name"] = row.get("name", "")
+        context[f"SW{index}_Maker"] = row.get("maker", "")
     
     # Third party software
     third_party_sw = s(all_sections, "third_party_sw")
-    context["ThirdPartySW"] = third_party_sw.get("sw4_name", "")
+    third_party_value = third_party_sw.get("sw4_name", "")
+    context["ThirdPartySW"] = third_party_value
+    context["SW4_Name"] = third_party_value or context.get("SW4_Name", "")
     
     # Supervisors
     supervisors = s(all_sections, "supervisors")
@@ -348,15 +453,33 @@ def build_context(
     
     # Buyer obligations
     buyer_obligations = s(all_sections, "buyer_obligations")
-    context["buyer_obligations_custom"] = buyer_obligations.get("custom_items", [])
+    buyer_obligation_items = _strip_list(buyer_obligations.get("items", []))
+    buyer_obligation_custom = _strip_list(buyer_obligations.get("custom_items", []))
+    context["buyer_obligations_custom"] = buyer_obligation_custom
+    _set_numbered_values(
+        context,
+        "BuyerObligation",
+        buyer_obligation_items + buyer_obligation_custom,
+        3,
+    )
     
     # Exclusion list
     exclusion_list = s(all_sections, "exclusion_list")
-    context["exclusion_custom"] = exclusion_list.get("custom_items", [])
+    exclusion_items = _strip_list(exclusion_list.get("items", []))
+    exclusion_custom = _strip_list(exclusion_list.get("custom_items", []))
+    context["exclusion_custom"] = exclusion_custom
+    _set_numbered_values(
+        context,
+        "ExclusionSystemSpecific",
+        exclusion_custom or exclusion_items,
+        3,
+    )
     
     # Buyer prerequisites
     buyer_prerequisites = s(all_sections, "buyer_prerequisites")
-    context["buyer_prereqs"] = buyer_prerequisites.get("items", [])
+    buyer_prereqs = _strip_list(buyer_prerequisites.get("items", []))
+    context["buyer_prereqs"] = buyer_prereqs
+    _set_numbered_values(context, "BuyerPrereq", buyer_prereqs, 3)
     
     # Revision history
     revision_history = s(all_sections, "revision_history")
@@ -442,11 +565,11 @@ def finalize_context_with_images(context: Dict[str, Any], template: Any) -> Dict
     project_id = context.get("_project_id", "")
     upload_dir = context.get("_upload_dir", "")
     
-    # Import VALID_SECTION_KEYS from sections router
-    from app.sections.router import VALID_SECTION_KEYS
+    # Keep generation independent from API router/database initialization.
+    from app.generation.document_references import PREDEFINED_SECTION_ORDER
     
     # Get ordered sections (predefined + custom)
-    ordered_sections = get_ordered_sections(VALID_SECTION_KEYS, all_sections)
+    ordered_sections = get_ordered_sections(PREDEFINED_SECTION_ORDER, all_sections)
     
     # Calculate section numbers
     section_numbers = {}

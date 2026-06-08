@@ -105,6 +105,7 @@ const ImageSubsectionEditor: React.FC<ImageSubsectionEditorProps> = ({ data, onC
           base64,
           filename: file.name,
           mimeType: file.type,
+          caption: file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(),
         });
       }
 
@@ -124,6 +125,15 @@ const ImageSubsectionEditor: React.FC<ImageSubsectionEditorProps> = ({ data, onC
     setError(null);
     onChange({
       images: getImageItems(data).filter((_, index) => index !== indexToRemove),
+    });
+  };
+
+  const handleCaptionChange = (imageIndex: number, caption: string) => {
+    setError(null);
+    onChange({
+      images: getImageItems(data).map((image, index) =>
+        index === imageIndex ? { ...image, caption } : image,
+      ),
     });
   };
 
@@ -190,6 +200,26 @@ const ImageSubsectionEditor: React.FC<ImageSubsectionEditorProps> = ({ data, onC
                     <div>
                       <strong>Type:</strong> {image.mimeType}
                     </div>
+                  </div>
+                  <div style={{ marginTop: '12px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+                      Figure Name / Caption
+                    </div>
+                    <input
+                      type="text"
+                      value={image.caption || ''}
+                      onChange={(e) => handleCaptionChange(index, e.target.value)}
+                      placeholder={`Figure ${index + 1} caption`}
+                      style={{
+                        width: '100%',
+                        padding: '8px 10px',
+                        border: '1px solid #D1D5DB',
+                        borderRadius: '4px',
+                        fontSize: '13px',
+                        fontFamily: 'inherit',
+                        boxSizing: 'border-box',
+                      }}
+                    />
                   </div>
                   <button
                     type="button"

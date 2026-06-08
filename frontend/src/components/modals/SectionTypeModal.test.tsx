@@ -1,15 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { convertImageToBase64, validateImageUpload } from '../../utils/customSectionUtils';
 import SectionTypeModal from './SectionTypeModal';
 
 vi.mock('../input/ParagraphSubsectionEditor', () => ({
   default: ({
-    value,
     data,
     onChange,
   }: {
-    value?: string;
     data?: { paragraphs?: Array<{ html: string }>; html?: string };
     onChange: (data: { paragraphs: Array<{ html: string }> }) => void;
   }) => (
@@ -148,7 +146,7 @@ describe('SectionTypeModal', () => {
     fireEvent.change(screen.getByLabelText('Paragraph Editor 1'), {
       target: { value: '<p>Saved paragraph text</p>' },
     });
-    fireEvent.click(screen.getByText('Save Text'));
+    fireEvent.click(screen.getByText('Save All'));
 
     await waitFor(() => {
       expect(onCreateSubsection).toHaveBeenCalledWith(
@@ -199,7 +197,7 @@ describe('SectionTypeModal', () => {
     fireEvent.change(screen.getByLabelText('Paragraph Editor 1'), {
       target: { value: '<p>Inline overview subsection</p>' },
     });
-    fireEvent.click(screen.getByText('Save Text'));
+    fireEvent.click(screen.getByText('Save All'));
 
     await waitFor(() => {
       expect(onCreateSubsection).toHaveBeenCalledWith(
@@ -208,6 +206,73 @@ describe('SectionTypeModal', () => {
           name: 'Extra Overview Details',
           contentType: 'paragraph',
         }),
+      );
+    });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('passes the selected subsection anchor when inserting between subsections', async () => {
+    const onCreateSection = vi.fn().mockResolvedValue(undefined);
+    const onCreateSubsection = vi.fn().mockResolvedValue(undefined);
+    const onClose = vi.fn();
+    const targetSectionKey =
+      'custom_section_1704067200000_a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+    const anchorSubsectionKey =
+      'custom_subsection_1704067200000_a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+
+    render(
+      <SectionTypeModal
+        isOpen
+        insertAfterKey={targetSectionKey}
+        insertAfterSubsectionKey={anchorSubsectionKey}
+        availableCustomSections={[
+          {
+            key: targetSectionKey,
+            title: 'Custom Compliance',
+            subsections: [
+              {
+                key: anchorSubsectionKey,
+                name: 'First Details',
+              },
+              {
+                key: 'custom_subsection_1704067200001_b1b2c3d4-e5f6-7890-abcd-ef1234567890',
+                name: 'Second Details',
+              },
+            ],
+          },
+        ]}
+        onClose={onClose}
+        onCreateSection={onCreateSection}
+        onCreateSubsection={onCreateSubsection}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('New Subsection'));
+    expect(
+      within(screen.getByRole('dialog')).getAllByText('Custom Compliance').length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByRole('option', { name: '1. First Details' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Add after subsection:')).toHaveValue(
+      `${targetSectionKey}:${anchorSubsectionKey}`,
+    );
+    fireEvent.change(screen.getByLabelText('Name of this subsection?'), {
+      target: { value: 'Between Details' },
+    });
+    fireEvent.click(screen.getByText('Add Paragraph'));
+    fireEvent.click(screen.getByText('Continue'));
+    fireEvent.change(screen.getByLabelText('Paragraph Editor 1'), {
+      target: { value: '<p>Inserted in the middle</p>' },
+    });
+    fireEvent.click(screen.getByText('Save All'));
+
+    await waitFor(() => {
+      expect(onCreateSubsection).toHaveBeenCalledWith(
+        targetSectionKey,
+        expect.objectContaining({
+          name: 'Between Details',
+          contentType: 'paragraph',
+        }),
+        anchorSubsectionKey,
       );
     });
     expect(onClose).toHaveBeenCalled();
@@ -242,14 +307,16 @@ describe('SectionTypeModal', () => {
     });
     fireEvent.click(screen.getByText('Add Paragraph'));
     fireEvent.click(screen.getByText('Continue'));
-    fireEvent.click(screen.getByText('+ Add New Paragraph'));
+    // The "+ Add New Paragraph" inside the ParagraphSubsectionEditor mock adds another paragraph
+    // within the same block's editor
+    fireEvent.click(screen.getAllByText('+ Add New Paragraph')[0]);
     fireEvent.change(screen.getByLabelText('Paragraph Editor 1'), {
       target: { value: '<p>First paragraph</p>' },
     });
     fireEvent.change(screen.getByLabelText('Paragraph Editor 2'), {
       target: { value: '<p>Second paragraph</p>' },
     });
-    fireEvent.click(screen.getByText('Save Text'));
+    fireEvent.click(screen.getByText('Save All'));
 
     await waitFor(() => {
       expect(onCreateSubsection).toHaveBeenCalledWith(
@@ -297,8 +364,10 @@ describe('SectionTypeModal', () => {
     });
     fireEvent.click(screen.getByText('Add Table'));
     fireEvent.click(screen.getByText('Continue'));
-    fireEvent.click(screen.getByText('+ Add New Table'));
-    fireEvent.click(screen.getByText('Create Table'));
+    // The "+ Add New Table" inside the TableSubsectionEditor mock adds another table
+    // within the same block's editor
+    fireEvent.click(screen.getAllByText('+ Add New Table')[0]);
+    fireEvent.click(screen.getByText('Save All'));
 
     await waitFor(() => {
       expect(onCreateSubsection).toHaveBeenCalledWith(
@@ -370,7 +439,7 @@ describe('SectionTypeModal', () => {
       expect(screen.getByText('Uploaded Images (2)')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Save Images'));
+    fireEvent.click(screen.getByText('Save All'));
 
     await waitFor(() => {
       expect(onCreateSubsection).toHaveBeenCalledWith(
@@ -380,16 +449,16 @@ describe('SectionTypeModal', () => {
           contentType: 'image',
           data: {
             images: [
-              {
+              expect.objectContaining({
                 base64: 'data:image/png;base64,first',
                 filename: 'diagram-1.png',
                 mimeType: 'image/png',
-              },
-              {
+              }),
+              expect.objectContaining({
                 base64: 'data:image/jpeg;base64,second',
                 filename: 'diagram-2.jpg',
                 mimeType: 'image/jpeg',
-              },
+              }),
             ],
           },
         }),

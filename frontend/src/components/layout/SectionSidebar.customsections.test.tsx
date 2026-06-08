@@ -88,6 +88,75 @@ describe('SectionSidebar - Custom Sections Integration', () => {
     expect(screen.getByText('NEW SECTION')).toBeInTheDocument();
   });
 
+  it('should display inline custom subsection names instead of "NEW SECTION"', () => {
+    (useProjectStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      cover: true,
+    });
+
+    const sectionContents: Record<string, Record<string, any>> = {
+      cover: { title: 'Cover Page' },
+      'custom_section_1704067200000_a1b2c3d4-e5f6-7890-abcd-ef1234567890': {
+        title: '',
+        displayMode: 'subsection',
+        insertAfterKey: 'cover',
+        subsections: [
+          {
+            key: 'custom_subsection_1704067200000_a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            name: '2.2 slim shady',
+            contentType: 'paragraph',
+            data: { paragraphs: [{ html: '<p>Test content</p>' }] },
+          },
+        ],
+      },
+    };
+
+    render(<SectionSidebar {...mockProps} sectionContents={sectionContents} />);
+
+    expect(screen.getByText('2.2 slim shady')).toBeInTheDocument();
+    expect(screen.queryByText('NEW SECTION')).not.toBeInTheDocument();
+  });
+
+  it('should order custom sections and inline subsections by preview position', () => {
+    (useProjectStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      overview: true,
+      poc: true,
+    });
+
+    const sectionContents: Record<string, Record<string, any>> = {
+      overview: { content: 'Overview' },
+      poc: { content: 'Proof of Concept' },
+      'custom_section_1704067100000_11111111-1111-4111-8111-111111111111': {
+        title: 'Section 7',
+        displayMode: 'section',
+        insertAfterKey: 'poc',
+        subsections: [],
+      },
+      'custom_section_1704067200000_22222222-2222-4222-8222-222222222222': {
+        title: '',
+        displayMode: 'subsection',
+        insertAfterKey: 'overview',
+        subsections: [
+          {
+            key: 'custom_subsection_1704067200000_33333333-3333-4333-8333-333333333333',
+            name: 'Section 5',
+            contentType: 'paragraph',
+            data: { paragraphs: [{ html: '<p>Earlier preview item</p>' }] },
+          },
+        ],
+      },
+    };
+
+    render(<SectionSidebar {...mockProps} sectionContents={sectionContents} />);
+
+    const section5Button = screen.getByRole('button', { name: /Section 5/i });
+    const section7Button = screen.getByRole('button', { name: /Section 7/i });
+
+    expect(
+      section5Button.compareDocumentPosition(section7Button) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('should not display CUSTOM SECTIONS group when no custom sections exist', () => {
     // Mock completion state
     (useProjectStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({

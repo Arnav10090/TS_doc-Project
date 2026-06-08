@@ -3,6 +3,7 @@ import { deleteSection } from '../../api/sections';
 import { useEditor } from '../../contexts/EditorContext';
 import ConfirmDialog from './ConfirmDialog';
 import toast from 'react-hot-toast';
+import type { AutoSaveStatus } from '../../types';
 
 interface SectionHeaderProps {
   projectId: string;
@@ -11,7 +12,7 @@ interface SectionHeaderProps {
   showDeleteButton?: boolean;
   onDelete?: () => void;
   onRefresh?: () => void;  // New prop to trigger data refresh
-  status?: 'saving' | 'saved' | 'error' | null;
+  status?: AutoSaveStatus | null;
 }
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({

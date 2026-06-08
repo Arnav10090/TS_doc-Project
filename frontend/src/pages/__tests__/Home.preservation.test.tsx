@@ -21,10 +21,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
-import * as fc from 'fast-check'
 import HomePage from '../Home'
 import * as projectsApi from '../../api/projects'
-import * as generationApi from '../../api/generation'
 import type { ProjectSummary } from '../../types'
 
 // Mock the API
@@ -357,7 +355,6 @@ describe('Home.tsx Preservation Property Tests', () => {
       expect(screen.getByText(/Created: 15 Mar 2024/)).toBeInTheDocument()
 
       // Verify section count display (this is the main functionality we're testing)
-      const expectedCompleted = Math.round((45 / 100) * 27) // = 12
       expect(screen.getByText('12 / 27 sections')).toBeInTheDocument()
     })
   })

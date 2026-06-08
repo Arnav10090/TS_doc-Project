@@ -1,14 +1,25 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
-import { getProjectById } from '../api/projects'
-import { getAllSections } from '../api/sections'
+import { getProjectById, updateProject } from '../api/projects'
+import { getAllSections, upsertSection } from '../api/sections'
 import { useProjectStore } from '../store/project.store'
 import { EditorProvider } from '../contexts/EditorContext'
+import { SECTION_DRAFT_CHANGED_EVENT } from '../hooks/useAutoSave'
+import { setSectionDraft } from '../utils/sectionDraftStore'
+import {
+  EDIT_METADATA_KEY,
+  buildContentWithEditMetadata,
+  getEditMetadata,
+  stripEditMetadata,
+} from '../utils/editMetadata'
 import Header from '../components/layout/Header'
 import SectionSidebar from '../components/layout/SectionSidebar'
 import SectionInputPanel from '../components/layout/SectionInputPanel'
 import DocumentPreview from '../components/preview/DocumentPreview'
+import { mergeSectionContent } from '../components/sections/predefinedSectionContent'
+import { isCustomSectionKey } from '../utils/customSectionUtils'
+import type { AutoSaveStatus } from '../types'
 import toast from 'react-hot-toast'
 
 const HEADER_HEIGHT = 56
@@ -27,8 +38,29 @@ const RESIZE_KEYBOARD_STEP = 16
 
 type ResizablePanel = 'left' | 'right'
 
+interface SectionDraftChangedDetail {
+  projectId: string
+  sectionKey: string
+  content: Record<string, any>
+}
+
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max)
+
+const buildCurrentSessionPreviewContent = (
+  previousPreviewContent: Record<string, any> | undefined,
+  savedContent: Record<string, any>
+) => {
+  const cleanSavedContent = stripEditMetadata(savedContent) || {}
+  const visibleMetadata = getEditMetadata(previousPreviewContent)
+
+  return visibleMetadata
+    ? {
+        ...cleanSavedContent,
+        [EDIT_METADATA_KEY]: visibleMetadata,
+      }
+    : cleanSavedContent
+}
 
 const getStoredWidth = (key: string, fallback: number) => {
   if (typeof window === 'undefined') {
@@ -115,6 +147,10 @@ const EditorPage = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const setProject = useProjectStore((state) => state.setProject)
+  const solutionName = useProjectStore((state) => state.solutionName)
+  const solutionFullName = useProjectStore((state) => state.solutionFullName)
+  const clientName = useProjectStore((state) => state.clientName)
+  const clientLocation = useProjectStore((state) => state.clientLocation)
   
   const [loading, setLoading] = useState(true)
   const [visitedSections, setVisitedSections] = useState<Set<string>>(new Set())
@@ -126,6 +162,8 @@ const EditorPage = () => {
   )
   const isNarrowScreen = viewportWidth < NARROW_LAYOUT_BREAKPOINT
   const [sectionContents, setSectionContents] = useState<Record<string, Record<string, any>>>({})
+  const [sectionDraftContents, setSectionDraftContents] = useState<Record<string, Record<string, any>>>({})
+  const [manualSaveStatus, setManualSaveStatus] = useState<Record<string, AutoSaveStatus>>({})
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(() =>
     getStoredWidth(LEFT_SIDEBAR_STORAGE_KEY, DEFAULT_LEFT_SIDEBAR_WIDTH)
   )
@@ -134,6 +172,10 @@ const EditorPage = () => {
   )
   const [resizingPanel, setResizingPanel] = useState<ResizablePanel | null>(null)
   const resizeCleanupRef = useRef<(() => void) | null>(null)
+  const sectionDraftsRef = useRef<Record<string, Record<string, any>>>({})
+  const persistedSectionContentsRef = useRef<Record<string, Record<string, any>>>({})
+  const manualSaveResetTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+  const sectionSaveChainRef = useRef<Record<string, Promise<void>>>({})
   const pendingSubsectionSelectionRef = useRef<{
     sectionKey: string
     subsectionKey: string
@@ -158,7 +200,10 @@ const EditorPage = () => {
         sections.forEach((section) => {
           contentsMap[section.section_key] = section.content || {}
         })
-        setSectionContents(contentsMap)
+        sectionDraftsRef.current = { ...contentsMap }
+        persistedSectionContentsRef.current = { ...contentsMap }
+        setSectionContents({ ...contentsMap })
+        setSectionDraftContents({ ...contentsMap })
       } catch (error) {
         toast.error('Failed to load project')
         console.error('Load project error:', error)
@@ -227,6 +272,49 @@ const EditorPage = () => {
 
   useEffect(() => () => resizeCleanupRef.current?.(), [])
 
+  useEffect(
+    () => () => {
+      Object.values(manualSaveResetTimersRef.current).forEach(clearTimeout)
+    },
+    []
+  )
+
+  useEffect(() => {
+    const handleSectionDraftChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<SectionDraftChangedDetail>
+      const detail = customEvent.detail
+
+      if (!detail || detail.projectId !== projectId) {
+        return
+      }
+
+      sectionDraftsRef.current = {
+        ...sectionDraftsRef.current,
+        [detail.sectionKey]: detail.content,
+      }
+      setSectionDraftContents((prev) => ({
+        ...prev,
+        [detail.sectionKey]: detail.content,
+      }))
+      setManualSaveStatus((prev) => ({
+        ...prev,
+        [detail.sectionKey]: 'idle',
+      }))
+    }
+
+    window.addEventListener(
+      SECTION_DRAFT_CHANGED_EVENT,
+      handleSectionDraftChanged as EventListener
+    )
+
+    return () => {
+      window.removeEventListener(
+        SECTION_DRAFT_CHANGED_EVENT,
+        handleSectionDraftChanged as EventListener
+      )
+    }
+  }, [projectId])
+
   // Extract active section from URL hash or default to 'cover'
   useEffect(() => {
     const hash = location.hash.replace('#', '')
@@ -276,11 +364,24 @@ const EditorPage = () => {
   )
 
   const handleSectionContentChange = useCallback((sectionKey: string, content: Record<string, any>) => {
-    setSectionContents((prev) => ({
+    if (projectId) {
+      setSectionDraft(projectId, sectionKey, content)
+    }
+
+    sectionDraftsRef.current = {
+      ...sectionDraftsRef.current,
+      [sectionKey]: content,
+    }
+    setSectionDraftContents((prev) => ({
       ...prev,
       [sectionKey]: content,
     }))
-  }, [])
+    setManualSaveStatus((prev) => ({
+      ...prev,
+      [sectionKey]: 'idle',
+    }))
+
+  }, [projectId])
 
   const refreshSections = useCallback(async () => {
     if (!projectId) return;
@@ -296,7 +397,10 @@ const EditorPage = () => {
       sections.forEach((section) => {
         contentsMap[section.section_key] = section.content || {};
       });
-      setSectionContents(contentsMap);
+      sectionDraftsRef.current = { ...contentsMap };
+      persistedSectionContentsRef.current = { ...contentsMap };
+      setSectionContents({ ...contentsMap });
+      setSectionDraftContents({ ...contentsMap });
     } catch (error) {
       console.error('Error refreshing sections:', error);
     }
@@ -322,6 +426,119 @@ const EditorPage = () => {
       )
     },
     [isNarrowScreen, leftSidebarWidth, rightPanelWidth, viewportWidth]
+  )
+
+  const handleSaveActiveSection = useCallback(
+    async (sectionKey: string) => {
+      if (!projectId) return
+      const previousQueue = sectionSaveChainRef.current[sectionKey] || Promise.resolve()
+      const queuedSave = previousQueue
+        .catch(() => undefined)
+        .then(async () => {
+          const content =
+            sectionDraftsRef.current[sectionKey] ||
+            sectionDraftContents[sectionKey] ||
+            persistedSectionContentsRef.current[sectionKey] ||
+            {}
+          const persistedContent = persistedSectionContentsRef.current[sectionKey] || {}
+          const baselineContent = isCustomSectionKey(sectionKey)
+            ? persistedContent
+            : mergeSectionContent(sectionKey, persistedContent, {
+                solutionName,
+                solutionFullName,
+                clientName,
+                clientLocation,
+              })
+          const contentWithEditMetadata = buildContentWithEditMetadata(
+            baselineContent,
+            content
+          )
+
+          const existingTimer = manualSaveResetTimersRef.current[sectionKey]
+          if (existingTimer) {
+            clearTimeout(existingTimer)
+          }
+
+          setManualSaveStatus((prev) => ({
+            ...prev,
+            [sectionKey]: 'saving',
+          }))
+
+          try {
+            const savedSection = await upsertSection(projectId, sectionKey, contentWithEditMetadata)
+            const savedContent = savedSection.content || contentWithEditMetadata
+
+            if (sectionKey === 'cover') {
+              const updatedProject = await updateProject(projectId, {
+                solution_full_name: savedContent.solution_full_name,
+                client_name: savedContent.client_name,
+                client_location: savedContent.client_location,
+                ref_number: savedContent.ref_number,
+                doc_date: savedContent.doc_date,
+                doc_version: savedContent.doc_version,
+              })
+              setProject(updatedProject)
+            }
+
+            persistedSectionContentsRef.current = {
+              ...persistedSectionContentsRef.current,
+              [sectionKey]: savedContent,
+            }
+            const cleanSavedContent = stripEditMetadata(savedContent) || {}
+            sectionDraftsRef.current = {
+              ...sectionDraftsRef.current,
+              [sectionKey]: cleanSavedContent,
+            }
+            setSectionContents((prev) => {
+              const previewContent = buildCurrentSessionPreviewContent(
+                prev[sectionKey],
+                savedContent
+              )
+
+              return {
+                ...prev,
+                [sectionKey]: previewContent,
+              }
+            })
+            setSectionDraftContents((prev) => ({
+              ...prev,
+              [sectionKey]: cleanSavedContent,
+            }))
+            setManualSaveStatus((prev) => ({
+              ...prev,
+              [sectionKey]: 'saved',
+            }))
+            toast.success('Section saved')
+
+            manualSaveResetTimersRef.current[sectionKey] = setTimeout(() => {
+              setManualSaveStatus((prev) => ({
+                ...prev,
+                [sectionKey]: 'idle',
+              }))
+              delete manualSaveResetTimersRef.current[sectionKey]
+            }, 2000)
+          } catch (error) {
+            console.error('Manual section save error:', error)
+            setManualSaveStatus((prev) => ({
+              ...prev,
+              [sectionKey]: 'error',
+            }))
+            toast.error('Failed to save section')
+          }
+        })
+
+      sectionSaveChainRef.current[sectionKey] = queuedSave
+      await queuedSave
+    },
+    [
+      clientLocation,
+      clientName,
+      projectId,
+      sectionDraftContents,
+      setProject,
+      solutionFullName,
+      solutionName,
+    ]
   )
 
   const createResizeHandler = useCallback(
@@ -490,8 +707,10 @@ const EditorPage = () => {
           projectId={projectId} 
           activeSectionKey={activeSectionKey}
           activeSubsectionKey={activeSubsectionKey}
-          sectionContents={sectionContents}
+          sectionContents={sectionDraftContents}
           onContentChange={handleSectionContentChange}
+          onSaveSection={handleSaveActiveSection}
+          saveStatus={manualSaveStatus[activeSectionKey] || 'idle'}
           onSectionNavigate={handleSectionClick}
           onSubsectionSelect={setActiveSubsectionKey}
           onRefresh={refreshSections}

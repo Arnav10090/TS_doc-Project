@@ -7,6 +7,7 @@ interface TableSubsectionEditorProps {
 }
 
 const createEmptyTable = (): TableItem => ({
+  caption: '',
   columns: ['Column 1'],
   rows: [{ 'Column 1': '' }],
 });
@@ -96,6 +97,13 @@ const TableSubsectionEditor: React.FC<TableSubsectionEditorProps> = ({ data, onC
     updateTables([...tables, createEmptyTable()]);
   };
 
+  const handleCaptionChange = (tableIndex: number, caption: string) => {
+    updateSingleTable(tableIndex, {
+      ...tables[tableIndex],
+      caption,
+    });
+  };
+
   const handleRemoveTable = (tableIndex: number) => {
     if (tables.length <= 1) return;
     updateTables(tables.filter((_, index) => index !== tableIndex));
@@ -176,7 +184,24 @@ const TableSubsectionEditor: React.FC<TableSubsectionEditorProps> = ({ data, onC
 
   return (
     <div style={containerStyle}>
-      <div style={sectionTitleStyle}>Table Configuration</div>
+      <div
+        style={{
+          ...sectionTitleStyle,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+        }}
+      >
+        <span>Table Configuration</span>
+        <button
+          type="button"
+          style={buttonStyle}
+          onClick={handleAddTable}
+        >
+          + Add New Table
+        </button>
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {tables.map((table, tableIndex) => (
           <div
@@ -205,6 +230,19 @@ const TableSubsectionEditor: React.FC<TableSubsectionEditorProps> = ({ data, onC
               >
                 Remove Table
               </button>
+            </div>
+
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>
+                Table Name / Caption
+              </div>
+              <input
+                type="text"
+                style={inputStyle}
+                value={table.caption || ''}
+                onChange={(e) => handleCaptionChange(tableIndex, e.target.value)}
+                placeholder={`Table ${tableIndex + 1} caption`}
+              />
             </div>
 
             <div style={{ marginBottom: '12px' }}>
@@ -306,13 +344,6 @@ const TableSubsectionEditor: React.FC<TableSubsectionEditorProps> = ({ data, onC
           </div>
         ))}
       </div>
-      <button
-        type="button"
-        style={{ ...buttonStyle, marginTop: '16px' }}
-        onClick={handleAddTable}
-      >
-        + Add New Table
-      </button>
     </div>
   );
 };

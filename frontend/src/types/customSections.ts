@@ -9,6 +9,7 @@
 export interface TableItem {
   columns: string[];  // Column names
   rows: Record<string, string>[];  // Array of row objects with column names as keys
+  caption?: string;  // Optional table caption/name for document references
 }
 
 export interface TableData {
@@ -24,6 +25,7 @@ export interface SubsectionImageItem {
   base64: string;  // Base64-encoded image data
   filename: string;  // Original filename
   mimeType: string;  // MIME type (image/png or image/jpeg)
+  caption?: string;  // Optional figure caption/name for document references
 }
 
 export interface ImageData {

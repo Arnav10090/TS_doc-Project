@@ -1,42 +1,11 @@
 import React, { useEffect } from 'react';
 import { isCustomSectionKey } from '../../utils/customSectionUtils';
 import CustomSectionInput from '../input/CustomSectionInput';
+import PredefinedSectionEditor from '../input/PredefinedSectionEditor';
 import type { CustomSectionContent } from '../../types/customSections';
-
-// Import all 31 section components
-import {
-  CoverSection,
-  RevisionHistory,
-  ExecutiveSummary,
-  IntroductionSection,
-  AbbreviationsSection,
-  ProcessFlowSection,
-  OverviewSection,
-  FeaturesSection,
-  RemoteSupportSection,
-  DocumentationControlSection,
-  CustomerTrainingSection,
-  SystemConfigSection,
-  FATConditionSection,
-  TechStackSection,
-  HardwareSpecsSection,
-  SoftwareSpecsSection,
-  ThirdPartySwSection,
-  OverallGanttSection,
-  ShutdownGanttSection,
-  SupervisorsSection,
-  ScopeDefinitionsSection,
-  DivisionOfEngSection,
-  ValueAdditionSection,
-  WorkCompletionSection,
-  BuyerObligationsSection,
-  ExclusionListSection,
-  BuyerPrerequisitesSection,
-  BindingConditionsSection,
-  CybersecuritySection,
-  DisclaimerSection,
-  PoCSection,
-} from '../sections';
+import type { AutoSaveStatus } from '../../types';
+import { PREDEFINED_SECTION_TITLES } from '../sections/predefinedSectionContent';
+import { stripEditMetadata } from '../../utils/editMetadata';
 
 interface SectionInputPanelProps {
   projectId: string;
@@ -44,6 +13,8 @@ interface SectionInputPanelProps {
   activeSubsectionKey?: string | null;
   sectionContents: Record<string, Record<string, any>>;
   onContentChange?: (sectionKey: string, content: Record<string, any>) => void;
+  onSaveSection?: (sectionKey: string) => void | Promise<void>;
+  saveStatus?: AutoSaveStatus;
   onSectionNavigate?: (sectionKey: string) => void;
   onSubsectionSelect?: (subsectionKey: string | null) => void;
   onRefresh?: () => void;
@@ -57,81 +28,14 @@ interface SectionInputPanelProps {
   resizeKeyboardStep?: number;
 }
 
-// Map section keys to components and display names
-const SECTION_COMPONENTS: Record<string, React.ComponentType<any>> = {
-  cover: CoverSection,
-  revision_history: RevisionHistory,
-  executive_summary: ExecutiveSummary,
-  introduction: IntroductionSection,
-  abbreviations: AbbreviationsSection,
-  process_flow: ProcessFlowSection,
-  overview: OverviewSection,
-  features: FeaturesSection,
-  remote_support: RemoteSupportSection,
-  documentation_control: DocumentationControlSection,
-  customer_training: CustomerTrainingSection,
-  system_config: SystemConfigSection,
-  fat_condition: FATConditionSection,
-  tech_stack: TechStackSection,
-  hardware_specs: HardwareSpecsSection,
-  software_specs: SoftwareSpecsSection,
-  third_party_sw: ThirdPartySwSection,
-  overall_gantt: OverallGanttSection,
-  shutdown_gantt: ShutdownGanttSection,
-  supervisors: SupervisorsSection,
-  scope_definitions: ScopeDefinitionsSection,
-  division_of_eng: DivisionOfEngSection,
-  value_addition: ValueAdditionSection,
-  work_completion: WorkCompletionSection,
-  buyer_obligations: BuyerObligationsSection,
-  exclusion_list: ExclusionListSection,
-  buyer_prerequisites: BuyerPrerequisitesSection,
-  binding_conditions: BindingConditionsSection,
-  cybersecurity: CybersecuritySection,
-  disclaimer: DisclaimerSection,
-  poc: PoCSection,
-};
-
-const SECTION_NAMES: Record<string, string> = {
-  cover: 'Cover Page',
-  revision_history: 'Revision History',
-  executive_summary: 'Executive Summary',
-  introduction: 'Introduction',
-  abbreviations: 'Abbreviations',
-  process_flow: 'Process Flow',
-  overview: 'Overview',
-  features: 'Features',
-  remote_support: 'Remote Support',
-  documentation_control: 'Documentation Control',
-  customer_training: 'Customer Training',
-  system_config: 'System Configuration',
-  fat_condition: 'FAT Condition',
-  tech_stack: 'Technology Stack',
-  hardware_specs: 'Hardware Specifications',
-  software_specs: 'Software Specifications',
-  third_party_sw: 'Third Party Software',
-  overall_gantt: 'Overall Gantt Chart',
-  shutdown_gantt: 'Shutdown Gantt Chart',
-  supervisors: 'Supervisors',
-  scope_definitions: 'Scope Definitions',
-  division_of_eng: 'Division of Engineering',
-  value_addition: 'Value Addition',
-  work_completion: 'Work Completion',
-  buyer_obligations: 'Buyer Obligations',
-  exclusion_list: 'Exclusion List',
-  buyer_prerequisites: 'Buyer Prerequisites',
-  binding_conditions: 'Binding Conditions',
-  cybersecurity: 'Cybersecurity',
-  disclaimer: 'Disclaimer',
-  poc: 'Proof of Concept',
-};
-
 const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
   projectId,
   activeSectionKey,
   activeSubsectionKey,
   sectionContents,
   onContentChange,
+  onSaveSection,
+  saveStatus = 'idle',
   onSectionNavigate,
   onSubsectionSelect,
   width,
@@ -146,7 +50,7 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
   // Check if this is a custom section
   const isCustomSection = isCustomSectionKey(activeSectionKey);
   const customSectionContent = isCustomSection
-    ? (sectionContents[activeSectionKey] as CustomSectionContent | undefined)
+    ? (stripEditMetadata(sectionContents[activeSectionKey]) as CustomSectionContent | undefined)
     : undefined;
 
   useEffect(() => {
@@ -171,10 +75,11 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
 
       return customSectionContent?.title || 'New Section';
     }
-    return SECTION_NAMES[activeSectionKey] || 'Section';
+    return PREDEFINED_SECTION_TITLES[activeSectionKey] || 'Section';
   };
 
   const sectionName = getSectionName();
+  const isSaving = saveStatus === 'saving';
 
   // Create a callback that includes the section key
   const handleContentChange = (content: Record<string, any>) => {
@@ -262,6 +167,10 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
           position: 'sticky',
           top: 0,
           zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
         }}
       >
         <h2
@@ -270,10 +179,47 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
             fontWeight: 600,
             color: '#1A1A2E',
             margin: 0,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
           }}
         >
           {sectionName}
         </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+          {saveStatus === 'saved' && (
+            <span style={{ color: '#10B981', fontSize: '13px', fontWeight: 500 }}>
+              Saved
+            </span>
+          )}
+          {saveStatus === 'error' && (
+            <span style={{ color: '#E60012', fontSize: '13px', fontWeight: 500 }}>
+              Save failed
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              void onSaveSection?.(activeSectionKey);
+            }}
+            disabled={!onSaveSection || isSaving}
+            style={{
+              padding: '8px 14px',
+              backgroundColor: isSaving ? '#F3F4F6' : '#E60012',
+              color: isSaving ? '#6B7280' : '#FFFFFF',
+              border: '1px solid #E60012',
+              borderRadius: '4px',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: !onSaveSection || isSaving ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit',
+              minWidth: '72px',
+            }}
+          >
+            {isSaving ? 'SAVING' : 'SAVE'}
+          </button>
+        </div>
       </div>
 
       {/* Scrollable Content */}
@@ -306,12 +252,12 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
             This section is no longer available. Redirecting to a valid section...
           </div>
         ) : (
-          <>
-            {(() => {
-              const SectionComponent = SECTION_COMPONENTS[activeSectionKey] || SECTION_COMPONENTS['cover'];
-              return <SectionComponent projectId={projectId} onContentChange={handleContentChange} />;
-            })()}
-          </>
+          <PredefinedSectionEditor
+            projectId={projectId}
+            sectionKey={activeSectionKey}
+            content={sectionContents[activeSectionKey]}
+            onContentChange={handleContentChange}
+          />
         )}
       </div>
     </aside>

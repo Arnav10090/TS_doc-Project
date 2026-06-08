@@ -600,13 +600,6 @@ describe('DocumentPreview - Preservation Property Tests: Non-Deleted Section Beh
       'poc',
     ];
 
-    // Arbitrary for generating section content
-    const sectionContentArbitrary = fc.record({
-      text: fc.option(fc.string(), { nil: '' }),
-      rows: fc.option(fc.array(fc.record({ sr_no: fc.nat(100) })), { nil: [] }),
-      items: fc.option(fc.array(fc.record({ id: fc.string(), title: fc.string() })), { nil: [] }),
-    });
-
     it('should render correctly for any random combination of existing sections', () => {
       fc.assert(
         fc.property(

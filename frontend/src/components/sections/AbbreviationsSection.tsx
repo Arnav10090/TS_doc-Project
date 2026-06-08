@@ -156,7 +156,7 @@ const AbbreviationsSection: React.FC<AbbreviationsSectionProps> = ({ projectId }
         fontSize: '14px',
         color: '#1A1A2E',
       }}>
-        <strong>Note:</strong> Rows with 🔒 icon are standard abbreviations and cannot be edited. 
+        <strong>Note:</strong> Standard abbreviations are loaded by default and remain editable.
         Row 13 is auto-filled with your solution abbreviation. You can add custom abbreviations below.
       </div>
 

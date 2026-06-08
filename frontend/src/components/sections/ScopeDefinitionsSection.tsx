@@ -72,8 +72,7 @@ const ScopeDefinitionsSection: React.FC<ScopeDefinitionsSectionProps> = ({ proje
           fontSize: '14px',
         }}
       >
-        <span>🔒</span>
-        <span>This section is fixed and cannot be edited.</span>
+        <span>Template content</span>
       </div>
       <div
         style={{

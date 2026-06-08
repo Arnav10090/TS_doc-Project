@@ -31,7 +31,6 @@ const CustomSectionInput: React.FC<CustomSectionInputProps> = ({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(content.title || '');
   const [isSaving, setIsSaving] = useState(false);
-  const [isSubsectionSaving, setIsSubsectionSaving] = useState(false);
   const [sectionDeletePending, setSectionDeletePending] = useState(false);
   const [pendingSubsectionDeleteKey, setPendingSubsectionDeleteKey] = useState<
     string | null
@@ -64,7 +63,7 @@ const CustomSectionInput: React.FC<CustomSectionInputProps> = ({
     onSubsectionSelect,
   ]);
 
-  const handleSaveTitle = async () => {
+  const handleSaveTitle = () => {
     const trimmedTitle = titleValue.trim();
 
     if (trimmedTitle === (content.title || '')) {
@@ -72,70 +71,43 @@ const CustomSectionInput: React.FC<CustomSectionInputProps> = ({
       return;
     }
 
-    setIsSaving(true);
-    try {
-      const updatedContent: CustomSectionContent = {
-        ...content,
-        title: trimmedTitle,
-      };
+    const updatedContent: CustomSectionContent = {
+      ...content,
+      title: trimmedTitle,
+    };
 
-      await upsertSection(projectId, sectionKey, updatedContent);
-      
-      if (onContentChange) {
-        onContentChange(updatedContent);
-      }
-
-      await refreshSections();
-      setIsEditingTitle(false);
-      toast.success('Section title saved');
-    } catch (error) {
-      console.error('Failed to save section title:', error);
-      toast.error('Failed to save section title');
-    } finally {
-      setIsSaving(false);
-    }
+    onContentChange?.(updatedContent);
+    setIsEditingTitle(false);
+    toast.success('Section title updated. Click SAVE to update the preview.');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      void handleSaveTitle();
+      handleSaveTitle();
     } else if (e.key === 'Escape') {
       setTitleValue(content.title || '');
       setIsEditingTitle(false);
     }
   };
 
-  const handleDeleteSubsection = async (subsectionKey: string) => {
-    setIsSaving(true);
-    try {
-      const updatedContent: CustomSectionContent = {
-        ...content,
-        subsections: content.subsections.filter(
-          (subsection) => subsection.key !== subsectionKey,
-        ),
-      };
+  const handleDeleteSubsection = (subsectionKey: string) => {
+    const updatedContent: CustomSectionContent = {
+      ...content,
+      subsections: content.subsections.filter(
+        (subsection) => subsection.key !== subsectionKey,
+      ),
+    };
 
-      await upsertSection(projectId, sectionKey, updatedContent);
+    onContentChange?.(updatedContent);
 
-      if (onContentChange) {
-        onContentChange(updatedContent);
-      }
-
-      await refreshSections();
-      if (activeSubsectionKey === subsectionKey) {
-        onSubsectionSelect?.(null);
-      }
-      setPendingSubsectionDeleteKey(null);
-      toast.success('Subsection deleted');
-    } catch (error) {
-      console.error('Failed to delete subsection:', error);
-      toast.error('Failed to delete subsection');
-    } finally {
-      setIsSaving(false);
+    if (activeSubsectionKey === subsectionKey) {
+      onSubsectionSelect?.(null);
     }
+    setPendingSubsectionDeleteKey(null);
+    toast.success('Subsection removed. Click SAVE to update the preview.');
   };
 
-  const handleInlineSubsectionUpdate = async (updatedSubsection: CustomSubsection) => {
+  const handleInlineSubsectionUpdate = (updatedSubsection: CustomSubsection) => {
     const updatedContent: CustomSectionContent = {
       ...content,
       subsections: content.subsections.map((subsection, index) =>
@@ -144,19 +116,9 @@ const CustomSectionInput: React.FC<CustomSectionInputProps> = ({
     };
 
     onContentChange?.(updatedContent);
-    setIsSubsectionSaving(true);
-
-    try {
-      await upsertSection(projectId, sectionKey, updatedContent);
-    } catch (error) {
-      console.error('Failed to save subsection:', error);
-      toast.error('Failed to save subsection changes');
-    } finally {
-      setIsSubsectionSaving(false);
-    }
   };
 
-  const handleSelectedSubsectionUpdate = async (
+  const handleSelectedSubsectionUpdate = (
     updatedSubsection: CustomSubsection,
   ) => {
     const updatedContent: CustomSectionContent = {
@@ -167,16 +129,6 @@ const CustomSectionInput: React.FC<CustomSectionInputProps> = ({
     };
 
     onContentChange?.(updatedContent);
-    setIsSubsectionSaving(true);
-
-    try {
-      await upsertSection(projectId, sectionKey, updatedContent);
-    } catch (error) {
-      console.error('Failed to save subsection:', error);
-      toast.error('Failed to save subsection changes');
-    } finally {
-      setIsSubsectionSaving(false);
-    }
   };
 
   const handleDeleteSection = async () => {
@@ -299,11 +251,6 @@ const CustomSectionInput: React.FC<CustomSectionInputProps> = ({
           <div style={helpTextStyle}>
             Update the subsection name and edit its paragraph, table, or image content here.
           </div>
-          {isSubsectionSaving && (
-            <div style={{ ...helpTextStyle, color: '#E60012', marginTop: '8px' }}>
-              Saving changes...
-            </div>
-          )}
         </div>
 
         <div style={subsectionCardStyle}>
@@ -311,7 +258,7 @@ const CustomSectionInput: React.FC<CustomSectionInputProps> = ({
             parentSectionKey={sectionKey}
             subsection={inlineSubsection}
             onUpdate={(updatedSubsection) => {
-              void handleInlineSubsectionUpdate(updatedSubsection);
+              handleInlineSubsectionUpdate(updatedSubsection);
             }}
           />
         </div>
@@ -405,7 +352,7 @@ const CustomSectionInput: React.FC<CustomSectionInputProps> = ({
               <button
                 type="button"
                 style={buttonStyle}
-                onClick={() => void handleSaveTitle()}
+                onClick={handleSaveTitle}
                 disabled={isSaving}
               >
                 {isSaving ? 'Saving...' : 'Save'}
@@ -527,7 +474,7 @@ const CustomSectionInput: React.FC<CustomSectionInputProps> = ({
                       style={dangerButtonStyle}
                       onClick={(event) => {
                         event.stopPropagation();
-                        void handleDeleteSubsection(subsection.key);
+                        handleDeleteSubsection(subsection.key);
                       }}
                       disabled={isSaving}
                     >
@@ -574,17 +521,12 @@ const CustomSectionInput: React.FC<CustomSectionInputProps> = ({
                 Update the subsection name and edit its paragraph, table, or image
                 content here.
               </div>
-              {isSubsectionSaving && (
-                <div style={{ ...helpTextStyle, color: '#E60012', marginTop: '8px' }}>
-                  Saving changes...
-                </div>
-              )}
               <div style={subsectionCardStyle}>
                 <CustomSubsectionInput
                   parentSectionKey={sectionKey}
                   subsection={selectedSubsection}
                   onUpdate={(updatedSubsection) => {
-                    void handleSelectedSubsectionUpdate(updatedSubsection);
+                    handleSelectedSubsectionUpdate(updatedSubsection);
                   }}
                 />
               </div>

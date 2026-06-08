@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSection } from '../../api/sections';
-import { updateProject } from '../../api/projects';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import SectionHeader from '../shared/SectionHeader';
 import type { CoverContent } from '../../types';
 
 interface CoverSectionProps {
   projectId: string;
-  onContentChange?: (content: Record<string, any>) => void;
 }
 
-const CoverSection: React.FC<CoverSectionProps> = ({ projectId, onContentChange }) => {
+const CoverSection: React.FC<CoverSectionProps> = ({ projectId }) => {
   const navigate = useNavigate();
   const [content, setContent] = useState<CoverContent>({
     solution_full_name: '',
@@ -22,15 +20,8 @@ const CoverSection: React.FC<CoverSectionProps> = ({ projectId, onContentChange 
     doc_version: '',
   });
   const [loading, setLoading] = useState(true);
-  
-  // Create callback that wraps onContentChange
-  const handleAutoSaveChange = (updatedContent: Record<string, any>) => {
-    if (onContentChange) {
-      onContentChange(updatedContent);
-    }
-  };
-  
-  const { save, status } = useAutoSave(projectId, 'cover', 800, handleAutoSaveChange);
+
+  const { save, status } = useAutoSave(projectId, 'cover', 800);
   // Note: Cover section should NOT update Zustand store
   // solutionName (short name) is set from project.solution_name on initial load
   // Cover section only edits solution_full_name which is a different field
@@ -52,21 +43,10 @@ const CoverSection: React.FC<CoverSectionProps> = ({ projectId, onContentChange 
     loadSection();
   }, [projectId]);
 
-  const handleChange = async (field: keyof CoverContent, value: string) => {
+  const handleChange = (field: keyof CoverContent, value: string) => {
     const updated = { ...content, [field]: value };
     setContent(updated);
     save(updated);
-
-    // Update project record for global fields
-    try {
-      await updateProject(projectId, { [field]: value });
-      // Note: Do NOT update Zustand store here
-      // solutionName in store is the SHORT name (e.g., "PMYMS") from project.solution_name
-      // Cover section edits solution_full_name which is a different field
-      // Store is only updated via setProject() on initial load
-    } catch (error) {
-      console.error('Error updating project:', error);
-    }
   };
 
   const handleDelete = () => {

@@ -24,3 +24,5 @@ export const useEditor = () => {
   }
   return context;
 };
+
+export const useOptionalEditor = () => useContext(EditorContext);

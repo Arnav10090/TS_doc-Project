@@ -1,5 +1,6 @@
 import apiClient from './client'
 import type { SectionData } from '../types'
+import { clearSectionDraft, getSectionDraft } from '../utils/sectionDraftStore'
 
 export const getAllSections = async (projectId: string): Promise<SectionData[]> => {
   const response = await apiClient.get<SectionData[]>(`/api/v1/projects/${projectId}/sections`)
@@ -10,7 +11,14 @@ export const getSection = async (projectId: string, sectionKey: string): Promise
   const response = await apiClient.get<SectionData>(
     `/api/v1/projects/${projectId}/sections/${sectionKey}`
   )
-  return response.data
+  const draftContent = getSectionDraft(projectId, sectionKey)
+
+  return draftContent
+    ? {
+        ...response.data,
+        content: draftContent,
+      }
+    : response.data
 }
 
 export const upsertSection = async (
@@ -22,6 +30,7 @@ export const upsertSection = async (
     `/api/v1/projects/${projectId}/sections/${sectionKey}`,
     { content }
   )
+  clearSectionDraft(projectId, sectionKey)
   return response.data
 }
 

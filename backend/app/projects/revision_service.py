@@ -9,7 +9,7 @@ Key responsibilities:
 - Create initial revision entry on project creation
 - Append new revision entries on project modification
 - Generate ordinal text for revision details (First issue, Second issue, etc.)
-- Format dates consistently (DD-MM-YYYY)
+- Format dates consistently in English ordinal format (e.g., Twentieth May 2026)
 - Calculate next revision number from existing entries
 """
 
@@ -66,24 +66,61 @@ def generate_ordinal_text(number: int) -> str:
     return f"{number}{suffix} issue"
 
 
+def _day_to_ordinal_word(day: int) -> str:
+    """
+    Convert a day number (1-31) to its English ordinal word.
+    
+    Args:
+        day: Day of the month (1-31)
+        
+    Returns:
+        English ordinal word for the day
+        
+    Examples:
+        >>> _day_to_ordinal_word(1)
+        'First'
+        >>> _day_to_ordinal_word(12)
+        'Twelfth'
+        >>> _day_to_ordinal_word(21)
+        'Twenty-First'
+        >>> _day_to_ordinal_word(31)
+        'Thirty-First'
+    """
+    ordinal_words = {
+        1: "First", 2: "Second", 3: "Third", 4: "Fourth", 5: "Fifth",
+        6: "Sixth", 7: "Seventh", 8: "Eighth", 9: "Ninth", 10: "Tenth",
+        11: "Eleventh", 12: "Twelfth", 13: "Thirteenth", 14: "Fourteenth",
+        15: "Fifteenth", 16: "Sixteenth", 17: "Seventeenth", 18: "Eighteenth",
+        19: "Nineteenth", 20: "Twentieth",
+        21: "Twenty-First", 22: "Twenty-Second", 23: "Twenty-Third",
+        24: "Twenty-Fourth", 25: "Twenty-Fifth", 26: "Twenty-Sixth",
+        27: "Twenty-Seventh", 28: "Twenty-Eighth", 29: "Twenty-Ninth",
+        30: "Thirtieth", 31: "Thirty-First",
+    }
+    return ordinal_words.get(day, str(day))
+
+
 def format_date_dd_mm_yyyy() -> str:
     """
-    Format current date as DD-MM-YYYY.
+    Format current date in English ordinal format.
     
-    Uses the current system date and formats it with zero-padded
-    day and month values.
+    Uses the current system date and formats it as an English ordinal
+    day followed by the full month name and four-digit year.
     
     Returns:
-        Date string in DD-MM-YYYY format
+        Date string in English ordinal format (e.g., "Twentieth May 2026")
         
     Examples:
         >>> format_date_dd_mm_yyyy()  # If today is Jan 5, 2025
-        '05-01-2025'
+        'Fifth January 2025'
         >>> format_date_dd_mm_yyyy()  # If today is Dec 25, 2025
-        '25-12-2025'
+        'Twenty-Fifth December 2025'
     """
     now = datetime.now()
-    return now.strftime("%d-%m-%Y")
+    day_word = _day_to_ordinal_word(now.day)
+    month_name = now.strftime("%B")
+    year = now.year
+    return f"{day_word} {month_name} {year}"
 
 
 def calculate_next_revision_number(existing_rows: List[dict]) -> int:

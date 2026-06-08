@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import TableSubsectionEditor from '../input/TableSubsectionEditor';
 import ParagraphSubsectionEditor from '../input/ParagraphSubsectionEditor';
 import {
@@ -21,24 +21,49 @@ import {
 type ModalStep =
   | 'choose-type'
   | 'configure-subsection'
-  | 'configure-table'
-  | 'configure-image'
-  | 'configure-paragraph';
+  | 'configure-content';
+
+interface ContentBlock {
+  id: string;
+  type: SubsectionContentType;
+  tableData: TableData;
+  imageData: ImageData;
+  paragraphData: ParagraphData;
+}
 
 interface CustomSectionOption {
   key: string;
   title: string;
+  subsections?: Array<{
+    key: string;
+    name: string;
+  }>;
+}
+
+interface SubsectionAnchorOption {
+  key: string;
+  label: string;
+  insertAfterKey: string;
+  insertAfterSubsectionKey?: string;
+}
+
+interface CurrentSectionContext {
+  label: string;
+  subsections: SubsectionAnchorOption[];
 }
 
 interface SectionTypeModalProps {
   isOpen: boolean;
   insertAfterKey: string;
+  insertAfterSubsectionKey?: string;
+  currentSection?: CurrentSectionContext | null;
   availableCustomSections: CustomSectionOption[];
   onClose: () => void;
   onCreateSection: (insertAfterKey: string) => Promise<void> | void;
   onCreateSubsection: (
     parentSectionKey: string,
     subsection: CustomSubsection,
+    insertAfterSubsectionKey?: string,
   ) => Promise<void> | void;
 }
 
@@ -56,6 +81,7 @@ const createTableData = (columnCount: number): TableData => {
   return {
     tables: [
       {
+        caption: '',
         columns,
         rows: [firstRow],
       },
@@ -73,9 +99,25 @@ const stripHtml = (html: string): string => {
   return (temp.textContent || temp.innerText || '').trim();
 };
 
+let blockIdCounter = 0;
+const generateBlockId = (): string => {
+  blockIdCounter += 1;
+  return `block_${Date.now()}_${blockIdCounter}`;
+};
+
+const createContentBlock = (type: SubsectionContentType): ContentBlock => ({
+  id: generateBlockId(),
+  type,
+  tableData: createTableData(2),
+  imageData: { images: [] },
+  paragraphData: { paragraphs: [{ html: '' }] },
+});
+
 const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
   isOpen,
   insertAfterKey,
+  insertAfterSubsectionKey,
+  currentSection,
   availableCustomSections,
   onClose,
   onCreateSection,
@@ -85,11 +127,8 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
   const [subsectionName, setSubsectionName] = useState('');
   const [selectedContentType, setSelectedContentType] =
     useState<SubsectionContentType>('table');
-  const [tableData, setTableData] = useState<TableData>(() => createTableData(2));
-  const [imageData, setImageData] = useState<ImageData>({ images: [] });
-  const [paragraphData, setParagraphData] = useState<ParagraphData>({
-    paragraphs: [{ html: '' }],
-  });
+  const [selectedAnchorKey, setSelectedAnchorKey] = useState('');
+  const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -106,7 +145,48 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
   const targetSectionKey = targetCustomSection?.key || insertAfterKey;
   const canCreateSubsection = !['cover', 'revision_history'].includes(insertAfterKey);
 
-  const targetSectionLabel = targetCustomSection?.title || 'the current section';
+  const customSectionAnchors = useMemo<SubsectionAnchorOption[]>(() => {
+    if (!targetCustomSection?.subsections?.length) {
+      return [];
+    }
+
+    return targetCustomSection.subsections.map((subsection, index) => ({
+      key: `${targetCustomSection.key}:${subsection.key}`,
+      label: `${index + 1}. ${subsection.name || `Subsection ${index + 1}`}`,
+      insertAfterKey: targetCustomSection.key,
+      insertAfterSubsectionKey: subsection.key,
+    }));
+  }, [targetCustomSection]);
+
+  const subsectionAnchorOptions =
+    currentSection?.subsections?.length
+      ? currentSection.subsections
+      : customSectionAnchors;
+  const targetSectionLabel =
+    currentSection?.label ||
+    targetCustomSection?.title ||
+    'the current section';
+  const preferredAnchor = useMemo(() => {
+    const matchingAnchor = subsectionAnchorOptions.find(
+      (anchor) =>
+        anchor.insertAfterKey === targetSectionKey &&
+        (anchor.insertAfterSubsectionKey || '') ===
+          (insertAfterSubsectionKey || ''),
+    );
+
+    return (
+      matchingAnchor ||
+      subsectionAnchorOptions[subsectionAnchorOptions.length - 1] ||
+      null
+    );
+  }, [
+    insertAfterSubsectionKey,
+    subsectionAnchorOptions,
+    targetSectionKey,
+  ]);
+  const selectedAnchor =
+    subsectionAnchorOptions.find((anchor) => anchor.key === selectedAnchorKey) ||
+    preferredAnchor;
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -132,12 +212,30 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
     setStep('choose-type');
     setSubsectionName('');
     setSelectedContentType('table');
-    setTableData(createTableData(2));
-    setImageData({ images: [] });
-    setParagraphData({ paragraphs: [{ html: '' }] });
+    setSelectedAnchorKey(preferredAnchor?.key || '');
+    setContentBlocks([]);
     setErrorMessage('');
     setIsSaving(false);
-  }, [isOpen, targetCustomSection]);
+  }, [isOpen, preferredAnchor?.key]);
+
+  const updateBlock = useCallback((blockId: string, updates: Partial<ContentBlock>) => {
+    setContentBlocks((prev) =>
+      prev.map((block) =>
+        block.id === blockId ? { ...block, ...updates } : block,
+      ),
+    );
+  }, []);
+
+  const removeBlock = useCallback((blockId: string) => {
+    setContentBlocks((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((block) => block.id !== blockId);
+    });
+  }, []);
+
+  const addBlock = useCallback((type: SubsectionContentType) => {
+    setContentBlocks((prev) => [...prev, createContentBlock(type)]);
+  }, []);
 
   if (!isOpen) {
     return null;
@@ -256,6 +354,59 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
     marginTop: '20px',
   };
 
+  const addElementButtonStyle: React.CSSProperties = {
+    padding: '8px 12px',
+    backgroundColor: '#FFFFFF',
+    color: '#E60012',
+    border: '2px solid #E60012',
+    borderRadius: '4px',
+    fontSize: '13px',
+    fontWeight: 500,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  };
+
+  const addElementRowStyle: React.CSSProperties = {
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap',
+    marginTop: '16px',
+  };
+
+  const blockContainerStyle: React.CSSProperties = {
+    border: '1px solid #E5E7EB',
+    borderRadius: '8px',
+    padding: '16px',
+    marginBottom: '16px',
+    backgroundColor: '#FAFAFA',
+  };
+
+  const blockHeaderStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '12px',
+  };
+
+  const blockTitleStyle: React.CSSProperties = {
+    fontSize: '14px',
+    fontWeight: 600,
+    color: '#1A1A2E',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  };
+
+  const removeBlockButtonStyle: React.CSSProperties = {
+    padding: '4px 10px',
+    backgroundColor: '#FFFFFF',
+    color: '#6B7280',
+    border: '1px solid #D1D5DB',
+    borderRadius: '4px',
+    fontSize: '12px',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  };
+
   const selectedTypeButton = (
     type: SubsectionContentType,
   ): React.CSSProperties => ({
@@ -272,6 +423,7 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
   };
 
   const handleImageFileChange = async (
+    blockId: string,
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const files = Array.from(e.target.files || []);
@@ -280,9 +432,11 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
     }
 
     setErrorMessage('');
+    const block = contentBlocks.find((b) => b.id === blockId);
+    if (!block) return;
 
     try {
-      const nextImages = [...getImageItems(imageData)];
+      const nextImages = [...getImageItems(block.imageData)];
 
       for (const file of files) {
         const validationError = validateImageUpload(file);
@@ -295,10 +449,11 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
           base64,
           filename: file.name,
           mimeType: file.type,
+          caption: file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim(),
         });
       }
 
-      setImageData({ images: nextImages });
+      updateBlock(blockId, { imageData: { images: nextImages } });
     } catch (error) {
       console.error('Failed to convert image:', error);
       setErrorMessage(
@@ -309,31 +464,43 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
     }
   };
 
-  const handleRemoveImage = (indexToRemove: number) => {
-    setImageData({
-      images: getImageItems(imageData).filter((_, index) => index !== indexToRemove),
+  const handleRemoveImage = (blockId: string, indexToRemove: number) => {
+    const block = contentBlocks.find((b) => b.id === blockId);
+    if (!block) return;
+
+    updateBlock(blockId, {
+      imageData: {
+        images: getImageItems(block.imageData).filter((_, index) => index !== indexToRemove),
+      },
     });
   };
 
-  const handleContinueToSubsectionContent = () => {
+  const handleImageCaptionChange = (
+    blockId: string,
+    imageIndex: number,
+    caption: string,
+  ) => {
+    const block = contentBlocks.find((b) => b.id === blockId);
+    if (!block) return;
+
+    updateBlock(blockId, {
+      imageData: {
+        images: getImageItems(block.imageData).map((image, index) =>
+          index === imageIndex ? { ...image, caption } : image,
+        ),
+      },
+    });
+  };
+
+  const handleContinueToContent = () => {
     if (!subsectionName.trim()) {
       setErrorMessage('Subsection name is required.');
       return;
     }
 
     setErrorMessage('');
-
-    if (selectedContentType === 'table') {
-      setStep('configure-table');
-      return;
-    }
-
-    if (selectedContentType === 'image') {
-      setStep('configure-image');
-      return;
-    }
-
-    setStep('configure-paragraph');
+    setContentBlocks([createContentBlock(selectedContentType)]);
+    setStep('configure-content');
   };
 
   const handleCreateSectionClick = async () => {
@@ -351,10 +518,8 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
     }
   };
 
-  const handleSaveSubsection = async () => {
+  const handleSaveAllBlocks = async () => {
     const trimmedName = subsectionName.trim();
-    const normalizedTables = getTableItems(tableData);
-    const normalizedParagraphs = getParagraphItems(paragraphData);
 
     if (!canCreateSubsection) {
       setErrorMessage(
@@ -368,59 +533,95 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
       return;
     }
 
-    if (selectedContentType === 'table') {
-      if (
-        normalizedTables.length === 0 ||
-        normalizedTables.some((table) => table.columns.some((column) => !column.trim()))
-      ) {
-        setErrorMessage('Every table needs at least one titled column before saving.');
+    // Validate all blocks
+    for (let i = 0; i < contentBlocks.length; i++) {
+      const block = contentBlocks[i];
+      const blockLabel = `Block ${i + 1}`;
+
+      if (block.type === 'table') {
+        const normalizedTables = getTableItems(block.tableData);
+        if (
+          normalizedTables.length === 0 ||
+          normalizedTables.some((table) => table.columns.some((column) => !column.trim()))
+        ) {
+          setErrorMessage(`${blockLabel}: Every table needs at least one titled column before saving.`);
+          return;
+        }
+      }
+
+      if (block.type === 'image' && getImageItems(block.imageData).length === 0) {
+        setErrorMessage(`${blockLabel}: Upload at least one image before saving.`);
         return;
       }
-    }
 
-    if (selectedContentType === 'image' && getImageItems(imageData).length === 0) {
-      setErrorMessage('Upload at least one image before saving this subsection.');
-      return;
+      if (block.type === 'paragraph') {
+        const normalizedParagraphs = getParagraphItems(block.paragraphData);
+        if (!normalizedParagraphs.some((paragraph) => stripHtml(paragraph.html))) {
+          setErrorMessage(`${blockLabel}: Enter paragraph text before saving.`);
+          return;
+        }
+      }
     }
-
-    if (
-      selectedContentType === 'paragraph' &&
-      !normalizedParagraphs.some((paragraph) => stripHtml(paragraph.html))
-    ) {
-      setErrorMessage('Enter paragraph text before saving.');
-      return;
-    }
-
-    const subsection: CustomSubsection = {
-      key: generateCustomSubsectionKey(),
-      name: trimmedName,
-      contentType: selectedContentType,
-      data:
-        selectedContentType === 'table'
-          ? {
-              tables: normalizedTables.map((table) => ({
-                columns: table.columns.map((column) => column.trim()),
-                rows: table.rows.map((row) =>
-                  table.columns.reduce<Record<string, string>>((nextRow, column) => {
-                    const trimmedColumn = column.trim();
-                    nextRow[trimmedColumn] = row[column] || '';
-                    return nextRow;
-                  }, {}),
-                ),
-              })),
-            }
-          : selectedContentType === 'image'
-            ? imageData
-            : {
-                paragraphs: normalizedParagraphs,
-              },
-    };
 
     setIsSaving(true);
     setErrorMessage('');
 
     try {
-      await onCreateSubsection(targetSectionKey, subsection);
+      const initialInsertAfterKey =
+        selectedAnchor?.insertAfterKey || targetSectionKey;
+      let nextInsertAfterSubsectionKey =
+        selectedAnchor?.insertAfterSubsectionKey || insertAfterSubsectionKey;
+
+      for (let i = 0; i < contentBlocks.length; i++) {
+        const block = contentBlocks[i];
+
+        let data;
+        if (block.type === 'table') {
+          const normalizedTables = getTableItems(block.tableData);
+          data = {
+            tables: normalizedTables.map((table) => ({
+              caption: table.caption?.trim() || '',
+              columns: table.columns.map((column) => column.trim()),
+              rows: table.rows.map((row) =>
+                table.columns.reduce<Record<string, string>>((nextRow, column) => {
+                  const trimmedColumn = column.trim();
+                  nextRow[trimmedColumn] = row[column] || '';
+                  return nextRow;
+                }, {}),
+              ),
+            })),
+          };
+        } else if (block.type === 'image') {
+          data = block.imageData;
+        } else {
+          data = {
+            paragraphs: getParagraphItems(block.paragraphData),
+          };
+        }
+
+        const blockName = contentBlocks.length > 1
+          ? `${trimmedName} - ${block.type.charAt(0).toUpperCase() + block.type.slice(1)} ${i + 1}`
+          : trimmedName;
+
+        const subsection: CustomSubsection = {
+          key: generateCustomSubsectionKey(),
+          name: blockName,
+          contentType: block.type,
+          data,
+        };
+
+        if (nextInsertAfterSubsectionKey) {
+          await onCreateSubsection(
+            initialInsertAfterKey,
+            subsection,
+            nextInsertAfterSubsectionKey,
+          );
+        } else {
+          await onCreateSubsection(initialInsertAfterKey, subsection);
+        }
+        nextInsertAfterSubsectionKey = subsection.key;
+      }
+
       onClose();
     } catch (error) {
       console.error('Failed to create subsection:', error);
@@ -499,7 +700,7 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
       </div>
 
       <div style={sectionBlockStyle}>
-        <div style={labelStyle}>Target location</div>
+        <div style={labelStyle}>Current Section</div>
         <div
           style={{
             ...inputStyle,
@@ -509,6 +710,33 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
         >
           {targetSectionLabel}
         </div>
+      </div>
+
+      <div style={sectionBlockStyle}>
+        <label style={labelStyle} htmlFor="add-after-subsection">
+          Add after subsection:
+        </label>
+        <select
+          id="add-after-subsection"
+          style={{
+            ...inputStyle,
+            backgroundColor:
+              subsectionAnchorOptions.length > 0 ? '#FFFFFF' : '#F9FAFB',
+          }}
+          value={selectedAnchor?.key || ''}
+          onChange={(e) => setSelectedAnchorKey(e.target.value)}
+          disabled={subsectionAnchorOptions.length === 0}
+        >
+          {subsectionAnchorOptions.length === 0 ? (
+            <option value="">End of current section</option>
+          ) : (
+            subsectionAnchorOptions.map((anchor) => (
+              <option key={anchor.key} value={anchor.key}>
+                {anchor.label}
+              </option>
+            ))
+          )}
+        </select>
       </div>
 
       <div style={sectionBlockStyle}>
@@ -549,7 +777,7 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
         <button
           type="button"
           style={primaryButtonStyle}
-          onClick={handleContinueToSubsectionContent}
+          onClick={handleContinueToContent}
         >
           Continue
         </button>
@@ -557,149 +785,169 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
     </>
   );
 
-  const renderTableStep = () => (
-    <>
-      <h2 id="section-type-modal-title" style={titleStyle}>
-        Add Table
-      </h2>
-      <div style={subtitleStyle}>
-        Create one or more tables for <strong>{subsectionName.trim() || 'this subsection'}</strong>{' '}
-        in <strong>{targetSectionLabel}</strong>.
-      </div>
-
-      <div style={sectionBlockStyle}>
-        <TableSubsectionEditor data={tableData} onChange={setTableData} />
-      </div>
-
-      <div style={footerStyle}>
-        <button
-          type="button"
-          style={secondaryButtonStyle}
-          onClick={() => setStep('configure-subsection')}
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          style={primaryButtonStyle}
-          onClick={handleSaveSubsection}
-          disabled={isSaving}
-        >
-          Create Table
-        </button>
-      </div>
-    </>
+  const renderTableBlock = (block: ContentBlock) => (
+    <TableSubsectionEditor
+      data={block.tableData}
+      onChange={(data) => updateBlock(block.id, { tableData: data })}
+    />
   );
 
-  const renderImageStep = () => (
-    <>
-      <h2 id="section-type-modal-title" style={titleStyle}>
-        Add Image
-      </h2>
-      <div style={subtitleStyle}>
-        Upload an image for <strong>{subsectionName.trim() || 'this subsection'}</strong>{' '}
-        in <strong>{targetSectionLabel}</strong>.
-      </div>
-
-      <div style={sectionBlockStyle}>
-        <label style={labelStyle}>Select image files from this computer</label>
-        <label
+  const renderImageBlock = (block: ContentBlock) => (
+    <div>
+      <label style={labelStyle}>Select image files from this computer</label>
+      <label
+        style={{
+          display: 'block',
+          padding: '18px',
+          border: '2px dashed #D1D5DB',
+          borderRadius: '6px',
+          backgroundColor: '#FFFFFF',
+          cursor: 'pointer',
+          textAlign: 'center',
+        }}
+      >
+        <div style={{ fontWeight: 600, marginBottom: '6px' }}>Choose Images</div>
+        <div style={helperStyle}>PNG or JPG, multiple files supported, maximum 10MB each</div>
+        <input
+          type="file"
+          accept="image/png,image/jpeg"
+          multiple
+          style={{ display: 'none' }}
+          onChange={(e) => handleImageFileChange(block.id, e)}
+        />
+      </label>
+      {getImageItems(block.imageData).length > 0 && (
+        <div
           style={{
-            display: 'block',
-            padding: '18px',
-            border: '2px dashed #D1D5DB',
+            marginTop: '12px',
+            border: '1px solid #E5E7EB',
             borderRadius: '6px',
-            backgroundColor: '#FFFFFF',
-            cursor: 'pointer',
-            textAlign: 'center',
+            padding: '12px',
           }}
         >
-          <div style={{ fontWeight: 600, marginBottom: '6px' }}>Choose Images</div>
-          <div style={helperStyle}>PNG or JPG, multiple files supported, maximum 10MB each</div>
-          <input
-            type="file"
-            accept="image/png,image/jpeg"
-            multiple
-            style={{ display: 'none' }}
-            onChange={handleImageFileChange}
-          />
-        </label>
-        {getImageItems(imageData).length > 0 && (
-          <div
-            style={{
-              marginTop: '12px',
-              border: '1px solid #E5E7EB',
-              borderRadius: '6px',
-              padding: '12px',
-            }}
-          >
-            <div style={{ fontWeight: 600, marginBottom: '12px' }}>
-              Uploaded Images ({getImageItems(imageData).length})
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {getImageItems(imageData).map((image, index) => (
-                <div
-                  key={`${image.filename}-${index}`}
-                  style={{
-                    border: '1px solid #E5E7EB',
-                    borderRadius: '6px',
-                    padding: '12px',
-                  }}
-                >
-                  <img
-                    src={image.base64}
-                    alt={image.filename || 'Uploaded preview'}
-                    style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
-                  />
-                  <div style={helperStyle}>
-                    {image.filename} {image.mimeType ? `(${image.mimeType})` : ''}
-                  </div>
-                  <button
-                    type="button"
-                    style={{ ...secondaryButtonStyle, marginTop: '8px' }}
-                    onClick={() => handleRemoveImage(index)}
-                  >
-                    Remove Image
-                  </button>
-                </div>
-              ))}
-            </div>
+          <div style={{ fontWeight: 600, marginBottom: '12px' }}>
+            Uploaded Images ({getImageItems(block.imageData).length})
           </div>
-        )}
-      </div>
-
-      <div style={footerStyle}>
-        <button
-          type="button"
-          style={secondaryButtonStyle}
-          onClick={() => setStep('configure-subsection')}
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          style={primaryButtonStyle}
-          onClick={handleSaveSubsection}
-          disabled={isSaving}
-        >
-          Save Images
-        </button>
-      </div>
-    </>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {getImageItems(block.imageData).map((image, index) => (
+              <div
+                key={`${image.filename}-${index}`}
+                style={{
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '6px',
+                  padding: '12px',
+                }}
+              >
+                <img
+                  src={image.base64}
+                  alt={image.filename || 'Uploaded preview'}
+                  style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
+                />
+                <div style={helperStyle}>
+                  {image.filename} {image.mimeType ? `(${image.mimeType})` : ''}
+                </div>
+                <div style={{ marginTop: '12px' }}>
+                  <label style={labelStyle}>Figure Name / Caption</label>
+                  <input
+                    type="text"
+                    style={inputStyle}
+                    value={image.caption || ''}
+                    onChange={(e) =>
+                      handleImageCaptionChange(block.id, index, e.target.value)
+                    }
+                    placeholder={`Figure ${index + 1} caption`}
+                  />
+                </div>
+                <button
+                  type="button"
+                  style={{ ...secondaryButtonStyle, marginTop: '8px' }}
+                  onClick={() => handleRemoveImage(block.id, index)}
+                >
+                  Remove Image
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 
-  const renderParagraphStep = () => (
+  const renderParagraphBlock = (block: ContentBlock) => (
+    <ParagraphSubsectionEditor
+      data={block.paragraphData}
+      onChange={(data) => updateBlock(block.id, { paragraphData: data })}
+    />
+  );
+
+  const getBlockTypeLabel = (type: SubsectionContentType): string => {
+    switch (type) {
+      case 'table':
+        return 'Table';
+      case 'image':
+        return 'Image';
+      case 'paragraph':
+        return 'Paragraph';
+    }
+  };
+
+  const renderContentStep = () => (
     <>
       <h2 id="section-type-modal-title" style={titleStyle}>
-        Add Paragraph
+        Add Content
       </h2>
       <div style={subtitleStyle}>
-        Write one or more formatted paragraphs for <strong>{subsectionName.trim() || 'this subsection'}</strong>{' '}
-        using the same editor configured in the existing section inputs.
+        Configure content for <strong>{subsectionName.trim() || 'this subsection'}</strong>{' '}
+        in <strong>{targetSectionLabel}</strong>
+        {selectedAnchor ? <> after <strong>{selectedAnchor.label}</strong></> : null}.
+        Add more elements using the buttons below each block.
       </div>
 
-      <div style={sectionBlockStyle}>
-        <ParagraphSubsectionEditor data={paragraphData} onChange={setParagraphData} />
+      {contentBlocks.map((block, index) => (
+        <div key={block.id} style={blockContainerStyle}>
+          <div style={blockHeaderStyle}>
+            <div style={blockTitleStyle}>
+              {getBlockTypeLabel(block.type)} {contentBlocks.length > 1 ? index + 1 : ''}
+            </div>
+            {contentBlocks.length > 1 && (
+              <button
+                type="button"
+                style={removeBlockButtonStyle}
+                onClick={() => removeBlock(block.id)}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+
+          {block.type === 'table' && renderTableBlock(block)}
+          {block.type === 'image' && renderImageBlock(block)}
+          {block.type === 'paragraph' && renderParagraphBlock(block)}
+        </div>
+      ))}
+
+      <div style={addElementRowStyle}>
+        <button
+          type="button"
+          style={addElementButtonStyle}
+          onClick={() => addBlock('table')}
+        >
+          + Add New Table
+        </button>
+        <button
+          type="button"
+          style={addElementButtonStyle}
+          onClick={() => addBlock('paragraph')}
+        >
+          + Add New Paragraph
+        </button>
+        <button
+          type="button"
+          style={addElementButtonStyle}
+          onClick={() => addBlock('image')}
+        >
+          + Add New Image
+        </button>
       </div>
 
       <div style={footerStyle}>
@@ -713,10 +961,10 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
         <button
           type="button"
           style={primaryButtonStyle}
-          onClick={handleSaveSubsection}
+          onClick={handleSaveAllBlocks}
           disabled={isSaving}
         >
-          Save Text
+          {isSaving ? 'Saving...' : 'Save All'}
         </button>
       </div>
     </>
@@ -733,9 +981,7 @@ const SectionTypeModal: React.FC<SectionTypeModalProps> = ({
       <div style={contentStyle}>
         {step === 'choose-type' && renderChooseTypeStep()}
         {step === 'configure-subsection' && renderSubsectionSetupStep()}
-        {step === 'configure-table' && renderTableStep()}
-        {step === 'configure-image' && renderImageStep()}
-        {step === 'configure-paragraph' && renderParagraphStep()}
+        {step === 'configure-content' && renderContentStep()}
 
         {errorMessage && (
           <div

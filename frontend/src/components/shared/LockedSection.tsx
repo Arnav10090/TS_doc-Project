@@ -19,7 +19,7 @@ const LockedSection: React.FC<LockedSectionProps> = ({ content }) => {
   const resolvedContent = resolveContent(content);
 
   return (
-    <div className="locked-section">
+    <div className="standard-section">
       <div
         style={{
           padding: '12px 16px',
@@ -33,8 +33,7 @@ const LockedSection: React.FC<LockedSectionProps> = ({ content }) => {
           fontSize: '14px',
         }}
       >
-        <span>🔒</span>
-        <span>This section is fixed and cannot be edited.</span>
+        <span>Template content</span>
       </div>
       <div
         style={{

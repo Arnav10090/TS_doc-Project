@@ -7,6 +7,7 @@ from typing import Dict, Any, Tuple
 from docxtpl import DocxTemplate
 
 from app.generation.context_builder import build_context, finalize_context_with_images
+from app.generation.document_references import apply_document_references
 
 
 def generate_safe_filename(text: str) -> str:
@@ -71,5 +72,8 @@ def generate_document(
     
     # Save document
     template.save(str(file_path))
+
+    # Add professional figure/table captions and the final reference lists.
+    apply_document_references(str(file_path), all_sections, upload_dir, project_id)
     
     return str(file_path), filename

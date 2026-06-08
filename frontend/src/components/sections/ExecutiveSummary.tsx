@@ -82,8 +82,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ projectId }) => {
           color: '#6B7280',
           fontSize: '14px',
         }}>
-          <span>🔒</span>
-          <span>This section is fixed and cannot be edited.</span>
+          <span>Template content</span>
         </div>
         <div style={{
           whiteSpace: 'pre-wrap',
@@ -111,8 +110,7 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ projectId }) => {
           color: '#6B7280',
           fontSize: '14px',
         }}>
-          <span>🔒</span>
-          <span>Client logos table (fixed layout)</span>
+          <span>Client logos table</span>
         </div>
         <div style={{
           whiteSpace: 'pre-wrap',

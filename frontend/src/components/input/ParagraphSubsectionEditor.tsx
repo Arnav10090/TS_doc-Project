@@ -224,7 +224,7 @@ const ParagraphEditorItem: React.FC<ParagraphEditorItemProps> = ({
           fontStyle: 'italic',
         }}
       >
-        Changes are auto-saved after 500ms
+        Click SAVE to update the document preview.
       </div>
     </div>
   );
@@ -289,6 +289,7 @@ const ParagraphSubsectionEditor: React.FC<ParagraphSubsectionEditorProps> = ({
         type="button"
         onClick={handleAddParagraph}
         style={{
+          alignSelf: 'flex-start',
           padding: '8px 12px',
           backgroundColor: '#E60012',
           color: '#FFFFFF',
@@ -298,7 +299,6 @@ const ParagraphSubsectionEditor: React.FC<ParagraphSubsectionEditorProps> = ({
           fontWeight: 500,
           cursor: 'pointer',
           fontFamily: 'inherit',
-          alignSelf: 'flex-start',
         }}
       >
         + Add New Paragraph

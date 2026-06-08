@@ -1,8 +1,8 @@
 /**
- * Locked Section Content Constants
+ * Standard Section Content Constants
  * 
  * IMPORTANT: These constants contain the exact text from TS_Template_original.docx
- * for sections that are locked and cannot be edited by users.
+ * for sections that start with standard template text.
  * 
  * The content must be extracted from the original Word template to ensure
  * legal accuracy and compliance with Hitachi India standards.
@@ -128,7 +128,7 @@ before the user-editable POC name and description fields.
 `;
 
 /**
- * Helper function to resolve placeholders in locked content
+ * Helper function to resolve placeholders in standard content
  * Replaces {{variable}} patterns with actual values from project data
  */
 export const resolvePlaceholders = (

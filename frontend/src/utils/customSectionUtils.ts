@@ -3,8 +3,42 @@
  * Handles key generation, validation, and position tracking
  */
 
-import { CustomSectionContent, CustomSubsection } from '../types/customSections';
-import type { TableData } from '../types/customSections';
+import { getTableItems } from '../types/customSections';
+import type { CustomSectionContent, CustomSubsection, TableData } from '../types/customSections';
+
+export const PREVIEW_SECTION_ORDER = [
+  'cover',
+  'revision_history',
+  'executive_summary',
+  'introduction',
+  'abbreviations',
+  'process_flow',
+  'overview',
+  'features',
+  'remote_support',
+  'documentation_control',
+  'customer_training',
+  'system_config',
+  'fat_condition',
+  'tech_stack',
+  'hardware_specs',
+  'software_specs',
+  'third_party_sw',
+  'overall_gantt',
+  'shutdown_gantt',
+  'supervisors',
+  'scope_definitions',
+  'division_of_eng',
+  'value_addition',
+  'work_completion',
+  'buyer_obligations',
+  'exclusion_list',
+  'buyer_prerequisites',
+  'binding_conditions',
+  'cybersecurity',
+  'disclaimer',
+  'poc',
+] as const;
 
 /**
  * Generates a unique custom section key
@@ -52,6 +86,71 @@ export function isCustomSectionKey(key: string): boolean {
  */
 export function isCustomSubsectionKey(key: string): boolean {
   return /^custom_subsection_\d+_[a-f0-9-]{36}$/.test(key);
+}
+
+export function getCustomSectionsInPreviewOrder(
+  customSections: Record<string, CustomSectionContent>,
+  predefinedSectionOrder: readonly string[] = PREVIEW_SECTION_ORDER,
+): Array<[string, CustomSectionContent]> {
+  const ordered: Array<[string, CustomSectionContent]> = [];
+  const visited = new Set<string>();
+  const entries = Object.entries(customSections);
+
+  const isInlineSubsectionSection = (content: CustomSectionContent) =>
+    content.displayMode === 'subsection';
+
+  const addCustomAfter = (afterKey: string) => {
+    const matchingEntries = entries.filter(
+      ([sectionKey, content]) =>
+        !visited.has(sectionKey) && content.insertAfterKey === afterKey,
+    );
+    const inlineEntries = matchingEntries.filter(([, content]) =>
+      isInlineSubsectionSection(content),
+    );
+    const topLevelEntries = matchingEntries.filter(
+      ([, content]) => !isInlineSubsectionSection(content),
+    );
+
+    [...inlineEntries, ...topLevelEntries].forEach(([sectionKey, content]) => {
+      visited.add(sectionKey);
+      ordered.push([sectionKey, content]);
+      addCustomAfter(sectionKey);
+    });
+  };
+
+  predefinedSectionOrder.forEach(addCustomAfter);
+
+  entries.forEach(([sectionKey, content]) => {
+    if (visited.has(sectionKey)) {
+      return;
+    }
+
+    visited.add(sectionKey);
+    ordered.push([sectionKey, content]);
+    addCustomAfter(sectionKey);
+  });
+
+  return ordered;
+}
+
+export function getCustomSectionDisplayName(
+  content: CustomSectionContent,
+): string {
+  const title = (content.title || '').trim();
+  const subsectionName =
+    content.subsections
+      ?.map((subsection) => subsection.name.trim())
+      .find(Boolean) || '';
+
+  if (content.displayMode === 'subsection') {
+    return subsectionName || 'NEW SUBSECTION';
+  }
+
+  if (title && title.toUpperCase() !== 'NEW SECTION') {
+    return title;
+  }
+
+  return subsectionName || 'NEW SECTION';
 }
 
 /**
@@ -223,6 +322,34 @@ export function calculateSubsectionNumbers(
 }
 
 /**
+ * Inserts a custom subsection after a specific existing subsection.
+ * Falls back to appending when no anchor is provided or the anchor is missing.
+ */
+export function insertSubsectionAfter(
+  subsections: CustomSubsection[],
+  subsection: CustomSubsection,
+  insertAfterSubsectionKey?: string | null,
+): CustomSubsection[] {
+  if (!insertAfterSubsectionKey) {
+    return [...subsections, subsection];
+  }
+
+  const insertAfterIndex = subsections.findIndex(
+    (item) => item.key === insertAfterSubsectionKey,
+  );
+
+  if (insertAfterIndex === -1) {
+    return [...subsections, subsection];
+  }
+
+  return [
+    ...subsections.slice(0, insertAfterIndex + 1),
+    subsection,
+    ...subsections.slice(insertAfterIndex + 1),
+  ];
+}
+
+/**
  * Finds the insertion position for a new custom section
  * 
  * @param insertAfterKey Key of section before insertion point
@@ -249,20 +376,27 @@ export function findInsertionPosition(
  * Requirements: 5.5
  */
 export function generateTableHTML(data: TableData): string {
+  const table = getTableItems(data)[0];
+
+  if (!table) {
+    return '';
+  }
+
+  const { columns, rows } = table;
   const tableStyle = 'width: 100%; border-collapse: collapse; margin: 16px 0;';
   const thStyle = 'border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;';
   const tdStyle = 'border: 1px solid #ddd; padding: 12px; text-align: left;';
   
   // Generate table header
-  const headerCells = data.columns
+  const headerCells = columns
     .map(col => `<th style="${thStyle}">${escapeHtml(col)}</th>`)
     .join('');
   const thead = `<thead><tr>${headerCells}</tr></thead>`;
   
   // Generate table body
-  const bodyRows = data.rows
+  const bodyRows = rows
     .map(row => {
-      const cells = data.columns
+      const cells = columns
         .map(col => `<td style="${tdStyle}">${escapeHtml(row[col] || '')}</td>`)
         .join('');
       return `<tr>${cells}</tr>`;

@@ -1,21 +1,23 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 interface PageBreakWithButtonProps {
   insertAfterKey: string;
-  onAddClick: (insertAfterKey: string) => void;
+  insertAfterSubsectionKey?: string;
+  onAddClick: (
+    insertAfterKey: string,
+    insertAfterSubsectionKey?: string,
+  ) => void;
 }
 
 const PageBreakWithButton: React.FC<PageBreakWithButtonProps> = ({
   insertAfterKey,
+  insertAfterSubsectionKey,
   onAddClick,
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  const PAGE_HORIZONTAL_PADDING = 97;
-
   const containerStyle: React.CSSProperties = {
-    width: `calc(100% + ${PAGE_HORIZONTAL_PADDING * 2}px)`,
-    margin: `28px -${PAGE_HORIZONTAL_PADDING}px`,
+    width: '21.59cm',
+    maxWidth: '100%',
+    margin: '0 auto',
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',
@@ -37,8 +39,8 @@ const PageBreakWithButton: React.FC<PageBreakWithButtonProps> = ({
 
   const breakGuideStyle: React.CSSProperties = {
     position: 'absolute',
-    left: `${PAGE_HORIZONTAL_PADDING}px`,
-    right: `${PAGE_HORIZONTAL_PADDING}px`,
+    left: '24px',
+    right: '24px',
     top: '50%',
     transform: 'translateY(-50%)',
     borderTop: '1px solid #D1D5DB',
@@ -47,8 +49,8 @@ const PageBreakWithButton: React.FC<PageBreakWithButtonProps> = ({
 
   const buttonStyle: React.CSSProperties = {
     padding: '8px 18px',
-    backgroundColor: isHovered ? '#E60012' : '#FFFFFF',
-    color: isHovered ? '#FFFFFF' : '#E60012',
+    backgroundColor: '#FFFFFF',
+    color: '#E60012',
     border: '1px solid #E60012',
     borderRadius: '999px',
     fontSize: '12px',
@@ -56,24 +58,25 @@ const PageBreakWithButton: React.FC<PageBreakWithButtonProps> = ({
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     fontFamily: 'inherit',
-    boxShadow: isHovered
-      ? '0 4px 14px rgba(230, 0, 18, 0.16)'
-      : '0 2px 8px rgba(15, 23, 42, 0.08)',
+    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
     position: 'relative',
     zIndex: 1,
   };
 
   return (
-    <div style={containerStyle} className="page-break-with-button">
+    <div
+      style={containerStyle}
+      className="page-break-with-button"
+      data-insert-after-key={insertAfterKey}
+      data-insert-after-subsection-key={insertAfterSubsectionKey || undefined}
+    >
       <div style={breakZoneStyle}>
         <div style={breakGuideStyle} aria-hidden="true" />
         <button
           type="button"
           className="add-section-button"
           style={buttonStyle}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          onClick={() => onAddClick(insertAfterKey)}
+          onClick={() => onAddClick(insertAfterKey, insertAfterSubsectionKey)}
           aria-label={`Add new section after ${insertAfterKey}`}
         >
           + Add New Section

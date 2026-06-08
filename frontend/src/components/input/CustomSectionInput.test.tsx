@@ -91,25 +91,16 @@ describe('CustomSectionInput', () => {
       }),
     );
 
-    await waitFor(() => {
-      expect(mockUpsertSection).toHaveBeenCalledWith(
-        'project-1',
-        parentSectionKey,
-        expect.objectContaining({
-          subsections: [
-            expect.objectContaining({ key: 'custom_subsection_keep' }),
-          ],
-        }),
-      );
-    });
-
     expect(onContentChange).toHaveBeenCalledWith(
       expect.objectContaining({
         subsections: [expect.objectContaining({ key: 'custom_subsection_keep' })],
       }),
     );
-    expect(mockRefreshSections).toHaveBeenCalled();
-    expect(mockToastSuccess).toHaveBeenCalledWith('Subsection deleted');
+    expect(mockUpsertSection).not.toHaveBeenCalled();
+    expect(mockRefreshSections).not.toHaveBeenCalled();
+    expect(mockToastSuccess).toHaveBeenCalledWith(
+      'Subsection removed. Click SAVE to update the preview.',
+    );
   });
 
   it('renders inline subsection editing controls in the right sidebar and saves subsection changes', async () => {
@@ -157,22 +148,6 @@ describe('CustomSectionInput', () => {
       target: { value: 'Updated Inline Table' },
     });
 
-    await waitFor(() => {
-      expect(mockUpsertSection).toHaveBeenCalledWith(
-        'project-1',
-        parentSectionKey,
-        expect.objectContaining({
-          displayMode: 'subsection',
-          subsections: [
-            expect.objectContaining({
-              key: 'custom_subsection_inline',
-              name: 'Updated Inline Table',
-            }),
-          ],
-        }),
-      );
-    });
-
     expect(onContentChange).toHaveBeenCalledWith(
       expect.objectContaining({
         subsections: [
@@ -182,6 +157,7 @@ describe('CustomSectionInput', () => {
         ],
       }),
     );
+    expect(mockUpsertSection).not.toHaveBeenCalled();
   });
 
   it('renders inline paragraph subsection editing controls with add paragraph action', () => {
@@ -262,21 +238,6 @@ describe('CustomSectionInput', () => {
       target: { value: 'Updated Subsection' },
     });
 
-    await waitFor(() => {
-      expect(mockUpsertSection).toHaveBeenCalledWith(
-        'project-1',
-        parentSectionKey,
-        expect.objectContaining({
-          subsections: expect.arrayContaining([
-            expect.objectContaining({
-              key: 'custom_subsection_edit',
-              name: 'Updated Subsection',
-            }),
-          ]),
-        }),
-      );
-    });
-
     expect(onContentChange).toHaveBeenCalledWith(
       expect.objectContaining({
         subsections: expect.arrayContaining([
@@ -287,6 +248,7 @@ describe('CustomSectionInput', () => {
         ]),
       }),
     );
+    expect(mockUpsertSection).not.toHaveBeenCalled();
   });
 
   it('selects a subsection card when clicked in the sidebar list', () => {

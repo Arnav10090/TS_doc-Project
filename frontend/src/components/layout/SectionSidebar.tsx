@@ -4,8 +4,12 @@ import CompletionBadge from '../shared/CompletionBadge';
 import { generateDocument } from '../../api/generation';
 import { handleDocumentDownload } from '../../utils/downloadHelper';
 import toast from 'react-hot-toast';
-import { isCustomSectionKey } from '../../utils/customSectionUtils';
-import { CustomSectionContent } from '../../types/customSections';
+import {
+  getCustomSectionDisplayName,
+  getCustomSectionsInPreviewOrder,
+  isCustomSectionKey,
+} from '../../utils/customSectionUtils';
+import type { CustomSectionContent } from '../../types/customSections';
 
 interface SectionSidebarProps {
   projectId: string;
@@ -23,7 +27,6 @@ interface SectionSidebarProps {
 interface SectionInfo {
   key: string;
   label: string;
-  locked?: boolean;
 }
 
 interface SectionGroup {
@@ -92,9 +95,9 @@ const SECTION_GROUPS: SectionGroup[] = [
   {
     category: 'LEGAL',
     sections: [
-      { key: 'binding_conditions', label: 'Binding Conditions', locked: true },
-      { key: 'cybersecurity', label: 'Cybersecurity', locked: true },
-      { key: 'disclaimer', label: 'Disclaimer', locked: true },
+      { key: 'binding_conditions', label: 'Binding Conditions' },
+      { key: 'cybersecurity', label: 'Cybersecurity' },
+      { key: 'disclaimer', label: 'Disclaimer' },
       { key: 'poc', label: 'Proof of Concept' },
     ],
   },
@@ -116,18 +119,25 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [missingSections, setMissingSections] = useState<string[]>([]);
 
-  // Filter custom sections from sectionContents
+  // Filter and order custom sections to match the document preview.
   const customSections: Array<{ key: string; title: string }> = [];
   if (sectionContents) {
+    const customSectionContents: Record<string, CustomSectionContent> = {};
+
     Object.entries(sectionContents).forEach(([key, content]) => {
       if (isCustomSectionKey(key)) {
-        const customContent = content as CustomSectionContent;
-        customSections.push({
-          key,
-          title: customContent.title || 'NEW SECTION'
-        });
+        customSectionContents[key] = content as CustomSectionContent;
       }
     });
+
+    getCustomSectionsInPreviewOrder(customSectionContents).forEach(
+      ([key, content]) => {
+        customSections.push({
+          key,
+          title: getCustomSectionDisplayName(content),
+        });
+      },
+    );
   }
 
   // Calculate completion statistics (27 completable sections, excluding custom sections)
@@ -367,9 +377,6 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
                       >
                         {section.label}
                       </span>
-                      {section.locked && (
-                        <span style={{ fontSize: '12px' }}>🔒</span>
-                      )}
                     </div>
                     <CompletionBadge status={status} />
                   </button>

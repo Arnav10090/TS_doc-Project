@@ -14,7 +14,7 @@
  * Expected Behavior: Deleted sections SHALL NOT render in the preview.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import DocumentPreview from './DocumentPreview';
 import { BrowserRouter } from 'react-router-dom';
@@ -245,7 +245,7 @@ describe('DocumentPreview - Bug Condition Exploration: Deleted Sections Disappea
     ];
 
     // Test each section individually
-    deletableSections.forEach(({ key, heading }) => {
+    deletableSections.forEach(({ heading }) => {
       // Create sectionContents WITHOUT the current section key
       const sectionContents = {
         cover: { solution_full_name: 'Test Solution' },

@@ -101,9 +101,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
           type="button"
           onClick={(e) => {
             e.preventDefault();
-            const { state } = editor;
-            const { selection } = state;
-            const { $from } = selection;
             
             // Check if we're in a different type of list
             const inOrderedList = editor.isActive('orderedList');
@@ -137,9 +134,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
           type="button"
           onClick={(e) => {
             e.preventDefault();
-            const { state } = editor;
-            const { selection } = state;
-            const { $from } = selection;
             
             // Check if we're in a different type of list
             const inBulletList = editor.isActive('bulletList');
@@ -173,8 +167,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
           type="button"
           onClick={(e) => {
             e.preventDefault();
-            // Clear all content in the editor
-            editor.chain().focus().clearContent().run();
+            editor.chain().focus().clearContent(true).run();
+            onChange('');
           }}
           style={{
             padding: '4px 8px',
