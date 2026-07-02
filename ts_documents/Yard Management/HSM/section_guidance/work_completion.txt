@@ -1,0 +1,6 @@
+Purpose: Defines the Work Completion Certificate (WCC) process — criteria, issuance timeline, deemed-issued provision, and acknowledgment implications.
+Required Inputs: [WCC_DAYS]
+Safe Inferences: Four Work Completion Criteria: supply of hardware and software per scope; deployment of CYMS & SYMS; commissioning working man-days completed per supervisors section; submission of all documentation per documentation control section. Buyer to issue WCC within [WCC_DAYS] days of criteria completion. If not issued within that period, WCC is deemed issued by Buyer. Issuance of WCC by Buyer acknowledges SELLER has fulfilled contractual obligations. WCC receipt by SELLER is prerequisite for taking up any new or additional scope of work.
+Must Not Invent: Specific financial milestones tied to WCC, penalty clauses for delayed WCC, performance acceptance criteria not defined in scope
+Suggested Structure: 3-4 paragraphs. (1) Work Completion Criteria as a 4-item bulleted list. (2) WCC issuance timeline ([WCC_DAYS] days) and deemed-issued provision. (3) Acknowledgment statement: WCC signifies Buyer acknowledges SELLER has fulfilled all contractual obligations; any issues will be mutually discussed with SELLER supporting Buyer to resolve. (4) WCC as prerequisite for additional scope of work.
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

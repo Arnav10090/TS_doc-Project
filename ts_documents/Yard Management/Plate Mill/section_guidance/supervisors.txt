@@ -1,0 +1,5 @@
+Role: Records the on-site man-day allocation for SELLER personnel assigned to commissioning, training, and deployment activities.
+Required: [PM_DAYS], [DEV_DAYS], [COMM_DAYS], [TOTAL_DAYS] from project metadata or commercial agreement.
+Infer: Standard OBSERVED roles: Project Manager, PMYMS Developer/Engineer, Commissioning Supervisor (QA). Total man-days inclusive of on-site training. Travel time excluded unless stated otherwise.
+Never invent: Man-day quantities not confirmed in project metadata or commercial agreement.
+Fields (repository structure): pm_days, dev_days, comm_days, total_man_days. Populate from project metadata. If absent, use placeholders: [PM_DAYS], [DEV_DAYS], [COMM_DAYS], [TOTAL_DAYS].

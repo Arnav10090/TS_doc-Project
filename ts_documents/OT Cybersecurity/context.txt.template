@@ -1,0 +1,30 @@
+### Placeholder Registry
+
+| Placeholder | Purpose | Expected Source | Example Value | Required |
+|---|---|---|---|---|
+| [CUSTOMER_NAME] | Buyer organization name | Project Metadata | "Acme Steel Ltd." | Required |
+| [SITE_NAME] | Plant or facility name | Project Metadata | "Rolling Mill Complex" | Required |
+| [SITE_LOCATION] | Geographic location of site | Project Metadata | "Pune, Maharashtra" | Required |
+| [TENDER_REF] | Enquiry or tender reference number | Project Metadata | "26/XXXX/OTCSS/01/v0" | Optional |
+| [TENDER_DATE] | Date of enquiry or tender | Project Metadata | "21 April 2026" | Optional |
+| [PRODUCTION_ZONE] | Operational zone or area being secured | Project Metadata | "Iron Making Zone" | Required |
+| [PLANT_LIST] | Comma-separated list of production units in scope | Project Metadata | "Blast Furnace-1, Sinter Plant, Coke Oven" | Required |
+| [NUM_PLANTS] | Number of production units in scope | Project Metadata | 5 | Required |
+| [NUM_ASSETS] | Estimated total OT asset count | Project Metadata | "up to 500" | Required |
+| [ARCHITECTURE_OPTION] | Selected deployment architecture variant | Project Metadata | "Option 1 (Aggregation Switch)" | Required |
+| [IDS_VENDOR] | Selected IDS/Asset Management/VM tool OEM | Project Metadata | "Claroty" | Optional |
+| [NUM_SENSORS] | Number of IDS sensors to be deployed | Project Metadata | 6 | Required |
+| [NUM_IDS_CORE] | Number of IDS core appliances | Project Metadata | 1 | Optional |
+| [SRA_VENDOR] | Secure Remote Access tool vendor | Project Metadata | "Claroty" | Optional |
+| [SUPPORT_PERIOD_REMOTE] | Duration of post-commissioning remote support | Project Metadata | "6 months" | Required |
+| [SUPPORT_PERIOD_ONSITE] | Duration of onsite SV cybersecurity engineer support | Project Metadata | "1 year" | Required |
+| [TRAINING_PERSONS] | Maximum number of personnel to be trained | Project Metadata | "5" | Required |
+| [TRAINING_DAYS] | Duration of hands-on training | Project Metadata | "3 days" | Required |
+| [POC_PLATFORM] | Name of PoC platform offered alongside the solution | Project Metadata | "AutoML Platform" | Optional |
+| [POC_PERIOD] | Duration of PoC demonstration period | Project Metadata | "2 months" | Optional |
+| [TOTAL_MANDAYS] | Total estimated project man-days | Project Metadata | "100" | Optional |
+| [SUBSCRIPTION_PERIOD] | Tool license subscription period | Project Metadata | "1 year" | Required |
+| [ENQUIRY_SUBJECT] | Subject line of the original enquiry | Project Metadata | "Enquiry of Integrated OT Cybersecurity Solution" | Optional |
+| [PM_DAYS] | Project management man-days | Project Metadata | "20" | Optional |
+| [DEV_DAYS] | Cybersecurity engineering / implementation man-days | Project Metadata | "60" | Optional |
+| [COMM_DAYS] | Commissioning and handover man-days | Project Metadata | "20" | Optional |

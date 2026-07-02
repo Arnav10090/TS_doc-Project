@@ -4,6 +4,7 @@ Integration tests for Images API.
 import pytest
 from httpx import AsyncClient
 from io import BytesIO
+from PIL import Image
 
 
 @pytest.mark.asyncio
@@ -13,8 +14,12 @@ async def test_upload_valid_image_returns_200_with_url(
     """Test uploading a valid image returns 200 with url."""
     project = await create_test_project()
     
-    # Create a fake PNG file
-    fake_image = BytesIO(b'\x89PNG\r\n\x1a\n' + b'\x00' * 100)
+    # Create a real 1x1 PNG in-memory using Pillow to ensure validity
+    img = Image.new("RGBA", (1, 1), (0, 0, 0, 0))
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    fake_image = buf
     
     files = {
         "file": ("test.png", fake_image, "image/png")

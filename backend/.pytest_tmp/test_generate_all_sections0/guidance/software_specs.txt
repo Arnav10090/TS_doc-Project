@@ -1,0 +1,2 @@
+[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
+Software component table: name, version, notes. Version: always 'current version at detailed engineering start.' Do not hardcode version strings. License count from metadata only.

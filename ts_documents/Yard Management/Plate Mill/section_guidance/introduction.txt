@@ -1,0 +1,5 @@
+Role: Formal opening of the TS document capturing the enquiry reference, buyer identity, and scope being covered throughout the document.
+Required: [TENDER_REF], [TENDER_DATE], [CUSTOMER_NAME], [SITE_NAME], [SITE_LOCATION], [SOLUTION_FULL_NAME].
+Infer: Standard response-to-enquiry framing. Reference to subsequent discussions following the enquiry. SELLER's confidence in solution fit. Statement that the Solution sets the stage for phased digitalization, IT and business process maturity, AI-based projects, and plant-wide digital transformation.
+Never invent: Tender reference numbers, dates, or buyer contact details not in project metadata. Do not assume enquiry channel (email, RFQ, tender) unless stated.
+Structure: Short italicized paragraph referencing the enquiry, subject line, buyer identity, and scope covered. Followed by one paragraph on SELLER's offering and confidence in meeting BUYER requirements. Populate [TENDER_REF], [TENDER_DATE], [CUSTOMER_NAME], [SITE_LOCATION] from project metadata; use placeholders if absent.

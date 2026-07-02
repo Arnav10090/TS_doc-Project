@@ -1,0 +1,9 @@
+Architecture: Standalone HMI stations or Client/Server HMI architecture depending on the legacy setup. New hardware typically involves fanless Industrial PCs (IPCs) or rack-mounted servers with thin clients.
+
+Technology: HMI Software (e.g., WinCC V7.x to V8.x, FactoryTalk View ME/SE upgrade); OS (Windows 10/11 IoT Enterprise or Windows Server 2022); Hardware (Siemens SIMATIC IPCs, Advantech, or Dell OptiPlex XR).
+
+Data acquisition: Existing PLC communication protocols are maintained (e.g., S7 Protocol, Ethernet/IP, Modbus TCP). Legacy serial connections may require serial-to-ethernet converters.
+
+Storage: Local SSDs on IPCs for local alarm/trend archiving (typically 30-90 days retention).
+
+Integration pattern: 1-to-1 replacement of existing HMI nodes on the existing L1/L2 network. Diagram: Existing vs. Proposed architecture showing the replaced HMI nodes and retained PLCs.

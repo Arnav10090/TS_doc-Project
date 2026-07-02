@@ -1,0 +1,717 @@
+# **Plate Mill** CONTEXT.TXT — Industrial Plate Mill Yard Management Solution
+# Category knowledge base for Gemini AI Suggestions runtime grounding
+# Version: 1.0
+
+
+---
+
+
+# GLOBAL PRIORITY AND SAFETY RULES
+
+Priority order (highest wins):
+1. Project metadata
+2. Current saved section content
+3. Current draft content
+4. Historical **Plate Mill** TS documents
+5. This file
+6. General industry knowledge
+
+Conflict rule: project-specific data always overrides this file.
+
+Missing data rule: use placeholders defined in the registry below. Do NOT assume any specific customer, plant scale, yard layout, crane count, integration protocol, or technology version unless higher-priority sources confirm it.
+
+### Placeholder Registry
+
+| Placeholder | Purpose | Expected Source | Example Value | Required |
+|---|---|---|---|---|
+| [CUSTOMER_NAME] | Buyer organization name | Project metadata | Jindal Steel & Power Ltd. | Required |
+| [CUSTOMER_ABBREVIATION] | Short form of buyer name used in scope tables | Project metadata | JSPL | Required |
+| [SITE_NAME] | Plant or facility name | Project metadata | Plate Mill | Required |
+| [SITE_LOCATION] | Geographic location of plant | Project metadata | Angul, Odisha | Required |
+| [TENDER_REF] | Enquiry or tender reference number | Project metadata | 26/XXXX/PMYMS/v0 | Required |
+| [TENDER_DATE] | Date of buyer enquiry or tender | Project metadata | 8th Jan 2026 | Required |
+| [SOLUTION_FULL_NAME] | Full product name as used in document title | Project metadata | Plate Mill Yard Management System | Required |
+| [SOLUTION_ABBREVIATION] | Abbreviation of solution name | Project metadata | PMYMS | Required |
+| [NUM_SERVERS] | Number of PMYMS application servers (online + backup) | Project metadata | 2 (Online & Backup) | Required |
+| [NUM_CLIENT_DESKTOPS] | Number of PMYMS client workstations | Project metadata | 4 | Required |
+| [NUM_CRANE_HMIS] | Number of crane-side HMI units | Project metadata | 3 | Optional |
+| [NUM_CRANES] | Total number of cranes in scope | Project metadata | Project-specific | Required |
+| [NUM_YARD_ZONES] | Number of distinct yard zones covered | Project metadata | Project-specific | Optional |
+| [PRODUCTION_CAPACITY] | Annual plate production throughput | Project metadata | 1.2 MTPA | Optional |
+| [SUPPORT_PERIOD] | Duration of complimentary remote support post-commissioning | Project metadata / Commercial | 6 months | Required |
+| [TRAINING_DAYS] | Maximum on-site training days | Project metadata / Commercial | 3 days | Required |
+| [TRAINEE_COUNT] | Maximum number of trainees | Project metadata / Commercial | 5 persons | Required |
+| [PM_DAYS] | Project Manager on-site man-days | Project metadata / Commercial | 30 | Required |
+| [DEV_DAYS] | Developer/Engineer on-site man-days | Project metadata / Commercial | 30 | Required |
+| [COMM_DAYS] | Commissioning Supervisor on-site man-days | Project metadata / Commercial | 30 | Required |
+| [TOTAL_DAYS] | Total supervisor man-days (sum of all roles) | Project metadata / Commercial | 90 | Required |
+| [SW_DEV_DURATION] | Software development duration after design approval | Project metadata / Schedule | 4 months | Required |
+| [POC_DURATION] | PoC demonstration period | Project metadata / Commercial | 2 months | Optional |
+| [POC_PLATFORM] | Name of PoC solution offered | Project metadata | AutoML Platform | Optional |
+| [POC_DATASET_LIMIT] | Maximum dataset size accepted during PoC | Project metadata | 50 MB | Optional |
+| [NETWORK_TYPE] | Network connectivity type (Wi-Fi, wired, or both) | Detailed engineering | To be finalized | Optional |
+| [PLATE_ID_METHOD] | Method of plate identification (barcode, RFID, OCR) | Detailed engineering | To be finalized at detailed engineering | Optional |
+| [WCC_PERIOD] | Days within which buyer must issue Work Completion Certificate | Commercial agreement | 7 days | Required |
+
+Hard prohibitions:
+- Do not invent customer names, project IDs, IP addresses, prices, or contract terms.
+- Do not copy wording verbatim from historical documents.
+- Do not treat numbers from one historical proposal as category defaults.
+- Do not generate legal language when repository-approved boilerplate exists for that section.
+- Do not assume any specific crane count, yard zone count, client desktop count, server specifications, production capacity, or protocol choice as a default.
+- Do not conflate this solution with a SCADA system, a Level-1 PLC system, a Level-2 process control system, an ERP, or a standalone inventory system.
+
+
+---
+
+
+# **Plate Mill** DOMAIN KNOWLEDGE
+
+## What Plate Mill Is
+
+A Plate Mill Yard Management System (hereafter the Solution) is a web-based, software-driven Layer-3 application that digitally manages the complete material lifecycle within a plate steel manufacturing facility — from slab receipt and furnace charging through rolling, heat treatment, quality inspection, yard stacking, logistics planning, and final dispatch to customers. It sits above the plant's Level-1 (PLC) and Level-2 (supervisory automation) systems, receiving material and production data from those systems and from MES/ERP, and orchestrating physical yard and crane operations through intelligent software guidance, real-time inventory control, 2D/3D visualization, and logistics coordination.
+
+What it IS NOT:
+- NOT a SCADA or DCS system — it does not directly control machines or process parameters.
+- NOT a Level-1 or Level-2 automation system — it does not replace or modify existing PLC or supervisory systems.
+- NOT an ERP or MES — it receives order and production data from those systems rather than replacing them.
+- NOT a crane automation or crane control system — cranes remain manually operated; the Solution provides movement guidance and captures execution feedback.
+- NOT a weighing system, barcode scanner, or RFID infrastructure — these are buyer-scope field devices whose signals the Solution consumes.
+- NOT a general-purpose data historian or OT/IT data integration middleware.
+
+## Core Capabilities (CORE)
+
+All Plate Mill deployments include:
+
+1. End-to-End Material Traceability: Unique identification and lifecycle tracking of every slab and plate from slab receipt, through furnace charging, rolling, heat treatment, QC inspection, yard stacking, and dispatch. All movement and status events are recorded with timestamps and linked to production and order references.
+
+2. Smart Yard Inventory Management: Real-time, synchronized digital representation of physical yard inventory. Tracks material attributes (grade, dimension, destination, quality status, rolling/shipping plan) at position granularity (zone → row → pile → layer). Eliminates stock mismatches and reduces manual reconciliation.
+
+3. Real-Time Communication and Action Handling: Continuous bi-directional data exchange with MES/ERP (order data, shipping plans, quality status) and Level-2 automation systems (production events, charging instructions). All inbound and outbound interface messages (telegrams) are logged for traceability and troubleshooting.
+
+4. Graphical 2D and 3D Yard Visualization: Interactive map of slab and plate yard areas displaying real-time material positions, stack configurations, pile heights, crane locations, and occupancy. Supports search and filter by material grade, reference, dimension, destination, or batch. Multiple zoom levels and pan controls.
+
+5. Rule-Based Dynamic Stacking and Space Optimization: Configurable business rule engine that recommends optimal stacking locations based on material properties, production/shipping plans, yard space availability, and tolerance limits. Minimizes pile changes and unnecessary crane movements. Rules are modifiable without system downtime.
+
+6. Stacking Rule Simulation and Validation: Pre-execution simulation capability allowing planners to validate stacking strategies against current yard conditions before committing instructions. Reduces operational conflicts and space constraint risks.
+
+7. Automated Crane Instruction and Movement Integration: System-generated crane movement instructions displayed on operator interfaces. Crane execution feedback is captured to update material locations automatically. Cranes remain manually operated; the Solution provides task guidance.
+
+8. Load-Based Multi-Material Handling Recognition: Detection and validation of multi-material crane lifts using load cell data. Accurately updates inventory and stacking records during bulk handling operations.
+
+9. Manual Intervention and Exception Handling: Controlled override capability for operators and supervisors to correct material locations, override recommendations, or resolve mismatches. All overrides logged with user identity, timestamp, and reason code for audit compliance.
+
+10. Logistics and Movement Planning Management: Manages slab entry plans, slab/plate transfer plans, shipping plans, and pile-change plans received from MES/ERP. Converts confirmed plans into executable yard and crane instructions. Generates loading memos, tracks dispatch progress, and sends confirmations back to MES/ERP. Handles memo modifications, cancellations, and stock restoration for unloading/reloading events.
+
+11. Operation History and Event Log Management: Comprehensive event log for every material-related action (receipt, movement, stacking, inspection, adjustment, dispatch) with full contextual data. Supports audits, performance analysis, and discrepancy investigation.
+
+12. Diagnostic Tooling for Troubleshooting: Built-in interface monitoring, message tracing, event log views, and diagnostic dashboards covering MES/ERP, Level-2, Weigher, and Crane communications. Reduces downtime by accelerating fault identification.
+
+13. Smart Reporting System and Dashboards: Real-time and historical reports on inventory, production, dispatch, logistics, and yard utilization. Dashboards support drill-down analysis and customizable views for operational and management users.
+
+14. Role-Based Access and Security Management: User access restricted by role and responsibility. System functions and data visibility enforced per user role.
+
+15. Scalability and Future Expansion Readiness: Modular architecture allowing addition of new yards, bays, cranes, interfaces, and business rules with minimal disruption.
+
+## Optional/Value-Added Capabilities (COMMON / OPTIONAL)
+
+- SMS Gateway Integration (COMMON): Alerts and notifications via SMS for critical yard events or thresholds.
+- Unified Gateway / HX Controller Integration (COMMON): SELLER-proprietary data gateway (HX Controller) for integration with heterogeneous field devices and crane subsystems, providing protocol bridging and local buffering.
+- Customizable MIS Dashboard (COMMON): Management information dashboards configurable for plant leadership and operations management.
+- Android Mobile Application (COMMON): Mobile interface for yard operators enabling field updates and material lookups without returning to a fixed workstation.
+- AutoML Platform PoC (OPTIONAL): Time-limited complimentary demonstration of an automated machine learning platform on existing server infrastructure. Enables data preprocessing, feature engineering, model selection, evaluation, benchmarking, and hyperparameter tuning. Demonstrates predictive and prescriptive ML model outputs. Dataset size capped at [POC_DATASET_LIMIT]. No integration with production systems during PoC. Full version available via separate commercial contract.
+
+## Business Drivers
+
+Customers implement this Solution to:
+- Eliminate manual slab/plate tracking and paper-based or spreadsheet-based inventory records.
+- Reduce misplacement, duplication, and inventory inaccuracies in plate yards.
+- Minimize unnecessary crane movements and rehandling cycles.
+- Enable real-time operational visibility for supervisors and plant management.
+- Align physical yard inventory with production rolling and dispatch plans.
+- Automate loading memo generation and dispatch coordination with MES/ERP.
+- Improve audit readiness with complete event traceability.
+- Create a digital transformation foundation for future AI/ML analytics, predictive scheduling, and operational optimization.
+
+The Solution does not guarantee productivity, quality, yield, or process performance improvements. These outcomes depend on plant operations, process conditions, and buyer's own operational practices.
+
+## Operational Environment
+
+The Solution operates within a hot-metal steel plate manufacturing plant. The typical environment includes:
+
+- A slab yard where input slabs are received and stored prior to charging into reheating furnaces.
+- A reheating furnace area where slabs are heated before rolling.
+- A rolling mill (roughing and finishing) where slabs are rolled into plates.
+- A cooling area where plates cool after rolling.
+- A Heat Treatment Complex (HTC) where a subset of plates undergoes furnace normalizing, quenching, or quenching-and-tempering.
+- A plate yard where finished and inspected plates are stored in stacks managed by Electric Overhead Travelling (EOT) cranes operating in manual mode.
+- A dispatch area (truck and/or wagon loading bays) for outbound logistics.
+- Existing Level-1 PLC systems, Level-2 supervisory systems, MES/ERP (typically SAP), and weighing systems that the Solution integrates with.
+
+HTC and Non-HTC route distribution is project-dependent (OBSERVED historical split: HTC 16–45%, Non-HTC 55–84%); actual distribution must be taken from project metadata, not assumed.
+
+The Solution is web-based and delivered as a centralized application on buyer-hosted server hardware, accessible via standard web browsers by authorized plant users.
+
+## Architecture Options
+
+Option A — Centralized Server with Direct Integration:
+PMYMS application server (online + backup pair) connects directly to Level-2 systems, MES/ERP, and Weigher systems via API/database interfaces over the plant network. Crane position and lock/unlock signals received via crane-side gateway hardware and wireless network. Suitable when network infrastructure is reliable and plant systems are accessible from server location.
+
+Option B — With HX Controller (Unified Gateway) for Crane Integration (COMMON):
+SELLER-supplied HX Controller (proprietary unified gateway) installed to bridge crane subsystem signals (position sensors, lock/unlock sensors) to the PMYMS server. Provides protocol normalization and local signal buffering. Used when direct integration from server to crane instrumentation is impractical.
+
+Both options use:
+- PMYMS Application Server (online + backup) for core software
+- Client workstations for operator and supervisor access
+- Web browser interface (no client software installation required beyond standard browser)
+- Android mobile devices for field access (buyer scope)
+- Network infrastructure managed by buyer (Wi-Fi or wired; finalized during detailed engineering)
+
+## Protocols (OBSERVED / OPTIONAL)
+
+Buyer-side interfaces:
+- Level-2 systems: typically via database-level API or SQL interface (L2 side modifications are buyer scope)
+- MES/ERP (SAP): via configured data exchange, API, or SAP integration layer (L3/SAP side modifications are buyer scope)
+- Weigher system: via direct data feed or API
+
+Crane subsystem:
+- Laser position sensors (X, Y axis coordinates): wireless or wired signals from crane to gateway
+- Lock/Unlock sensor signals: gate feedback from crane tong or magnet mechanism
+- Zeroing sensors: reference position calibration signals
+- Network between crane gateway and PMYMS server: [NETWORK_TYPE] (to be finalized during detailed engineering)
+
+Plate identification method: [PLATE_ID_METHOD] — options include barcode, RFID, and OCR scanning; method finalized during detailed engineering.
+
+All integration parameters, protocols, and communication details are finalized during detailed engineering, not at TS stage.
+
+## Data Acquisition
+
+Material and production data flow into the Solution from:
+- Plate Mill Level-2: Plate production data (rolling events, plate dimensions, grades)
+- Furnace Level-2: Slab tracking data (charging, discharge, heat number)
+- Plate Leveller Level-2: HTC and Non-HTC production completion data
+- MES/ERP: Order data, shipping plans, quality status, customer master data
+- Crane subsystem: Position coordinates (X, Y axes), lock/unlock signals (tong/magnet feedback)
+- Weigher system: Weight data for dispatch confirmation
+
+Outbound data from Solution to external systems:
+- MES/ERP: Movement confirmations, stock updates, loading memo confirmations, shipment records
+- Optional: SMS gateway for alert notifications
+
+All inbound and outbound messages (telegrams) are logged internally for troubleshooting.
+
+## Data Storage
+
+Centralized on-premises relational database (MS SQL Server or alternative; selection at SELLER discretion) on the PMYMS server infrastructure. Data includes:
+- Real-time and historical yard inventory positions (zone, row, pile, layer)
+- Material attributes and production traceability records
+- Crane instruction and execution logs
+- Interface message logs (all inbound/outbound telegrams)
+- Event history for every material action
+- User action logs (manual overrides, exceptions)
+- Reports and dashboard data
+
+No write-back to Level-1 or Level-2 source systems from PMYMS. PMYMS consumes L1/L2 data; it does not modify it.
+
+Backup server provides redundancy. Backup software (OBSERVED: Acronis or equivalent) manages server-level backup. Retention and housekeeping policy are project-dependent.
+
+## Integration Patterns
+
+1. Plate Mill L2 → PMYMS: L2 side integration modifications are BUYER scope; PMYMS side is SELLER scope.
+2. Furnace L2 → PMYMS: Same pattern — L2 side is BUYER scope; PMYMS side is SELLER scope.
+3. MES/ERP (L3/SAP) ↔ PMYMS: L3/SAP side modifications are BUYER scope; PMYMS side is SELLER scope.
+4. Crane subsystem → PMYMS: Crane-side hardware (sensors, wireless APs, HMIs, Gateway hardware) is BUYER supply scope; SELLER provides engineering, commissioning, and gateway integration.
+5. Weigher system → PMYMS: Integration details finalized in detailed engineering.
+
+Any data required from Level-1 systems must be routed through the existing Level-1 to Level-2 integration chain before reaching PMYMS. PMYMS does not connect directly to Level-1 PLCs.
+
+Firewall configuration and network security remain exclusively BUYER scope.
+
+## Technology Stack Patterns (OBSERVED)
+
+Software (observed in sample TS; versions project-dependent; all OBSERVED — not defaults):
+- Frontend: Angular Framework (web browser access via Chrome, Edge, Mozilla)
+- Backend: Python with Django web framework
+- Database: MS SQL Server 2022 Standard Edition (or other suitable database at SELLER discretion)
+- Deployment: Docker containerization
+- Mobile: Android Application
+- Antivirus: Trend Micro or equivalent
+- Server OS: Windows Server 2022 Standard Edition (64-bit)
+- Client OS: Windows 11 Pro
+- Office suite: Microsoft Office
+- Server backup: Acronis or equivalent backup software
+
+Hardware (OBSERVED quantities and specifications — not defaults):
+- PMYMS Application Servers: Tower form factor, enterprise-grade processor, redundant pair (online + backup)
+- PMYMS Client Workstations: Desktop PCs with FHD monitors, keyboard, mouse
+- GSM Modem: Industrial cellular modem for SMS gateway capability (if SMS Gateway is in scope)
+- HX Controller: SELLER-proprietary unified gateway device (if Unified Gateway is in scope)
+- All hardware quantities and specifications confirmed at detailed engineering
+
+Buyer provides: server room / rack space, power supply, UPS, network cabling and accessories, firewall, Android mobile devices, VPN/internet for remote support.
+
+## Cybersecurity
+
+Responsibility split:
+- BUYER is responsible for: all cybersecurity, information security, hardware security, personal data security, network security, equipment security, and overall data security at the plant. This includes firewall configuration, network segmentation, patch management after delivery, and control of remote access links.
+- SELLER delivers: the application with secure-by-default role-based access control (RBAC), antivirus software installed at delivery, and recommendations for prompt security patching. SELLER recommends that security updates be applied as soon as available and that the latest supported versions be maintained.
+
+SELLER is not liable for any direct, indirect, incidental, consequential, or special damages arising from cybersecurity incidents, data breaches, unauthorized access, or other security-related events.
+
+NDA must be signed by both parties before any remote support session begins.
+
+Use of unsupported software versions or failure to apply security updates may increase exposure to cyber threats; this is acknowledged to be outside SELLER control.
+
+Do not generate novel legal cybersecurity clauses — use approved TS boilerplate for the cybersecurity section.
+
+## Implementation Phases
+
+Phase 1 — Engineering Survey: SELLER and BUYER jointly study existing systems, gather basic data (yard layouts, crane details, interface specifications, system inventory). Buyer provides site access, technical team, and existing system documentation.
+
+Phase 2 — Engineering Review Meeting: Alignment on scope, interface requirements, yard configuration, and project schedule. Kick-off of Basic Engineering.
+
+Phase 3 — Design and Build (Basic Engineering + Detailed Design + Software Development): System design document produced and submitted for BUYER approval. After BUYER approval, software development begins. OBSERVED duration: [SW_DEV_DURATION] from design document approval. Delays in design approval cause proportional project delay.
+
+Phase 4 — Pre-Commissioning: Software and hardware readiness verification before site deployment. Internal testing and quality assurance.
+
+Phase 5 — Commissioning and Launch: SELLER supervisors deployed to site. Hardware installation (by BUYER), software deployment, integration testing with live Level-2 and MES/ERP systems, crane integration testing, operator training, snag resolution, and handover. Requires crane availability and site readiness from BUYER.
+
+Phase 6 — Handover: Submission of documentation package, Work Completion Certificate issuance, remote support period begins.
+
+Critical path gating points:
+- M1 (Design Approval): BUYER must approve System Design Document; this gates software development start.
+- M2 (Site Readiness): Crane hardware, network infrastructure, and master data must be ready before on-site commissioning begins.
+- M3 (Work Completion Certificate): Marks formal project completion; gates start of remote support period.
+
+## Testing
+
+Pre-Commissioning / FAT (if applicable): Functional testing of software flows and integrations in SELLER environment or staging environment against simulated inputs before deployment to site. Verifies configured yard rules, interface message handling, visualization, and reporting functions.
+
+Site Acceptance / Commissioning Testing: Live integration testing at site with actual Level-2, MES/ERP, Weigher, and crane systems. Tests include: material tracking end-to-end, crane instruction display and feedback, yard visualization accuracy, report generation, user access control, and interface message verification. BUYER assigns crane operators, weighbridge operators, yard supervisors, and QC personnel for integration testing.
+
+Acceptance artifacts: All documentation per section 3.3 scope (Screen Design Document, Hardware Specifications, Software Specifications, Operation Manual); Work Completion Certificate issued by BUYER.
+
+## Risks
+
+1. System Design Document approval delay — gates software development; BUYER-owned risk; mitigate by setting approval turnaround deadline in TS.
+2. Crane hardware or sensor procurement delay — BUYER scope items; gates commissioning; define as formal prerequisite.
+3. Level-2 or MES/ERP interface unavailability at commissioning — BUYER must make OEM engineers available; define as buyer obligation.
+4. Network infrastructure not ready at commissioning — Wi-Fi coverage, VLAN, IP assignments, firewall rules, port openings must be ready; BUYER obligation.
+5. Master data not available — yard locations, material masters, product codes, QC codes, customer masters must be provided complete and accurate by BUYER before commissioning.
+6. Crane availability constraint — commissioning requires cranes available in working condition; crane downtime for maintenance or production priority can delay commissioning.
+7. Integration interface parameter changes — L2 or ERP schema/API changes discovered late require change order; mitigate by freezing interface specs during Basic Engineering.
+8. Plate identification method not finalized — barcode/RFID/OCR selection deferred to detailed engineering; delay in finalization affects software development.
+9. Scope creep from undiscovered cranes or yard areas — define scope by named yards and crane count; additions require change order.
+10. Remote access link not established — required for remote support; BUYER obligation; NDA required before sessions.
+
+## Standard Assumptions (CORE / COMMON)
+
+- Level-2 systems can expose required data interfaces for PMYMS integration; upgrades to L2 systems for this purpose are BUYER scope.
+- All integration parameters (interface schemas, API endpoints, communication protocols) finalized during detailed engineering.
+- BUYER provides complete and accurate master data before commissioning.
+- Yard scope is defined by the named yards, zones, and crane count agreed at the time of TS signing; additions are a change order.
+- IP addresses, hostname assignments, VLAN/network routing provided by BUYER during engineering.
+- Crane hardware (position sensors, lock/unlock sensors, zeroing sensors, wireless APs, HMIs) procured and installed by BUYER within agreed schedule.
+- All crane systems are in working condition before commissioning activities begin.
+- Site network readiness (Wi-Fi coverage, firewall rules, port openings) is BUYER responsibility and must be completed before on-site commissioning.
+
+## Standard Exclusions (CORE)
+
+- Interfaces with external systems or devices not explicitly named in the agreed and signed TS.
+- Operating system patches, antivirus updates, and software maintenance after project delivery (post-delivery patch management is BUYER scope).
+- Source code of SELLER's core technology platform.
+- Modifications to existing Level-1, Level-2, MES, ERP, or FCE systems (these are BUYER scope).
+- Software or hardware modifications to existing crane PLC, drive systems, or crane control infrastructure.
+- Erection, civil, or mechanical works of any kind.
+- Hardware and software not listed in the agreed scope of supply.
+- Mechanical equipment supply, modification, or maintenance.
+- Troubleshooting support for mechanical, process, or operational issues outside the Solution scope.
+- L2 and PDA software and related hardware.
+- Firewall, managed switches, and other networking infrastructure.
+- Performance guarantees on productivity, yield, quality, or process capability.
+- Supervision or management of BUYER personnel, contractors, or agents.
+- Any warranty, guarantee, or liability regarding production output, product quality, or yield.
+
+## Diagram Guidance (semantic only — no mxGraph XML)
+
+System Architecture diagram layers (top to bottom):
+- Remote Support Layer: SELLER remote connection via BUYER-controlled VPN/internet (buyer scope)
+- IT / Application Layer: PMYMS Application Server (online + backup), Client Workstations, HX Controller (if in scope)
+- OT/IT Boundary: Network switches and firewalls (buyer scope)
+- MES/ERP Layer: SAP or equivalent ERP/MES system (buyer scope; provides order and production data)
+- L2 Layer: Plate Mill L2, Furnace L2, Plate Leveller L2 (buyer scope automation systems; provide production data)
+- Crane Subsystem: Position sensors (laser, X/Y), Lock/Unlock sensors, Zeroing sensors, Wireless APs, Crane HMIs, Gateway (crane hardware supply is buyer scope; engineering and commissioning is seller scope with buyer support)
+- Mobile Layer (optional): Android devices for field operators (buyer scope)
+
+Scope boundary representation:
+- Solid/dashed box around PMYMS servers and client PCs = SELLER supply scope
+- Alternate boundary around crane hardware = BUYER supply scope with SELLER engineering
+- All L2 systems, ERP, firewall, network cabling, mobile devices = BUYER scope
+
+No IP addresses, specific port numbers, or physical network routing in diagrams — all finalized during engineering.
+
+## Gantt Guidance (all values indicative only)
+
+Phases (OBSERVED, not commitments):
+- Phase 1 — Engineering Survey: Joint site study; gate: basic data collection complete
+- Phase 2 — Engineering Review Meeting: Scope alignment and kickoff
+- Phase 3 — Basic Engineering: System design document production; gate: BUYER design approval (M1)
+- Phase 4 — Detailed Design + Software Development: Duration [SW_DEV_DURATION] from M1; BUYER approval delay causes proportional delivery delay
+- Phase 5 — Pre-Commissioning: Internal testing and hardware readiness
+- Phase 6 — Commissioning and Launch: On-site deployment, integration, training; gate: crane availability + site readiness (M2)
+- Phase 7 — Handover: Documentation, Work Completion Certificate (M3), remote support start
+
+Scale examples (OBSERVED, not commitments — use indicative language):
+- Small Plate Mill scope (few integrations, limited yard): approximately 6–8 months from PO acceptance
+- Medium scope (full integration suite, standard yard): approximately 8–12 months from PO acceptance
+- Large scope (multiple yards, complex integrations): approximately 12–16 months from PO acceptance
+
+Shutdown Gantt:
+- PMYMS software deployment itself does not require a full plant shutdown.
+- Commissioning activities involving crane integration (sensor installation, testing) require crane availability and may require brief maintenance windows.
+- Shutdown duration and timing determined by crane availability agreed between BUYER and SELLER during engineering.
+- If no production shutdown is confirmed, state that commissioning is planned during normal operations with crane availability windows agreed by BUYER.
+- Shutdown Gantt content (if applicable): installation of crane-side sensors and wireless APs (BUYER execution), gateway installation (joint), integration testing windows, software go-live.
+
+Draw.io Gantt format: week-based JSON tasks with fields — task (task name), phase (phase label), start_week (integer, week 1 = PO acceptance date), duration_weeks (integer), milestone (boolean), dependencies (array of predecessor task indices). Backend converts to mxGraph XML.
+
+Mandatory indicative language: "The above schedule is indicative for reference only. Final schedule to be mutually agreed upon at project kickoff. Delays in [M1 — design document approval] or [M2 — site readiness] by BUYER will result in proportional delivery delays."
+
+
+---
+
+
+# DOMAIN GLOSSARY
+
+PMYMS — Plate Mill Yard Management System. The Solution covered by this TS type. A web-based yard management application for steel plate manufacturing plants. Use [SOLUTION_ABBREVIATION] as placeholder when the actual solution abbreviation is project-dependent.
+
+Slab — Raw input material (thick steel slab) received in the slab yard, heated in the reheating furnace, and rolled into plates. Tracked by PMYMS from receipt through furnace charging.
+
+Plate — Finished rolled steel product produced in the rolling mill from slabs. Subject to QC inspection, HTC or Non-HTC routing, yard storage, and dispatch. Primary tracked material unit in the plate yard.
+
+HTC — Heat Treatment Complex. The facility section where plates are subjected to heat treatment processes: Furnace Normalizing (FN), Quenching (Q), or Quenching and Tempering (Q&T). HTC plates follow a different process route and require additional tracking steps. [HTC_DISTRIBUTION] percentage is project-dependent.
+
+Non-HTC — Plates that proceed directly from rolling to the plate yard without heat treatment. Includes As-Rolled/Normalized Rolling and TMCP (Thermo-Mechanical Controlled Processing / Laminar Cooling) plates.
+
+FN — Furnace Normalizing. A heat treatment process in which plates are heated in a furnace to a specified temperature and then air-cooled. One of the HTC routes.
+
+Q — Quenching. A heat treatment process in which plates are rapidly cooled (water-quenched) after furnace heating to increase hardness. One of the HTC routes.
+
+Q&T — Quenching and Tempering. A two-stage heat treatment process — quenching followed by reheating in a tempering furnace (TF1 or TF2). Produces high-strength, tough plates. One of the HTC routes.
+
+TMCP — Thermo-Mechanical Controlled Processing. A controlled rolling process using laminar cooling. Produces high-strength plates without post-rolling heat treatment. Falls under the Non-HTC category.
+
+EOT Crane — Electric Overhead Travelling Crane. The primary material handling equipment in slab and plate yards. Operates in manual mode. PMYMS provides movement guidance to crane operators and captures execution feedback for inventory updates.
+
+LT — Long Travel. The longitudinal axis movement of an EOT crane along the crane runway (travel along the length of the bay).
+
+CT — Cross Travel. The lateral axis movement of an EOT crane perpendicular to the runway (travel across the width of the bay).
+
+L1 — Level-1 System. PLC-level plant automation system (sensors, actuators, drives). PMYMS does not connect directly to L1; any L1 data required must be routed through L2.
+
+L2 — Level-2 System. Supervisory automation system (process control, data acquisition). PMYMS receives plate production data, slab tracking data, and heat treatment completion data from L2 systems. L2-side interface modifications are BUYER scope.
+
+L3 / ERP / SAP — Level-3 or Enterprise Resource Planning system (typically SAP in steel plants). PMYMS receives order data, shipping plans, and quality information from ERP, and sends back movement confirmations, stock updates, and loading memo data. L3/ERP side integration modifications are BUYER scope.
+
+MES — Manufacturing Execution System. Plant-level production management layer, typically between L2 and ERP. May be combined with ERP functions. PMYMS integrates with MES for order-to-dispatch lifecycle management.
+
+Loading Memo — A formal dispatch document generated by PMYMS authorizing loading of specific plates onto a truck or wagon for a customer order. PMYMS automates generation, tracks progress, and records confirmation back to MES/ERP.
+
+Pile / Stack — The physical arrangement of plates stacked on top of each other in the yard. PMYMS tracks each plate's position within a stack at layer level.
+
+Pile-Change Plan — A rearrangement plan received from MES/ERP that instructs PMYMS to reorganize material within the yard (e.g., move plates from one pile to another for access priority or order fulfillment). PMYMS converts these plans into crane instructions.
+
+Zone / Row / Column / Layer — The hierarchical grid system used to describe yard positions. The yard is divided into zones, each zone into rows and columns (bay positions), and each bay position into layers (stacking height). PMYMS maintains inventory at this four-level position granularity.
+
+HX Controller — SELLER's proprietary unified gateway hardware device used to bridge crane subsystem signals and heterogeneous field device protocols to the PMYMS server. Provides local signal buffering, protocol normalization, and reliable data transmission. Optional; included when direct server integration with crane hardware is impractical.
+
+GSM Modem — Industrial cellular modem included when SMS Gateway capability is in scope. Enables outbound SMS alerts for critical yard events or operational notifications.
+
+Load Cell — Force measurement sensor on a crane tong or magnet system. Used by PMYMS to detect multi-material lifts (load-based multi-material handling recognition feature).
+
+Telegram — In the context of PMYMS, a structured data message exchanged between PMYMS and an external system (L2, ERP, Weigher). All inbound and outbound telegrams are logged by PMYMS for troubleshooting.
+
+Grid Layout — The configurable digital representation of the physical yard in PMYMS software. Defined by zones, rows, and columns. Configurable in software without hardware changes.
+
+WCC — Work Completion Certificate. Formal document issued by BUYER to SELLER confirming satisfactory completion of all contracted deliverables. Triggers start of warranty/remote support period. Deemed issued if BUYER does not issue within [WCC_PERIOD] of completion criteria being met.
+
+AutoML Platform — Automated Machine Learning platform offered as a complimentary PoC alongside the main Solution. Enables automated data preprocessing, model selection, evaluation, and benchmarking. Deployed on existing PMYMS server for [POC_DURATION]; requires separate commercial contract for continued use.
+
+Barcode / RFID / OCR — Methods for plate identification during material handling. The specific method used is project-dependent and finalized during detailed engineering. Represented as [PLATE_ID_METHOD] in this context.
+
+Docker — Container platform used for deploying PMYMS software components. Observed in sample TS; treatment as standard only when confirmed by project metadata.
+
+Angular — JavaScript frontend framework used for the PMYMS web application. Enables access via standard web browsers (Chrome, Edge, Mozilla). Observed in sample TS.
+
+Django — Python web framework used for the PMYMS application backend. Observed in sample TS.
+
+BD / BE / DD / SU / ER / COM — Scope matrix phase codes used in the Division of Engineering table. BD = Basic Data, BE = Basic Engineering, DD = Detail Design, SU = Supply or Service, ER = Erection, COM = Commissioning. B = Buyer, S = Seller, B/S = Joint (primary by first party with support from second).
+
+
+---
+
+
+# REPOSITORY SECTION MAPPING
+
+Confirmed section keys only. Suppressed (no AI button): cover, revision_history, abbreviations.
+AI-eligible but excluded from completion count: binding_conditions, cybersecurity, disclaimer, scope_definitions.
+
+Format per entry: Role | Required inputs | Safe to infer | Must not invent | Field/structure notes
+
+---
+
+## executive_summary
+Role: Positions SELLER and the Plate Mill Yard Management Solution for a management reader. First impression section — strategic framing, not technical specification detail.
+Required: [CUSTOMER_NAME], [SITE_NAME], [SITE_LOCATION], [SOLUTION_FULL_NAME], seller identity (Hitachi India Pvt. Ltd.).
+Infer: Standard SELLER OT/IT heritage statement (105+ years OT experience, 55+ years IT experience). General value proposition: digitalization of yard operations, end-to-end traceability, improved operational visibility, foundation for AI-driven optimization. Seller's qualification via in-house team of certified professionals.
+Never invent: Specific client reference lists, named competitors, pricing, performance improvement percentages, contract terms, or experience year counts beyond what is established in standard SELLER boilerplate.
+Structure: 2–3 short paragraphs. (1) SELLER capability and OT/IT heritage introduction. (2) SELLER qualification for this engagement. (3) Solution value framing for [CUSTOMER_NAME] — yard digitalization, traceability, and digital transformation foundation. Executive language only. No technical specifications in this section.
+
+---
+
+## introduction
+Role: Formal opening of the TS document capturing the enquiry reference, buyer identity, and scope being covered throughout the document.
+Required: [TENDER_REF], [TENDER_DATE], [CUSTOMER_NAME], [SITE_NAME], [SITE_LOCATION], [SOLUTION_FULL_NAME].
+Infer: Standard response-to-enquiry framing. Reference to subsequent discussions following the enquiry. SELLER's confidence in solution fit. Statement that the Solution sets the stage for phased digitalization, IT and business process maturity, AI-based projects, and plant-wide digital transformation.
+Never invent: Tender reference numbers, dates, or buyer contact details not in project metadata. Do not assume enquiry channel (email, RFQ, tender) unless stated.
+Structure: Short italicized paragraph referencing the enquiry, subject line, buyer identity, and scope covered. Followed by one paragraph on SELLER's offering and confidence in meeting BUYER requirements. Populate [TENDER_REF], [TENDER_DATE], [CUSTOMER_NAME], [SITE_LOCATION] from project metadata; use placeholders if absent.
+
+---
+
+## process_flow
+Role: Describes the end-to-end material lifecycle in the Plate Mill — from slab receipt through rolling, heat treatment, inspection, yard stacking, and dispatch — as the operational context for the Solution.
+Required: [SITE_NAME], confirmation of HTC and Non-HTC routes present, any project-specific process route details from project metadata.
+Infer: Standard Plate Mill process flow — (1) Slab receipt and yard storage → (2) Reheating furnace charging → (3) Roughing and finishing mill rolling → (4) Cooling → (5) HTC route (FN, Q, or Q&T) or Non-HTC route (as-rolled, TMCP) → (6) QC inspection → (7) Plate yard stacking → (8) Customer order picking and crane dispatch → (9) Loading (truck/wagon) → (10) Shipment confirmation. PMYMS role at each stage should be described briefly (tracking, status update, instruction generation, confirmation).
+Never invent: Specific process route distribution percentages, specific furnace or mill names, specific customer order or grade references, specific yard zone layouts not confirmed in metadata.
+Structure: Narrative paragraphs describing the flow steps, optionally with a table showing HTC/Non-HTC route types and sub-routes. Include a note that the HTC route involves FN, Q, and Q&T sub-routes and may use multiple tempering furnaces. Include a note on PMYMS marking plates as "cooling in progress" and assigning stack positions after QC. Describe dispatch flow including loading memo generation. Close with PMYMS updating the final shipment record and closing the material movement loop.
+
+---
+
+## overview
+Role: Business context and system objective — why the Solution is needed, what systems it interacts with, and what value it provides to [CUSTOMER_NAME].
+Required: [CUSTOMER_NAME], [SITE_NAME], [SITE_LOCATION], [SOLUTION_FULL_NAME], [SOLUTION_ABBREVIATION], confirmed integration list (L2 systems, MES/ERP, crane subsystem).
+Infer: Problem framing (manual tracking risks, inventory inaccuracy, crane inefficiency, lack of operational visibility, disconnected data sources). Solution as the digital coordination layer above L2 and ERP. Tangible benefits: inventory accuracy, traceability, reduced mishandling, crane efficiency, dispatch accuracy. Intangible benefits: operational visibility, management reporting, digitalization foundation, auditability.
+Never invent: Existing system details (PLC models, ERP version, L2 vendor) not in project metadata. KPI improvement percentages or numerical performance claims. Details about buyer's current manual processes not stated in project metadata.
+Structure: Mixed-field section. Include subsections: (1) process_summary — 1–2 sentences on plant context and enquiry. (2) system_objective — problem + Solution purpose, stated as PMYMS system objectives (bullet list). (3) existing_system — yard and crane description with [NETWORK_TYPE] and system architecture from metadata; use placeholders for unknowns. (4) integration_approach — PMYMS as L3 application above L2 and ERP, receiving data from both. (5) tangible_benefits — bullet list. (6) intangible_benefits — bullet list. Management-level tone throughout.
+
+---
+
+## features
+Role: Complete functional feature set of the Solution being delivered. Primary technical offering section. Most detailed section in the document.
+Required: [SOLUTION_ABBREVIATION], [SOLUTION_FULL_NAME], [CUSTOMER_NAME], confirmation of which optional features are in scope (SMS Gateway, HX Controller, Mobile App, Customizable Dashboard).
+Infer: All 15 CORE features are present in every Plate Mill deployment. Optional/COMMON features (SMS Gateway, Unified Gateway, MIS Dashboard, Android App) should be included if project metadata confirms scope. Screenshots included in actual TS are for reference only; note explicitly that the Solution is fully customized per site requirements.
+Never invent: Feature capabilities not in the CORE or confirmed OPTIONAL list above. Performance claims. Integration endpoints not named in project metadata.
+Structure: Numbered subsections (3.1.1 through 3.1.N) per feature in this order: (1) End-to-End Material Traceability, (2) Smart Yard Management, (3) Real-Time Communication and Action Handling, (4) Graphical 2D and 3D Yard Visualization, (5) Rule-Based Dynamic Stacking and Space Optimization, (6) Stacking Rule Simulation and Validation, (7) Automated Crane Instruction and Movement Integration, (8) Load-Based Multi-Material Handling Recognition, (9) Manual Intervention and Exception Handling, (10) Logistics and Movement Planning Management, (11) Operation History and Event Log Management, (12) Tools for Easy Troubleshooting and Debugging, (13) Smart Reporting System and Dashboards, (14) Role-Based Access and Security Management, (15) Scalability and Future Expansion Readiness. Each subsection: brief framing sentence, feature title in bold, description paragraph. Include "FOR REFERENCE" note after screenshot placeholders. Close section with note that screenshots are for reference only and the Solution is fully customized.
+
+---
+
+## remote_support
+Role: Defines post-commissioning remote maintenance support scope, duration, conditions, and constraints.
+Required: [SUPPORT_PERIOD] from project metadata or commercial agreement.
+Infer: Support covers troubleshooting and issue resolution only within the TS-defined scope of supply. Infrastructure and network configuration to enable remote access must be provided by BUYER. Working hours: 9:00 AM to 5:00 PM IST, Monday to Friday, excluding national holidays. NDA must be signed before remote support sessions begin. Dedicated internet or leased line at site to be arranged by BUYER.
+Never invent: SLA response times; on-site visit commitments during remote support period; support scope beyond the agreed TS scope.
+Structure: Two to three short paragraphs. (1) Support duration ([SUPPORT_PERIOD] from project completion date), scope (troubleshooting, issue resolution within TS scope only). (2) BUYER responsibility for infrastructure enabling remote access; access to remote terminal to be made available to SELLER as required. (3) Working hours and NDA requirement.
+
+---
+
+## documentation_control
+Role: Describes the documentation package SELLER delivers as part of the project.
+Required: No project-specific inputs required beyond standard scope confirmation.
+Infer: Standard documentation package for Plate Mill Yard Management System: Screen Design Document, Hardware Specifications, Software Specifications, Operation Manual (PMYMS).
+Never invent: Additional documentation items not established in the scope of supply (such as network design documents, DBA guides, or API specifications) unless explicitly stated in project metadata.
+Structure: One paragraph or bulleted list. State that SELLER shall provide the following technical documentation: Screen Design Document, Hardware Specifications, Software Specifications, and PMYMS Operation Manual. Brief and factual.
+
+---
+
+## customer_training
+Role: Defines the training delivered by SELLER during commissioning.
+Required: [TRAINING_DAYS], [TRAINEE_COUNT] from project metadata or commercial agreement.
+Infer: On-site classroom training during commissioning. Covers mutually agreed topics on PMYMS web application. Training agenda agreed between BUYER and SELLER before delivery.
+Never invent: Specific training topics, certification programs, or assessment commitments. Post-commissioning training sessions unless separately agreed.
+Structure: One to two paragraphs. State: at-site classroom training during commissioning, maximum [TRAINEE_COUNT] persons, maximum [TRAINING_DAYS] days, covers mutually agreed PMYMS web application topics, agenda to be agreed before training commencement.
+
+---
+
+## tech_stack
+Role: Combined table of all software and hardware components in the technology stack. Unified summary view of the technology choices underlying the Solution.
+Required: All components from project metadata or standard Plate Mill BOM and software stack. Confirmation of optional components (HX Controller, GSM Modem, Android App).
+Infer: Standard observed technology stack — see Technology Stack Patterns in domain knowledge above. Software: Angular (frontend), Python/Django (backend), MS SQL Server (database), Docker (deployment), Windows Server OS (server), Windows Client OS (client desktops), Microsoft Office, antivirus, backup software. Hardware: PMYMS application servers (tower, online + backup), client workstations, FHD monitors, GSM Modem (if SMS Gateway in scope), HX Controller (if Unified Gateway in scope).
+Never invent: Specific version strings — use "Current version at time of detailed engineering" for all software versions. Specific RAM, storage, or processor values not confirmed in project metadata — use "Sized per detailed engineering."
+Fields (repository row structure): sr_no, component (name), technology (description or make/model), note (sizing note or qualification). Single unified table covering both software and hardware. Version column: "Current version at time of detailed engineering." Hardware sizing: "Sized and confirmed at detailed engineering."
+
+---
+
+## fat_condition
+Role: Defines Factory Acceptance Testing (FAT) scope, criteria, and conditions before site deployment. Not explicitly present in the sample TS as a standalone section; content inferred from project completion criteria and standard practice.
+Required: Confirmation from project metadata whether formal FAT is in scope; if so, FAT location (SELLER facility or third-party test environment).
+Infer: If FAT is confirmed: FAT tests all configured software modules, simulated interface message flows (L2, ERP, Weigher), yard visualization accuracy, stacking rule behavior, user access control, and report generation against simulated data. FAT report issued and signed before hardware shipment to site. Shipment conditional on FAT sign-off. If FAT is not explicitly confirmed in project metadata, do not assume it is in scope.
+Never invent: Formal FAT pass/fail thresholds, buyer witness travel requirements, or FAT duration unless confirmed in project metadata.
+Structure: If FAT confirmed: bullet list of FAT test items (interface message simulation, yard visualization, stacking rules, user access, reporting) plus FAT report issuance condition. If not confirmed: single statement noting that factory acceptance testing approach is to be agreed during detailed engineering. Reference commissioning and work completion criteria as the acceptance gate.
+
+---
+
+## hardware_specs
+Role: Table listing all hardware items being supplied by SELLER within the agreed scope.
+Required: Hardware items from project metadata or standard Plate Mill BOM. Confirmation of HX Controller inclusion. [NUM_SERVERS], [NUM_CLIENT_DESKTOPS], [NUM_CRANE_HMIS].
+Infer: Standard BOM pattern (OBSERVED, not defaults): PMYMS Application Servers (tower, enterprise-grade, online + backup pair), PMYMS Server Consoles (FHD monitors + accessories), GSM Modem (if SMS Gateway in scope), HX Controller (if Unified Gateway in scope), PMYMS Client Desktops, Client Desktop Consoles (FHD monitors + accessories). Generic vendor descriptions acceptable ("HP/Dell/Lenovo or equivalent").
+Never invent: Specific processor model numbers, exact RAM or storage values, exact cable lengths, vendor model identifiers. Instead write "Sized per detailed engineering" for specifications not confirmed in project metadata.
+Fields (repository row structure): name (equipment name), maker (vendor/make description), qty (quantity), specs_line1 through specs_line4 (specification lines). Do not state specific RAM/storage values unless confirmed in project metadata — write "Sized and confirmed at detailed engineering" in specs lines for unknowns.
+
+---
+
+## software_specs
+Role: Table listing all software components being supplied by SELLER within the agreed scope.
+Required: Software components from project metadata or standard Plate Mill stack. License quantities derivable from hardware counts.
+Infer: Standard observed software stack: Windows Server OS (for PMYMS servers), Windows Client OS (for client desktops), Microsoft Office (for server and client machines), MS SQL Server (for PMYMS database), Antivirus (for all machines), Python (for PMYMS server), Django Framework (for PMYMS server), Angular Framework (for PMYMS server), Docker (for PMYMS server deployment), Server Backup Software (for PMYMS servers), Android Application (mobile access, if in scope).
+Never invent: Specific version strings — use "Current version at time of detailed engineering" for all software versions. License counts not derivable from confirmed hardware quantities.
+Fields (repository row structure): rows.name = software component name. Version field: always "Current version at time of detailed engineering." Quantity: derived from hardware counts or stated as project-dependent.
+
+---
+
+## third_party_sw
+Role: Documents third-party software requirements, specifically the remote support network link requirement.
+Required: Confirmation of remote support mechanism; database selection (MS SQL Server or alternative per SELLER decision).
+Infer: Database selection is solely at SELLER discretion — MS SQL Server or other suitable database. Remote link: SELLER requires a network connection (broadband/VPN) between SELLER and BUYER's site to provide remote support. Establishment and maintenance of this link is always under BUYER's authority.
+Never invent: Specific VPN product names, bandwidth requirements, or third-party software items not confirmed in scope.
+Fields: Primary entry: remote support network link (established and managed by BUYER). Secondary entry: database platform (at SELLER's discretion). Additional entries for any other confirmed third-party software requirements.
+
+---
+
+## system_config
+Role: Image-backed section. User uploads the PMYMS system configuration diagram. This section holds the text companion describing the architecture.
+Required: Architecture option (with or without HX Controller); confirmed integration points from project metadata.
+Infer: PMYMS server pair (online + backup) at the center. Client workstations accessing via web browser. Integration upward to MES/ERP (SAP). Integration laterally to Plate Mill L2, Furnace L2, Plate Leveller L2. Integration downward to crane subsystem via crane-side hardware and gateway. HX Controller in path to crane system if Unified Gateway option is confirmed. Network connectivity between all components via plant network (type [NETWORK_TYPE] to be finalized). Reference-only caveat is mandatory.
+Never invent: IP addresses, port numbers, VLAN details, specific network topology, physical rack layout, or component locations. These are all finalized during detailed engineering.
+Structure: 2–3 sentences describing the selected architecture option and how integrations connect to the PMYMS application. State key confirmed integration points. End with: "The above configuration is provided for illustrative purposes only and is subject to modification during detailed engineering to optimize overall system performance and functionality."
+
+---
+
+## supervisors
+Role: Records the on-site man-day allocation for SELLER personnel assigned to commissioning, training, and deployment activities.
+Required: [PM_DAYS], [DEV_DAYS], [COMM_DAYS], [TOTAL_DAYS] from project metadata or commercial agreement.
+Infer: Standard OBSERVED roles: Project Manager, PMYMS Developer/Engineer, Commissioning Supervisor (QA). Total man-days inclusive of on-site training. Travel time excluded unless stated otherwise.
+Never invent: Man-day quantities not confirmed in project metadata or commercial agreement.
+Fields (repository structure): pm_days, dev_days, comm_days, total_man_days. Populate from project metadata. If absent, use placeholders: [PM_DAYS], [DEV_DAYS], [COMM_DAYS], [TOTAL_DAYS].
+
+---
+
+## scope_definitions
+Role: Defines party identities and abbreviation codes used in the Division of Engineering table.
+Required: [CUSTOMER_NAME], [CUSTOMER_ABBREVIATION], seller identity (Hitachi India Pvt. Ltd.).
+Infer: Standard abbreviation definitions: BD = Basic Data, BE = Basic Engineering, DD = Detail Design, SU = Supply or Service, ER = Erection, COM = Commissioning. X/Y notation = primary work/services provided by X with support from Y.
+Never invent: Abbreviations not used in the Division of Engineering table.
+Structure: Party definition block (BUYER = [CUSTOMER_NAME] with abbreviation [CUSTOMER_ABBREVIATION]; SELLER = Hitachi India Pvt. Ltd.) followed by phase code definitions and the X/Y notation explanation.
+
+---
+
+## division_of_eng
+Role: Responsibility matrix showing who (BUYER, SELLER, or joint) owns each activity across project phases for all scope items.
+Required: Architecture option (affects HX Controller and crane interface line items); confirmed integration list; confirmed hardware scope items.
+Infer: Standard responsibility pattern — SELLER: Basic Engineering, Detail Design, Supply, and Commissioning for all SELLER-scope hardware and software items; BUYER: Basic Data, erection of hardware at site, firewall and network configuration, L2 and ERP system-side interface modifications; Joint (B/S): project execution coordination, overall system design. For crane subsystem: BUYER supplies hardware (sensors, APs, HMIs, Gateway hardware); SELLER designs, engineers, and commissions. For interfaces: L2 side = BUYER; PMYMS side = SELLER.
+Never invent: Responsibility assignments without project-specific basis.
+Structure: Table with columns: No., Item, BD, BE, DD, SU, ER, COM. Codes: B = Buyer, S = Seller, B/S = Joint. Categories: (1) Services (project execution, system design, testing), (2) System Engineering (documentation), (3) Hardware (PMYMS servers, client PCs, GSM Modem, HX Controller), (4) Software (all software components), (5) Training, (6) Pre-Engineering Activities, (7) Documents, (8) Crane System (sensor and hardware items with B for supply, S for engineering), (9) Interface with Other Systems (each interface appears twice: source-system side = B, PMYMS side = S). Network cables and accessories = B for all phases. Android mobile devices = B for all phases.
+
+---
+
+## overall_gantt
+Role: Image-backed Gantt chart section for the overall project schedule. User uploads the Gantt image; section holds text companion and draw.io JSON output.
+Required: Nothing project-specific required at TS stage; PO date from metadata if available for relative start.
+Infer: All canonical phases (see Gantt Guidance above). Key milestones: M1 = BUYER design document approval (gates software development); M2 = site readiness + crane availability (gates on-site commissioning); M3 = Work Completion Certificate. Durations are indicative only. BUYER prerequisite delays cause proportional delivery delays.
+Never invent: Committed calendar dates unless PO date is confirmed in project metadata. Durations as guarantees.
+Structure: 2–3 sentences introducing the indicative schedule and total estimated duration range. List key phases and milestones (M1, M2, M3). Mandatory indicative caveat. For draw.io Gantt: output week-based GanttTask JSON array (task, phase, start_week, duration_weeks, milestone, dependencies). Backend converts to mxGraph XML. Note that [SW_DEV_DURATION] starts only after M1 approval.
+
+---
+
+## shutdown_gantt
+Role: Image-backed shutdown activity schedule for commissioning activities requiring crane or production downtime.
+Required: Whether a production shutdown is required (from project metadata); if yes, which cranes and duration; shutdown timing constraints from BUYER.
+Infer: PMYMS software deployment does not require a full plant shutdown. Commissioning activities involving crane-side sensor installation and integration testing require crane availability windows agreed by BUYER. If no formal shutdown is confirmed, state that commissioning activities are planned during normal plant operations with crane availability windows to be agreed between BUYER and SELLER during detailed engineering.
+Never invent: Shutdown requirement if not confirmed in project metadata; specific shutdown duration without BUYER agreement.
+Structure: If no shutdown confirmed: one-sentence statement confirming non-intrusive deployment with crane availability windows to be agreed. If shutdown confirmed: week-based GanttTask JSON for shutdown-window activities only (crane sensor installation, gateway commissioning, integration testing, go-live) — same format as overall_gantt.
+
+---
+
+## work_completion
+Role: Defines Work Completion Certificate (WCC) criteria and deemed-issuance conditions.
+Required: References to scope sections; [WCC_PERIOD] from commercial agreement.
+Infer: Four criteria: (1) Supply of hardware and software per scope of supply (ref: Division of Engineering). (2) Deployment of PMYMS (software commissioned and functional). (3) Submission of all documentation per Documentation Control scope. (4) Commissioning man-days completed per agreed allocation. Deemed-issued clause: if BUYER does not issue WCC within [WCC_PERIOD] of all criteria being met, WCC is deemed issued. BUYER acknowledgment through WCC that SELLER has fulfilled all contractual obligations.
+Never invent: Specific deadline periods not commercially agreed.
+Structure: Bulleted list of four criteria, followed by one paragraph on WCC issuance procedure (BUYER issues within [WCC_PERIOD]; deemed issued if not issued in time; any issues to be mutually discussed). One final sentence: WCC issuance = acknowledgment of SELLER fulfilling all contractual obligations.
+
+---
+
+## value_addition
+Role: Describes complimentary value-added capabilities and PoC offer alongside the main Solution scope.
+Required: [POC_PLATFORM], [POC_DURATION], hosting arrangement (PMYMS server), [POC_DATASET_LIMIT]; confirmation of which value-added items are included (SMS Gateway, Unified Gateway, MIS Dashboard).
+Infer: Three standard value-addition items in Plate Mill: (1) SMS Gateway for operational alerts, (2) Unified Gateway (HX Controller) for integrated field connectivity, (3) Customizable MIS Dashboard. PoC: time-limited complimentary demonstration on PMYMS server infrastructure. Commercial continuation requires separate contract. SELLER reserves right to withdraw PoC if BUYER does not proceed to purchase.
+Never invent: PoC capabilities not listed in scope above. Deployment commitments. SLAs for PoC components.
+Structure: Bullet list of value-added items. Followed by PoC description paragraph: platform name, hosting, duration, core capabilities demonstrated (data preprocessing, feature engineering, model selection, evaluation, benchmarking, hyperparameter tuning, demonstration of ML models), dataset size limit, and explicit exclusions (no production integration, no large-scale data ingestion, no real-time deployment, no API integration, no user management or security governance during PoC). Close with statement that full version available via separate commercial contract.
+
+---
+
+## buyer_obligations
+Role: Lists what BUYER must provide or arrange for the project to succeed. These are contractually binding commitments.
+Required: All standard Plate Mill prerequisites plus any project-specific obligations from project metadata.
+Infer: All standard Plate Mill buyer obligations apply (see list in Standard Assumptions and Risks sections above). Complete list: (1) Responsible for project execution — answer technical queries promptly, coordinate all stakeholders. (2) Arrange all BUYER-scope hardware (crane sensors, network cables, accessories) ahead of agreed schedule. (3) Network cables and accessories (not in SELLER scope) to be provided by BUYER. (4) Provide site access to SELLER representatives for data collection and team discussions. (5) Provide dedicated internet connection for remote support. (6) Provide medical facilities for SELLER representatives in case of health emergency (costs borne by SELLER). (7) Provide complete and accurate master data (yard locations, material masters, product codes, QC codes, customer masters) before commissioning. (8) Arrange network readiness (Wi-Fi coverage, VLAN configuration, IP address releases, firewall rules, port openings). (9) Assign operations personnel and crane operators for joint testing during commissioning. (10) Make available weighbridge operators, yard supervisors, and QC personnel for integration testing. (11) Configure L2 and ERP/MES systems on their respective sides to support interface requirements.
+Never invent: Obligations for systems not named in project metadata.
+Structure: Bulleted imperative list ("Responsible for...", "Arrange...", "Provide...", "Ensure...", "Configure..."). Each item specific enough to be referenced in a project dispute.
+
+---
+
+## exclusion_list
+Role: Explicitly documents what is NOT included in the SELLER scope to prevent scope disputes.
+Required: Standard Plate Mill exclusions (see Standard Exclusions section above) plus any project-specific exclusions from project metadata.
+Infer: All standard Plate Mill exclusions apply. Include the following explicitly: interfaces with external devices other than those described in the TS; software patches (Microsoft security updates, antivirus updates, software upgrades after delivery); any warranty or guarantee on productivity, quality, or yield; source code of SELLER's core technology; modifications to existing L1, L2, MES, or FCE systems; software and hardware modifications to existing crane PLC, drive, or crane control systems; erection activities and civil work; hardware and software not mentioned in the TS; mechanical equipment supply, modification, or maintenance; troubleshooting support for mechanical, operational, or process issues; L2 and PDA software and related hardware; firewalls and networking components; performance guarantees on productivity, yield, quality, or process performance.
+Never invent: Additional exclusions not grounded in Plate Mill scope patterns.
+Structure: Bulleted list. One to two sentences per exclusion, specific enough for contractual reference. Opening statement: "Only the services mentioned in this scope are included. Any further services require mutual discussion and a previously agreed change management mechanism."
+
+---
+
+## buyer_prerequisites
+Role: Pre-conditions BUYER must satisfy before SELLER can begin each project phase.
+Required: Conditions from project metadata; standard Plate Mill prerequisites.
+Infer: Standard Plate Mill gating prerequisites: (1) Crane system readiness — crane hardware (position sensors, lock/unlock sensors, zeroing sensors, wireless APs, HMIs, gateway hardware) procured, installed, and operational before commissioning can begin. (2) Remote connection setup — BUYER must establish VPN/internet connection for remote support before support period begins. (3) Cranes in working condition — all cranes in scope must be operational and available during the commissioning window. Additional standard gates: design document provision (BUYER provides basic data for engineering start); design approval (BUYER approves system design document within agreed turnaround to gate software development); network readiness (Wi-Fi, firewall, VLAN, IP) before on-site commissioning; L2 and ERP interfaces configured on source-system side before integration testing.
+Never invent: Prerequisites for unconfirmed systems or phases.
+Structure: Bulleted list organized by phase gate where practical. Each item states the prerequisite and which SELLER activity it gates.
+
+---
+
+## binding_conditions
+Role: Contractual framework limiting SELLER scope, establishing SELLER site-exit rights, and defining liability boundaries. Standard boilerplate content.
+Required: Nothing project-specific — standard content only.
+Infer: Standard Plate Mill binding conditions (use approved boilerplate): SELLER scope limited to agreed and signed TS content. Services outside TS scope are full BUYER responsibility. No performance guarantees of any kind. Conditions for SELLER supervisor site exit (excessive idling, BUYER non-compliance with TS terms, force majeure, prerequisites not fulfilled, site conditions unsafe or unconducive). SELLER not responsible for failed/missing/damaged equipment during service unless explicitly stated. Unless explicitly mentioned in TS, SELLER does not take responsibility for modification or updating of existing systems. Normal working of existing servers, L2 systems, crane systems, and crane instrumentation is BUYER responsibility. Firewall configuration is BUYER responsibility. Contract effective date = PO acceptance date. WCC / deemed WCC is prerequisite for taking up new or additional scope.
+Never invent: Novel legal clauses, penalty terms, indemnity provisions, or modifications to the standard binding conditions boilerplate.
+Structure: Bulleted list using repository-approved binding conditions boilerplate. Do not generate novel legal language.
+
+---
+
+## cybersecurity
+Role: Formally states cybersecurity responsibilities and SELLER liability limitations. Standard boilerplate content.
+Required: Standard disclaimer content only — see Cybersecurity section in domain knowledge above.
+Infer: Four-part content: (1) SELLER recommendation to apply security updates promptly and use supported versions. (2) BUYER's full and sole responsibility for all cybersecurity, information security, hardware security, data security, network security, and equipment security. BUYER responsible for preventing unauthorized access to plant systems. (3) SELLER's liability limitation — not liable for any direct, indirect, incidental, consequential, or special damages from security incidents, data breaches, or unauthorized access. (4) NDA required before any remote support session.
+Never invent: Novel legal security clauses, product-level cybersecurity certifications, or commitments to specific security architectures.
+Structure: 2–4 short paragraphs using approved cybersecurity disclaimer boilerplate. Do not generate novel legal language.
+
+---
+
+## disclaimer
+Role: Standard legal disclaimers covering software licenses, technical improvements, confidentiality, and liability limitations.
+Required: Standard clauses only; reference to contract price for liability cap (use placeholder if price not in metadata).
+Infer: Four standard subsections: (1) Software Licenses — BUYER's right to use and modify for normal use during system lifetime; no duplication or third-party distribution; all rights remain with SELLER; BUYER responsible for valid licenses of third-party software. (2) Changes Due to Technical Improvements — SELLER reserves right to supply systems differing in detail from the TS due to continuous improvement policy. (3) Confidentiality of Information (NDA) — TS document is a company secret; no disclosure or reproduction to third parties without SELLER management written authorization. (4) Limitation of Liability and Consequential Damages — SELLER total liability capped at 100% of SELLER contract price; no liability for indirect or consequential damages including loss of profit, use, contracts, production, or business interruption; document confidentiality.
+Never invent: Contract price values, penalty amounts, specific indemnity terms, or novel legal clauses.
+Structure: Four subsections with the titles above. Use approved template language only. Do not generate new legal text beyond established boilerplate.
+
+---
+
+## poc
+Role: Describes the complimentary Proof of Concept offer provided alongside the main Solution.
+Required: [POC_PLATFORM], [POC_DURATION], hosting arrangement from project metadata (observed: PMYMS server), [POC_DATASET_LIMIT].
+Infer: Complimentary PoC; time-limited duration [POC_DURATION]; deployed on PMYMS server infrastructure (no additional server required from BUYER during PoC). The AutoML Platform PoC enables: automated data preprocessing, feature engineering, and model selection; model evaluation and performance benchmarking; hyperparameter tuning; demonstration of at least two ML model types (predictive and prescriptive). Dataset input limited to [POC_DATASET_LIMIT]. SELLER installs and configures on BUYER's infrastructure. Full platform capabilities available via separate commercial contract. SELLER reserves right to withdraw PoC if BUYER does not proceed.
+Never invent: PoC platform capabilities beyond those listed above. Deployment commitments. Integration with production systems during PoC. SLAs for PoC period.
+Structure: Brief 2–3 paragraph section. (1) Purpose and eligibility — complimentary alongside main Solution. (2) Platform capabilities within PoC scope (bullet sub-list). (3) Explicit PoC exclusions (no production integration, no large-scale data ingestion, no real-time API deployment, no user management, security governance, or scalability testing). Close with commercial continuation statement and SELLER's right to withdraw.
+
+
+---
+
+
+End of **Plate Mill** context.txt

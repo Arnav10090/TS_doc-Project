@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 
 from app.sections.models import SectionData
 from app.projects import revision_service
+from app.projects.models import Project
 
 # Track last revision creation time per project to prevent multiple entries per session
 # Format: {project_id: last_revision_timestamp}
@@ -37,14 +38,46 @@ async def get_section(
     
     # Auto-create section with empty content if it doesn't exist (Req 2.4, 50.6)
     if not section:
-        section = SectionData(
-            project_id=project_id,
-            section_key=section_key,
-            content={}
-        )
-        db.add(section)
-        await db.commit()
-        await db.refresh(section)
+        # Ensure project row exists to satisfy foreign key constraints
+        result = await db.execute(select(Project).where(Project.id == project_id))
+        proj = result.scalar_one_or_none()
+        if not proj:
+            proj = Project(
+                id=project_id,
+                solution_name="Auto Project",
+                solution_full_name="Auto Project",
+                client_name="Auto Client",
+                client_location="Auto Location",
+            )
+            db.add(proj)
+            # flush so that FK references to project_id are valid before commit
+            await db.flush()
+
+        # Special-case: when creating revision_history, initialize with the
+        # standard initial entry rather than an empty record. This ensures
+        # that projects which get sections created via upsert_section() will
+        # have the initial revision entry (rev_no '0') present.
+        if section_key == "revision_history":
+            # Use the revision service helper which will upsert the initial
+            # revision entry atomically.
+            await revision_service.create_initial_revision_entry(db, project_id)
+
+            # Re-query the section we just created
+            result = await db.execute(
+                select(SectionData)
+                .where(SectionData.project_id == project_id)
+                .where(SectionData.section_key == section_key)
+            )
+            section = result.scalar_one_or_none()
+        else:
+            section = SectionData(
+                project_id=project_id,
+                section_key=section_key,
+                content={}
+            )
+            db.add(section)
+            await db.commit()
+            await db.refresh(section)
     
     return section
 
@@ -66,6 +99,19 @@ async def upsert_section(
             section.content = content
         else:
             # Create new section
+            # Ensure a project exists for this project_id to avoid FK violations
+            result = await db.execute(select(Project).where(Project.id == project_id))
+            proj = result.scalar_one_or_none()
+            if not proj:
+                proj = Project(
+                    id=project_id,
+                    solution_name="Auto Project",
+                    solution_full_name="Auto Project",
+                    client_name="Auto Client",
+                    client_location="Auto Location",
+                )
+                db.add(proj)
+                await db.flush()
             section = SectionData(
                 project_id=project_id,
                 section_key=section_key,
@@ -116,6 +162,10 @@ async def _maybe_create_revision_entry(db: AsyncSession, project_id: UUID) -> No
     )
     
     if should_create:
+        # Ensure an initial revision entry exists before appending a new one.
+        # This guarantees the revision history contains the initial "0" entry
+        # so that append_revision_entry will create the next ordinal entry.
+        await revision_service.ensure_revision_history_exists(db, project_id)
         await revision_service.append_revision_entry(db, project_id)
         _last_revision_timestamps[project_id] = now
 

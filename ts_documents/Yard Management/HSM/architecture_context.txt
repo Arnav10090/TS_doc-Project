@@ -1,0 +1,81 @@
+## Architecture Options
+Three functional tiers:
+
+Tier 1 — Crane Subsystem (BUYER SCOPE):
+- Position sensors (X, Y, Z axes) on each crane
+- Pick/drop detection sensors (load or magnet-based)
+- Onboard crane controller (Edge I/O + network)
+- Crane-side HMI for operator feedback
+- Wireless access points (WAPs) and networking accessories
+- Crane-side PLC modifications for CYMS/SYMS integration
+
+Tier 2 — Application Server (SELLER SCOPE):
+- Industrial-grade server hardware (online + backup)
+- Web application server (frontend, backend, database engine)
+- API layer for external system integration
+- Digital yard map engine (2D and 3D)
+- Event processing and history logging module
+- Report engine
+
+Tier 3 — Client Access Layer (SELLER SCOPE):
+- Client workstation PCs at operator and supervisor stations
+- KVM extenders for remote console access
+- Standard web browser access; no proprietary client software required on client PCs
+
+Deployment: containerized application (OBSERVED: Docker) on dedicated server hardware (online + backup).
+
+## Protocols (OBSERVED / OPTIONAL)
+All protocol selections are project-specific and confirmed during engineering. Do not assume any default:
+- Plant network transport: Wi-Fi (industrial wireless) or wired Ethernet — finalized during detailed engineering (OBSERVED)
+- Remote access: Broadband/VPN — buyer provides and manages infrastructure (OBSERVED)
+- API integration with L1/L2/third-party systems: protocol (OPC-UA, REST, MQTT, proprietary, etc.) confirmed per integration point during engineering (OBSERVED)
+- Crane integration protocol: determined by crane-side controller hardware, confirmed during engineering (OBSERVED)
+
+## Data Acquisition
+- Crane position data: continuous X, Y, Z position feed from sensors mounted on cranes, transmitted from crane controller to CYMS/SYMS server over plant network
+- Pick/drop event data: discrete event signals from load or magnet-based sensors; each event triggers inventory slot update in CYMS/SYMS
+- Manual data entry: operator-entered corrections, placement overrides, and adjustments through web UI
+- Third-party system interfaces: data exchange with HSM L1 (Coil Tracking Map), Caster L1/L2, Mill L2/L3, Slab Transfer Car, Pellet Conveyor L1/L2; integration protocols and data points confirmed during engineering
+- MES/ERP: explicitly designated Future Scope in base proposal; do not include in scope unless confirmed
+
+## Data Storage
+- Primary database: relational RDBMS; MS SQL Server is OBSERVED — final selection at SELLER discretion
+- Backup: server-level automated backup software in SELLER scope
+- Data stored: yard position records, material attributes (coil ID, slab ID, weight, grade, dimensions, status), crane event history, pick/drop logs, operator corrections, reports, instruction history
+- Historical retention period: determined during engineering
+- Antivirus: antivirus software for server and client protection in SELLER scope
+- No write-back to L1/L2 source systems; CYMS/SYMS does not modify existing automation systems
+
+## Integration Patterns
+All integration work on the third-party/external system side is BUYER scope. CYMS/SYMS software-side modification is SELLER scope.
+
+| Integration Target          | Seller Scope (CYMS/SYMS side)  | Buyer Scope (External side)          |
+|-----------------------------|-------------------------------|--------------------------------------|
+| HSM L1 (Coil Tracking Map)  | Software interface             | L1 side modification                 |
+| Mill L2                     | Software interface             | L2 side modification                 |
+| Mill L3 / MES               | Future Scope                   | Future Scope                         |
+| Caster 1 L1 & L2            | Software interface             | Caster side modification             |
+| Caster 2 L1 & L2            | Software interface             | Caster side modification             |
+| Slab Transfer Car           | Software interface             | Transfer car side modification       |
+| Pellet Conveyor L1 & L2     | Software interface             | Conveyor side modification           |
+| Cranes (EOT, Semi-Gantry)   | Software interface             | Crane PLC/sensor modifications       |
+| MES/ERP                     | Future Scope                   | Future Scope                         |
+
+Firewall configuration: exclusively BUYER responsibility.
+
+## Technology Stack Patterns (OBSERVED)
+All selections are OBSERVED from one historical proposal. Never treat as project defaults:
+
+| Component              | OBSERVED Technology                                   |
+|------------------------|------------------------------------------------------|
+| Application Frontend   | Angular Framework                                     |
+| Browser Access         | Standard web browsers (Chrome, Edge, Mozilla)         |
+| Application Backend    | Python / Django framework                             |
+| Containerization       | Docker                                                |
+| Database               | MS SQL Server 2022 Standard Edition (or equivalent)   |
+| Server OS              | Windows Server 2022 (64-bit)                          |
+| Development IDE        | Microsoft Visual Studio                               |
+| Backup Software        | Acronics or equivalent                                |
+| Antivirus              | Trend Micro or equivalent                             |
+
+SELLER reserves the right to substitute equivalent technologies at its discretion. Database selection is solely SELLER's decision.

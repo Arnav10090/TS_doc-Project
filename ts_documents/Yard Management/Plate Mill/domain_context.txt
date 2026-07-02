@@ -1,0 +1,153 @@
+## What Plate Mill Is
+
+A Plate Mill Yard Management System (hereafter the Solution) is a web-based, software-driven Layer-3 application that digitally manages the complete material lifecycle within a plate steel manufacturing facility — from slab receipt and furnace charging through rolling, heat treatment, quality inspection, yard stacking, logistics planning, and final dispatch to customers. It sits above the plant's Level-1 (PLC) and Level-2 (supervisory automation) systems, receiving material and production data from those systems and from MES/ERP, and orchestrating physical yard and crane operations through intelligent software guidance, real-time inventory control, 2D/3D visualization, and logistics coordination.
+
+What it IS NOT:
+- NOT a SCADA or DCS system — it does not directly control machines or process parameters.
+- NOT a Level-1 or Level-2 automation system — it does not replace or modify existing PLC or supervisory systems.
+- NOT an ERP or MES — it receives order and production data from those systems rather than replacing them.
+- NOT a crane automation or crane control system — cranes remain manually operated; the Solution provides movement guidance and captures execution feedback.
+- NOT a weighing system, barcode scanner, or RFID infrastructure — these are buyer-scope field devices whose signals the Solution consumes.
+- NOT a general-purpose data historian or OT/IT data integration middleware.
+
+## Core Capabilities (CORE)
+
+All Plate Mill deployments include:
+
+1. End-to-End Material Traceability: Unique identification and lifecycle tracking of every slab and plate from slab receipt, through furnace charging, rolling, heat treatment, QC inspection, yard stacking, and dispatch. All movement and status events are recorded with timestamps and linked to production and order references.
+
+2. Smart Yard Inventory Management: Real-time, synchronized digital representation of physical yard inventory. Tracks material attributes (grade, dimension, destination, quality status, rolling/shipping plan) at position granularity (zone → row → pile → layer). Eliminates stock mismatches and reduces manual reconciliation.
+
+3. Real-Time Communication and Action Handling: Continuous bi-directional data exchange with MES/ERP (order data, shipping plans, quality status) and Level-2 automation systems (production events, charging instructions). All inbound and outbound interface messages (telegrams) are logged for traceability and troubleshooting.
+
+4. Graphical 2D and 3D Yard Visualization: Interactive map of slab and plate yard areas displaying real-time material positions, stack configurations, pile heights, crane locations, and occupancy. Supports search and filter by material grade, reference, dimension, destination, or batch. Multiple zoom levels and pan controls.
+
+5. Rule-Based Dynamic Stacking and Space Optimization: Configurable business rule engine that recommends optimal stacking locations based on material properties, production/shipping plans, yard space availability, and tolerance limits. Minimizes pile changes and unnecessary crane movements. Rules are modifiable without system downtime.
+
+6. Stacking Rule Simulation and Validation: Pre-execution simulation capability allowing planners to validate stacking strategies against current yard conditions before committing instructions. Reduces operational conflicts and space constraint risks.
+
+7. Automated Crane Instruction and Movement Integration: System-generated crane movement instructions displayed on operator interfaces. Crane execution feedback is captured to update material locations automatically. Cranes remain manually operated; the Solution provides task guidance.
+
+8. Load-Based Multi-Material Handling Recognition: Detection and validation of multi-material crane lifts using load cell data. Accurately updates inventory and stacking records during bulk handling operations.
+
+9. Manual Intervention and Exception Handling: Controlled override capability for operators and supervisors to correct material locations, override recommendations, or resolve mismatches. All overrides logged with user identity, timestamp, and reason code for audit compliance.
+
+10. Logistics and Movement Planning Management: Manages slab entry plans, slab/plate transfer plans, shipping plans, and pile-change plans received from MES/ERP. Converts confirmed plans into executable yard and crane instructions. Generates loading memos, tracks dispatch progress, and sends confirmations back to MES/ERP. Handles memo modifications, cancellations, and stock restoration for unloading/reloading events.
+
+11. Operation History and Event Log Management: Comprehensive event log for every material-related action (receipt, movement, stacking, inspection, adjustment, dispatch) with full contextual data. Supports audits, performance analysis, and discrepancy investigation.
+
+12. Diagnostic Tooling for Troubleshooting: Built-in interface monitoring, message tracing, event log views, and diagnostic dashboards covering MES/ERP, Level-2, Weigher, and Crane communications. Reduces downtime by accelerating fault identification.
+
+13. Smart Reporting System and Dashboards: Real-time and historical reports on inventory, production, dispatch, logistics, and yard utilization. Dashboards support drill-down analysis and customizable views for operational and management users.
+
+14. Role-Based Access and Security Management: User access restricted by role and responsibility. System functions and data visibility enforced per user role.
+
+15. Scalability and Future Expansion Readiness: Modular architecture allowing addition of new yards, bays, cranes, interfaces, and business rules with minimal disruption.
+
+## Optional/Value-Added Capabilities (COMMON / OPTIONAL)
+
+- SMS Gateway Integration (COMMON): Alerts and notifications via SMS for critical yard events or thresholds.
+- Unified Gateway / HX Controller Integration (COMMON): SELLER-proprietary data gateway (HX Controller) for integration with heterogeneous field devices and crane subsystems, providing protocol bridging and local buffering.
+- Customizable MIS Dashboard (COMMON): Management information dashboards configurable for plant leadership and operations management.
+- Android Mobile Application (COMMON): Mobile interface for yard operators enabling field updates and material lookups without returning to a fixed workstation.
+- AutoML Platform PoC (OPTIONAL): Time-limited complimentary demonstration of an automated machine learning platform on existing server infrastructure. Enables data preprocessing, feature engineering, model selection, evaluation, benchmarking, and hyperparameter tuning. Demonstrates predictive and prescriptive ML model outputs. Dataset size capped at [POC_DATASET_LIMIT]. No integration with production systems during PoC. Full version available via separate commercial contract.
+
+## Business Drivers
+
+Customers implement this Solution to:
+- Eliminate manual slab/plate tracking and paper-based or spreadsheet-based inventory records.
+- Reduce misplacement, duplication, and inventory inaccuracies in plate yards.
+- Minimize unnecessary crane movements and rehandling cycles.
+- Enable real-time operational visibility for supervisors and plant management.
+- Align physical yard inventory with production rolling and dispatch plans.
+- Automate loading memo generation and dispatch coordination with MES/ERP.
+- Improve audit readiness with complete event traceability.
+- Create a digital transformation foundation for future AI/ML analytics, predictive scheduling, and operational optimization.
+
+The Solution does not guarantee productivity, quality, yield, or process performance improvements. These outcomes depend on plant operations, process conditions, and buyer's own operational practices.
+
+## Operational Environment
+
+The Solution operates within a hot-metal steel plate manufacturing plant. The typical environment includes:
+
+- A slab yard where input slabs are received and stored prior to charging into reheating furnaces.
+- A reheating furnace area where slabs are heated before rolling.
+- A rolling mill (roughing and finishing) where slabs are rolled into plates.
+- A cooling area where plates cool after rolling.
+- A Heat Treatment Complex (HTC) where a subset of plates undergoes furnace normalizing, quenching, or quenching-and-tempering.
+- A plate yard where finished and inspected plates are stored in stacks managed by Electric Overhead Travelling (EOT) cranes operating in manual mode.
+- A dispatch area (truck and/or wagon loading bays) for outbound logistics.
+- Existing Level-1 PLC systems, Level-2 supervisory systems, MES/ERP (typically SAP), and weighing systems that the Solution integrates with.
+
+HTC and Non-HTC route distribution is project-dependent (OBSERVED historical split: HTC 16–45%, Non-HTC 55–84%); actual distribution must be taken from project metadata, not assumed.
+
+The Solution is web-based and delivered as a centralized application on buyer-hosted server hardware, accessible via standard web browsers by authorized plant users.
+
+# DOMAIN GLOSSARY
+
+PMYMS — Plate Mill Yard Management System. The Solution covered by this TS type. A web-based yard management application for steel plate manufacturing plants. Use [SOLUTION_ABBREVIATION] as placeholder when the actual solution abbreviation is project-dependent.
+
+Slab — Raw input material (thick steel slab) received in the slab yard, heated in the reheating furnace, and rolled into plates. Tracked by PMYMS from receipt through furnace charging.
+
+Plate — Finished rolled steel product produced in the rolling mill from slabs. Subject to QC inspection, HTC or Non-HTC routing, yard storage, and dispatch. Primary tracked material unit in the plate yard.
+
+HTC — Heat Treatment Complex. The facility section where plates are subjected to heat treatment processes: Furnace Normalizing (FN), Quenching (Q), or Quenching and Tempering (Q&T). HTC plates follow a different process route and require additional tracking steps. [HTC_DISTRIBUTION] percentage is project-dependent.
+
+Non-HTC — Plates that proceed directly from rolling to the plate yard without heat treatment. Includes As-Rolled/Normalized Rolling and TMCP (Thermo-Mechanical Controlled Processing / Laminar Cooling) plates.
+
+FN — Furnace Normalizing. A heat treatment process in which plates are heated in a furnace to a specified temperature and then air-cooled. One of the HTC routes.
+
+Q — Quenching. A heat treatment process in which plates are rapidly cooled (water-quenched) after furnace heating to increase hardness. One of the HTC routes.
+
+Q&T — Quenching and Tempering. A two-stage heat treatment process — quenching followed by reheating in a tempering furnace (TF1 or TF2). Produces high-strength, tough plates. One of the HTC routes.
+
+TMCP — Thermo-Mechanical Controlled Processing. A controlled rolling process using laminar cooling. Produces high-strength plates without post-rolling heat treatment. Falls under the Non-HTC category.
+
+EOT Crane — Electric Overhead Travelling Crane. The primary material handling equipment in slab and plate yards. Operates in manual mode. PMYMS provides movement guidance to crane operators and captures execution feedback for inventory updates.
+
+LT — Long Travel. The longitudinal axis movement of an EOT crane along the crane runway (travel along the length of the bay).
+
+CT — Cross Travel. The lateral axis movement of an EOT crane perpendicular to the runway (travel across the width of the bay).
+
+L1 — Level-1 System. PLC-level plant automation system (sensors, actuators, drives). PMYMS does not connect directly to L1; any L1 data required must be routed through L2.
+
+L2 — Level-2 System. Supervisory automation system (process control, data acquisition). PMYMS receives plate production data, slab tracking data, and heat treatment completion data from L2 systems. L2-side interface modifications are BUYER scope.
+
+L3 / ERP / SAP — Level-3 or Enterprise Resource Planning system (typically SAP in steel plants). PMYMS receives order data, shipping plans, and quality information from ERP, and sends back movement confirmations, stock updates, and loading memo data. L3/ERP side integration modifications are BUYER scope.
+
+MES — Manufacturing Execution System. Plant-level production management layer, typically between L2 and ERP. May be combined with ERP functions. PMYMS integrates with MES for order-to-dispatch lifecycle management.
+
+Loading Memo — A formal dispatch document generated by PMYMS authorizing loading of specific plates onto a truck or wagon for a customer order. PMYMS automates generation, tracks progress, and records confirmation back to MES/ERP.
+
+Pile / Stack — The physical arrangement of plates stacked on top of each other in the yard. PMYMS tracks each plate's position within a stack at layer level.
+
+Pile-Change Plan — A rearrangement plan received from MES/ERP that instructs PMYMS to reorganize material within the yard (e.g., move plates from one pile to another for access priority or order fulfillment). PMYMS converts these plans into crane instructions.
+
+Zone / Row / Column / Layer — The hierarchical grid system used to describe yard positions. The yard is divided into zones, each zone into rows and columns (bay positions), and each bay position into layers (stacking height). PMYMS maintains inventory at this four-level position granularity.
+
+HX Controller — SELLER's proprietary unified gateway hardware device used to bridge crane subsystem signals and heterogeneous field device protocols to the PMYMS server. Provides local signal buffering, protocol normalization, and reliable data transmission. Optional; included when direct server integration with crane hardware is impractical.
+
+GSM Modem — Industrial cellular modem included when SMS Gateway capability is in scope. Enables outbound SMS alerts for critical yard events or operational notifications.
+
+Load Cell — Force measurement sensor on a crane tong or magnet system. Used by PMYMS to detect multi-material lifts (load-based multi-material handling recognition feature).
+
+Telegram — In the context of PMYMS, a structured data message exchanged between PMYMS and an external system (L2, ERP, Weigher). All inbound and outbound telegrams are logged by PMYMS for troubleshooting.
+
+Grid Layout — The configurable digital representation of the physical yard in PMYMS software. Defined by zones, rows, and columns. Configurable in software without hardware changes.
+
+WCC — Work Completion Certificate. Formal document issued by BUYER to SELLER confirming satisfactory completion of all contracted deliverables. Triggers start of warranty/remote support period. Deemed issued if BUYER does not issue within [WCC_PERIOD] of completion criteria being met.
+
+AutoML Platform — Automated Machine Learning platform offered as a complimentary PoC alongside the main Solution. Enables automated data preprocessing, model selection, evaluation, and benchmarking. Deployed on existing PMYMS server for [POC_DURATION]; requires separate commercial contract for continued use.
+
+Barcode / RFID / OCR — Methods for plate identification during material handling. The specific method used is project-dependent and finalized during detailed engineering. Represented as [PLATE_ID_METHOD] in this context.
+
+Docker — Container platform used for deploying PMYMS software components. Observed in sample TS; treatment as standard only when confirmed by project metadata.
+
+Angular — JavaScript frontend framework used for the PMYMS web application. Enables access via standard web browsers (Chrome, Edge, Mozilla). Observed in sample TS.
+
+Django — Python web framework used for the PMYMS application backend. Observed in sample TS.
+
+BD / BE / DD / SU / ER / COM — Scope matrix phase codes used in the Division of Engineering table. BD = Basic Data, BE = Basic Engineering, DD = Detail Design, SU = Supply or Service, ER = Erection, COM = Commissioning. B = Buyer, S = Seller, B/S = Joint (primary by first party with support from second).
+
+
+---

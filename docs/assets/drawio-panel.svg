@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="460" viewBox="0 0 860 460" role="img" aria-label="Draw.io XML panel reference screenshot">
+  <rect width="860" height="460" fill="#f8fafc"/>
+  <rect x="46" y="36" width="768" height="388" rx="8" fill="#ffffff" stroke="#d1d5db"/>
+  <text x="78" y="76" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#111827">Overall Gantt</text>
+  <rect x="592" y="54" width="188" height="42" rx="6" fill="#0ea5e9"/>
+  <text x="616" y="81" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff">Generate Draw.io Chart</text>
+  <text x="78" y="128" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#374151">Draw.io XML</text>
+  <rect x="682" y="106" width="98" height="34" rx="6" fill="#111827"/>
+  <text x="704" y="128" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff">Copy XML</text>
+  <rect x="78" y="152" width="702" height="154" rx="6" fill="#f8fafc" stroke="#e5e7eb"/>
+  <text x="100" y="188" font-family="Consolas, monospace" font-size="13" fill="#111827">&lt;mxGraphModel&gt;</text>
+  <text x="100" y="216" font-family="Consolas, monospace" font-size="13" fill="#111827">  &lt;root&gt;...Gantt bars and milestones...&lt;/root&gt;</text>
+  <text x="100" y="244" font-family="Consolas, monospace" font-size="13" fill="#111827">&lt;/mxGraphModel&gt;</text>
+  <text x="78" y="348" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#374151">Instructions</text>
+  <text x="78" y="376" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">Copy XML, open diagrams.net, import the XML, edit, and export as PNG.</text>
+</svg>
+

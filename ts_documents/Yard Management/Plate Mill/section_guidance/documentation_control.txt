@@ -1,0 +1,5 @@
+Role: Describes the documentation package SELLER delivers as part of the project.
+Required: No project-specific inputs required beyond standard scope confirmation.
+Infer: Standard documentation package for Plate Mill Yard Management System: Screen Design Document, Hardware Specifications, Software Specifications, Operation Manual (PMYMS).
+Never invent: Additional documentation items not established in the scope of supply (such as network design documents, DBA guides, or API specifications) unless explicitly stated in project metadata.
+Structure: One paragraph or bulleted list. State that SELLER shall provide the following technical documentation: Screen Design Document, Hardware Specifications, Software Specifications, and PMYMS Operation Manual. Brief and factual.

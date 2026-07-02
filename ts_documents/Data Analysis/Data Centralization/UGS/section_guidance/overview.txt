@@ -1,0 +1,4 @@
+Structure: Business context (current problem), problem statement (what is lacking), proposed solution summary, key KPIs enabled. Use sub-headings or short paragraphs.
+Avoid: Deep architecture detail; no protocol names here. Do not repeat Executive Summary content.
+Tone: Business-analytical. Frame around buyer's operational challenge, not HICAD's product.
+UGS-specific: Emphasize data centralization from named units, eliminating siloed reporting, enabling plant-wide visibility.

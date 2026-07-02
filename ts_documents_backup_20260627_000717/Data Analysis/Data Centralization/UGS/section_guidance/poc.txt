@@ -1,0 +1,3 @@
+Structure: Platform description (what the PoC demonstrates — data acquisition from a subset of tags, live KPI dashboard, OPC UA data feed), demonstration period (from metadata or "mutually agreed"), hosting arrangement (runs on UGS server already in scope — no separate hardware), scope limitations (limited tag set, no production SLA, no uptime guarantee), IP retention (all PoC software IP remains with HICAD; buyer gets no license to PoC code).
+Avoid: Implying PoC = production readiness or commercial license. Do not promise specific tag count unless in metadata.
+Tone: Offer-qualification. Clear boundaries on what PoC is and is not.

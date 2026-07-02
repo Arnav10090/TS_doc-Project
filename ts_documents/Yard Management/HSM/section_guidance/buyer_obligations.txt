@@ -1,0 +1,6 @@
+Purpose: Lists obligations Buyer must fulfill to enable SELLER to successfully execute the project scope.
+Required Inputs: No project-specific inputs required beyond scope confirmation
+Safe Inferences: Standard obligations: coordinate project execution and answer technical queries within a reasonable time; arrange all hardware in Buyer scope well ahead of the agreed schedule; provide network cables and accessories not included in the TS; provide site access to SELLER's representatives for data collection and technical discussions; provide a dedicated internet connection; in case of health issue to SELLER's representative, immediately provide best available medical facility (expenses borne by SELLER)
+Must Not Invent: Specific response-time SLAs for Buyer queries, specific penalty clauses for Buyer delays, specific hardware procurement specifications for Buyer-scope equipment
+Suggested Structure: Introductory sentence. Bulleted list of obligations. Professional tone. Each bullet specific enough to be referenced in a scope discussion.
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

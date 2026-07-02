@@ -6,6 +6,7 @@ import { useProjectStore } from '../../store/project.store';
 import { EDIT_METADATA_KEY, stripEditMetadata } from '../../utils/editMetadata';
 import DiagramUpload from '../shared/DiagramUpload';
 import RichTextEditor from '../shared/RichTextEditor';
+import ExpandableTableFrame from '../shared/ExpandableTableFrame';
 import SectionHeader from '../shared/SectionHeader';
 import {
   PREDEFINED_SECTION_TITLES,
@@ -393,8 +394,10 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({ label, rows, onChange }) =>
           </button>
         </div>
       </div>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <ExpandableTableFrame
+        title={label}
+        renderTable={() => (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <tbody>
             {normalizedRows.map((row, rowIndex) => (
               <tr key={rowIndex}>
@@ -421,7 +424,8 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({ label, rows, onChange }) =>
             ))}
           </tbody>
         </table>
-      </div>
+        )}
+      />
       {columnCount > 1 && (
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
           {Array.from({ length: columnCount }, (_, columnIndex) => (
@@ -520,8 +524,10 @@ const RecordTableEditor: React.FC<RecordTableEditorProps> = ({
           </button>
         </div>
       </div>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '520px' }}>
+      <ExpandableTableFrame
+        title={label}
+        renderTable={() => (
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '520px' }}>
           <thead>
             <tr>
               {columns.map((column) => (
@@ -601,7 +607,8 @@ const RecordTableEditor: React.FC<RecordTableEditorProps> = ({
             ))}
           </tbody>
         </table>
-      </div>
+        )}
+      />
     </div>
   );
 };
@@ -900,3 +907,4 @@ const PredefinedSectionEditor: React.FC<PredefinedSectionEditorProps> = ({
 };
 
 export default PredefinedSectionEditor;
+

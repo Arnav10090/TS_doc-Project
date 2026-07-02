@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="420" viewBox="0 0 860 420" role="img" aria-label="AI suggestion panel reference screenshot">
+  <rect width="860" height="420" fill="#f8fafc"/>
+  <rect x="46" y="38" width="768" height="344" rx="8" fill="#ffffff" stroke="#d1d5db"/>
+  <text x="78" y="78" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#111827">Executive Summary</text>
+  <text x="78" y="104" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">AI-generated content. Review before importing.</text>
+  <rect x="420" y="58" width="142" height="40" rx="6" fill="#10b981"/>
+  <text x="442" y="84" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff">Import Suggestion</text>
+  <rect x="574" y="58" width="112" height="40" rx="6" fill="#e60012"/>
+  <text x="594" y="84" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff">Regenerate</text>
+  <rect x="698" y="58" width="82" height="40" rx="6" fill="#ffffff" stroke="#d1d5db"/>
+  <text x="717" y="84" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Dismiss</text>
+  <rect x="78" y="130" width="702" height="126" rx="6" fill="#f9fafb" stroke="#e5e7eb"/>
+  <text x="100" y="166" font-family="Arial, sans-serif" font-size="15" fill="#111827">Suggested section content preview appears here.</text>
+  <text x="100" y="196" font-family="Arial, sans-serif" font-size="15" fill="#374151">Structured tables, rich text, lists, or raw text are rendered based on section type.</text>
+  <text x="78" y="298" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#374151">Context sources</text>
+  <text x="100" y="326" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">UGS/Technical Proposal example.docx</text>
+</svg>
+

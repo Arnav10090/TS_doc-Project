@@ -1,0 +1,6 @@
+## tech_stack
+Role: Combined table of all software and hardware components in the OTCSS technology stack.
+Required: All confirmed components from project metadata or standard OTCSS supply; [ARCHITECTURE_OPTION]; [NUM_SENSORS]; [SUBSCRIPTION_PERIOD].
+Infer: Standard OT cybersecurity technology categories: IDS/Asset Management/Vulnerability Management platform (hardware sensors + core appliance + EM if Option 2 + software subscription); SRA platform (hardware appliance + software subscription); Enterprise Manager (Option 2 only, hardware + software). Software versions always "current at implementation start." Hardware sizing always "per asset count and deployment scope — confirmed at detailed engineering." Aggregation switches noted as Buyer-provided if Option 1.
+Never invent: Specific version strings; specific RAM/storage/CPU values; specific vendor product names not confirmed; IP addresses.
+Fields: sr_no, component (name), technology (description or vendor category — "OEM per confirmed tool selection" if vendor not confirmed), note (sizing or qualification note). Software version column: "current version at implementation start." Hardware sizing note: "sized per asset count and deployment scope — confirmed at detailed engineering."

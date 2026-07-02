@@ -1,0 +1,6 @@
+## work_completion
+Role: Defines the work completion certificate criteria and conditions.
+Required: References to the confirmed OTCSS work completion milestones.
+Infer: Five standard OTCSS milestones: M1 — Submission of Project Plan; M2 — Submission of Asset Discovery List; M3 — Confirmation of Cyber Tool Installation; M4 — Deployment and verification of OT-specific Dashboards; M5 — Submission of Training Report and Post-Deployment Assessment Report. Upon completion of all milestones, Buyer issues Work Completion Certificate within an agreed period (OBSERVED: 7 days). If Buyer does not issue within the period, the certificate is deemed issued. Issuance of Work Completion Certificate triggers commencement of remote support and onsite SV periods.
+Never invent: Specific deadline periods not commercially agreed; milestone content not confirmed.
+Structure: Five-bullet milestone list plus deemed-issued clause. One short paragraph noting that Work Completion Certificate triggers start of post-implementation support periods.

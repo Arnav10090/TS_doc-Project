@@ -1,0 +1,7 @@
+Plate Mill Yard Management Solution — automates the tracking, scheduling, and movement of heavy steel plates and slabs within the Plate Mill yard. Provides real-time 3D visualization of the yard inventory, crane scheduling, and integration with the production pacing systems. Specifically designed to handle the unique geometry and stacking rules of plates compared to coils (e.g., cooling bed management, pile sorting, shearing line logistics).
+
+Core capabilities: 3D Yard Visualization (Slab Yard and Plate Yard); automated crane tracking using laser sensors/encoders; plate pile tracking (LIFO management); optimized slab/plate selection logic based on rolling/shearing schedules; real-time cooling tracking and dispatching; mobile tablets for ground operators; integration with Level 3 MES/ERP and Level 2 process control systems.
+
+Business drivers: Eliminate "lost" plates, reduce crane idle time and unnecessary restacking (digging), optimize hot charging to save energy, ensure correct plates are sent to the shearing line, increase yard throughput and storage density.
+
+Plant environment: Extremely harsh environment. High temperatures, heavy dust, vibrations. High-bay cranes operating continuously. Wireless network coverage required across large, metallic environments (RF challenging). Plate yards often have more complex sorting requirements than coil yards.

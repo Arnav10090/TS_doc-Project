@@ -1,0 +1,6 @@
+Purpose: Formal document context — establishes what this TS is, in response to what enquiry, submitted by whom to whom. States the document's status.
+Required Inputs: [CUSTOMER_NAME], [SITE_NAME], [SITE_LOCATION], [TENDER_REF], [TENDER_DATE]
+Safe Inferences: Document is a Draft Technical Note for Design, Engineering, Supply and Commissioning of CYMS & SYMS; SELLER submits to BUYER; document is for discussion purposes and does not constitute a contract; solution addresses BUYER's coil yard and slab yard management requirements
+Must Not Invent: Specific enquiry dates, reference numbers, specific prior correspondence details, or contact names not in project metadata
+Suggested Structure: 2-3 short paragraphs. (1) Document purpose, scope (CYMS & SYMS for HSM at [SITE_NAME], [SITE_LOCATION]), reference to [TENDER_REF] dated [TENDER_DATE]. (2) SELLER submission statement to BUYER. (3) Brief confidence statement on solution fit and value. Formal contract-appropriate tone. Include the notation that the document is for discussion purposes only.
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

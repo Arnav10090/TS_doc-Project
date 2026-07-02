@@ -1,0 +1,7 @@
+[DRAFT — ADAPT FOR OT UPGRADES/L2]
+Structure: Four mandatory paragraphs in order: (1) patch/update recommendation (buyer responsibility post-delivery); (2) buyer's full cybersecurity responsibility statement; (3) seller's liability limitation (not liable for security incidents); (4) NDA requirement for remote sessions.
+Avoid: Inventing product-level certifications (e.g., IEC 62443 compliance) unless confirmed in metadata. No cybersecurity guarantees. Do not generate novel legal clauses.
+Tone: Legal-disclaimer. Use approved boilerplate language only. Buyer = responsible party.
+Hard prohibition: Never claim specific compliance certifications without metadata confirmation.
+--- Template structure reminder ---
+2-4 paragraphs: patch recommendation, buyer's full security responsibility, seller liability limitation, NDA requirement. Approved boilerplate only. No novel legal language. No security guarantees.

@@ -1,0 +1,7 @@
+Security responsibility: Hitachi India implements secure communication protocols (where supported by field devices) and secures the central application server (RBAC, firewalls). Buyer is responsible for overall OT network segregation and securing legacy field devices that do not support encryption.
+
+Patch management: Hitachi India installs the latest stable OS and application software. Ongoing patching is the buyer's responsibility.
+
+Liability: Hitachi India's liability is limited to the correct collection, calculation, and reporting of data received from the field meters. Hitachi India is not liable for data inaccuracies caused by faulty physical meters or network interruptions.
+
+Remote access: Secure VPN access is required for remote troubleshooting of the central server and data collection gateways.

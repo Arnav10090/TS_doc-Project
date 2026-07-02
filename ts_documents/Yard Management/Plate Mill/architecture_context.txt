@@ -1,0 +1,97 @@
+## Architecture Options
+
+Option A — Centralized Server with Direct Integration:
+PMYMS application server (online + backup pair) connects directly to Level-2 systems, MES/ERP, and Weigher systems via API/database interfaces over the plant network. Crane position and lock/unlock signals received via crane-side gateway hardware and wireless network. Suitable when network infrastructure is reliable and plant systems are accessible from server location.
+
+Option B — With HX Controller (Unified Gateway) for Crane Integration (COMMON):
+SELLER-supplied HX Controller (proprietary unified gateway) installed to bridge crane subsystem signals (position sensors, lock/unlock sensors) to the PMYMS server. Provides protocol normalization and local signal buffering. Used when direct integration from server to crane instrumentation is impractical.
+
+Both options use:
+- PMYMS Application Server (online + backup) for core software
+- Client workstations for operator and supervisor access
+- Web browser interface (no client software installation required beyond standard browser)
+- Android mobile devices for field access (buyer scope)
+- Network infrastructure managed by buyer (Wi-Fi or wired; finalized during detailed engineering)
+
+## Protocols (OBSERVED / OPTIONAL)
+
+Buyer-side interfaces:
+- Level-2 systems: typically via database-level API or SQL interface (L2 side modifications are buyer scope)
+- MES/ERP (SAP): via configured data exchange, API, or SAP integration layer (L3/SAP side modifications are buyer scope)
+- Weigher system: via direct data feed or API
+
+Crane subsystem:
+- Laser position sensors (X, Y axis coordinates): wireless or wired signals from crane to gateway
+- Lock/Unlock sensor signals: gate feedback from crane tong or magnet mechanism
+- Zeroing sensors: reference position calibration signals
+- Network between crane gateway and PMYMS server: [NETWORK_TYPE] (to be finalized during detailed engineering)
+
+Plate identification method: [PLATE_ID_METHOD] — options include barcode, RFID, and OCR scanning; method finalized during detailed engineering.
+
+All integration parameters, protocols, and communication details are finalized during detailed engineering, not at TS stage.
+
+## Data Acquisition
+
+Material and production data flow into the Solution from:
+- Plate Mill Level-2: Plate production data (rolling events, plate dimensions, grades)
+- Furnace Level-2: Slab tracking data (charging, discharge, heat number)
+- Plate Leveller Level-2: HTC and Non-HTC production completion data
+- MES/ERP: Order data, shipping plans, quality status, customer master data
+- Crane subsystem: Position coordinates (X, Y axes), lock/unlock signals (tong/magnet feedback)
+- Weigher system: Weight data for dispatch confirmation
+
+Outbound data from Solution to external systems:
+- MES/ERP: Movement confirmations, stock updates, loading memo confirmations, shipment records
+- Optional: SMS gateway for alert notifications
+
+All inbound and outbound messages (telegrams) are logged internally for troubleshooting.
+
+## Data Storage
+
+Centralized on-premises relational database (MS SQL Server or alternative; selection at SELLER discretion) on the PMYMS server infrastructure. Data includes:
+- Real-time and historical yard inventory positions (zone, row, pile, layer)
+- Material attributes and production traceability records
+- Crane instruction and execution logs
+- Interface message logs (all inbound/outbound telegrams)
+- Event history for every material action
+- User action logs (manual overrides, exceptions)
+- Reports and dashboard data
+
+No write-back to Level-1 or Level-2 source systems from PMYMS. PMYMS consumes L1/L2 data; it does not modify it.
+
+Backup server provides redundancy. Backup software (OBSERVED: Acronis or equivalent) manages server-level backup. Retention and housekeeping policy are project-dependent.
+
+## Integration Patterns
+
+1. Plate Mill L2 → PMYMS: L2 side integration modifications are BUYER scope; PMYMS side is SELLER scope.
+2. Furnace L2 → PMYMS: Same pattern — L2 side is BUYER scope; PMYMS side is SELLER scope.
+3. MES/ERP (L3/SAP) ↔ PMYMS: L3/SAP side modifications are BUYER scope; PMYMS side is SELLER scope.
+4. Crane subsystem → PMYMS: Crane-side hardware (sensors, wireless APs, HMIs, Gateway hardware) is BUYER supply scope; SELLER provides engineering, commissioning, and gateway integration.
+5. Weigher system → PMYMS: Integration details finalized in detailed engineering.
+
+Any data required from Level-1 systems must be routed through the existing Level-1 to Level-2 integration chain before reaching PMYMS. PMYMS does not connect directly to Level-1 PLCs.
+
+Firewall configuration and network security remain exclusively BUYER scope.
+
+## Technology Stack Patterns (OBSERVED)
+
+Software (observed in sample TS; versions project-dependent; all OBSERVED — not defaults):
+- Frontend: Angular Framework (web browser access via Chrome, Edge, Mozilla)
+- Backend: Python with Django web framework
+- Database: MS SQL Server 2022 Standard Edition (or other suitable database at SELLER discretion)
+- Deployment: Docker containerization
+- Mobile: Android Application
+- Antivirus: Trend Micro or equivalent
+- Server OS: Windows Server 2022 Standard Edition (64-bit)
+- Client OS: Windows 11 Pro
+- Office suite: Microsoft Office
+- Server backup: Acronis or equivalent backup software
+
+Hardware (OBSERVED quantities and specifications — not defaults):
+- PMYMS Application Servers: Tower form factor, enterprise-grade processor, redundant pair (online + backup)
+- PMYMS Client Workstations: Desktop PCs with FHD monitors, keyboard, mouse
+- GSM Modem: Industrial cellular modem for SMS gateway capability (if SMS Gateway is in scope)
+- HX Controller: SELLER-proprietary unified gateway device (if Unified Gateway is in scope)
+- All hardware quantities and specifications confirmed at detailed engineering
+
+Buyer provides: server room / rack space, power supply, UPS, network cabling and accessories, firewall, Android mobile devices, VPN/internet for remote support.

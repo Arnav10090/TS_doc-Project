@@ -1,0 +1,80 @@
+## Implementation Phases
+All durations are OBSERVED from one historical proposal and INDICATIVE ONLY:
+
+Phase 1 — System Design: Requirements gathering, system design document preparation (OBSERVED: months 1-3)
+Phase 2 — Hardware Engineering: Hardware specification and procurement preparation (OBSERVED: months 2-4)
+Phase 3 — Software Design: Detailed software architecture and design (OBSERVED: months 3-5)
+Phase 4 — Software Development: Programming and unit testing (OBSERVED: months 5-12)
+Phase 5 — Shop Test & QMS Testing: Factory acceptance testing at SELLER's facility (OBSERVED: months 9-13)
+Phase 6 — Hardware & Software Shipping: Delivery to site (OBSERVED: months 12-14)
+Phase 7 — System Readiness at Site: Site preparation and pre-commissioning readiness (OBSERVED: months 14-15)
+Phase 8 — Commissioning: On-site integration, testing, and commissioning (OBSERVED: months 15-16)
+
+Critical path note: After System Design Document (SDD) approval by Buyer, SELLER requires [SW_DEV_MONTHS_AFTER_SDD] months for software development and testing. Delays in SDD approval cause proportional delays in delivery.
+
+Pre-engineering activity: Study of existing systems is part of Phase 1 and is SELLER scope.
+
+## Testing
+Factory Testing (FAT / Shop Test):
+- Conducted at SELLER's facility before shipment
+- Covers software functionality, integration simulation, QMS testing
+- Signed FAT report issued; shipment conditional on FAT completion
+
+Shutdown Integration Testing (OBSERVED):
+- Performed during planned plant shutdown; OBSERVED window: approximately 8 days total
+- Before MSD (-3 to -1 days): Shutdown Preparation Check, Latest System Save Check
+- During Main Shutdown (days 1-N): Network Checking, Interface Checking, I/O Check, New Crane Connection Test, Manual/Automatic Test, Overall Test
+- After MSD: Monitoring
+
+Site Acceptance:
+- Work Completion Certificate issued by Buyer upon completion of defined criteria
+- Buyer must issue WCC within [WCC_DAYS] days of criteria fulfillment; deemed issued otherwise
+
+Documentation required: Screen Design Documents, Hardware Specifications, Software Specifications, CYMS & SYMS Operation Manual.
+
+## Risks
+SELLER risks:
+- Delays in SDD approval by Buyer delay overall delivery — explicitly documented in proposals
+- Integration data availability from third-party systems (Buyer side) may gate testing progress
+
+BUYER risks:
+- Crane hardware and sensors not ready on schedule (Buyer scope; prerequisite for commissioning)
+- Remote connection not established before support or commissioning
+- Firewall configuration delays impacting system connectivity
+- Third-party OEM system engineers unavailable at commissioning
+
+Shared risks:
+- Data quality and format from existing L1/L2 systems for integration
+- Network infrastructure adequacy for real-time crane data transmission
+
+## Standard Assumptions (CORE / COMMON)
+CORE (every project):
+- Crane position sensors (X, Y, Z) and pick/drop detection sensors are provided and installed by Buyer
+- Crane-side PLC/controller modifications for CYMS/SYMS integration are Buyer responsibility
+- Network cables and accessories between server and crane network are Buyer responsibility
+- Firewall configuration is exclusively Buyer responsibility
+- Buyer provides dedicated internet/broadband for remote support access
+- System design is fully customized per site requirements; not a fixed pre-packaged product
+- NDA is signed between BUYER and SELLER before remote support commences
+- PO acceptance date is the effective date of contract execution
+
+COMMON (most projects):
+- Yard is organized as a configurable grid (bays, zones, rows, columns); final configuration supplied as Buyer data
+- Cranes operate in both manual and automatic modes
+- Multiple crane types coexist (EOT cranes, Semi-Gantry cranes, forklifts, transfer cars) — exact count is project-specific
+
+## Standard Exclusions (CORE)
+Always excluded unless explicitly stated in the signed TS:
+- Interface with external devices/systems not listed in the TS
+- Software patches, OS security updates, antivirus updates, or any software upgrades post-delivery
+- Any warranty, guarantee, or liability for productivity, quality, or yield
+- Source code of core technology
+- Modifications to existing plant electrical and automation systems (L1, L2, MES, or others)
+- Erection activities and civil works
+- Hardware and software beyond the TS scope
+- Mechanical equipment supply or modification
+- Support for mechanical, operational, or process troubleshooting
+- L2 & PDA software and related hardware
+- Firewalls and networking components
+- Performance guarantees of any kind
+- Supervision, management, or scheduling of Buyer's personnel, agents, or contractors

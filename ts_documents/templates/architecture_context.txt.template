@@ -1,0 +1,24 @@
+# architecture_context.txt — Technical Architecture Template
+# Target size: ~600 chars | Max: 1000 chars
+# Purpose: Architecture options, tech stack, protocols, data flow, storage
+# Audience: LLM prompt context — technical, precise, pattern-focused
+#
+# AUTHORING GUIDE:
+#   1. Architecture options (Option A / Option B, or single-option)
+#   2. Technology stack summary (platform, protocol, DB, server role)
+#   3. Data acquisition method (polling, push, event-driven)
+#   4. Data storage (type, retention, housekeeping)
+#   5. Integration patterns (diagram guidance, draw.io annotations if applicable)
+#
+# DELETE this header block before saving as the live architecture_context.txt
+# ─────────────────────────────────────────────────────────────────────────────
+
+Architecture: [OPTION_A_DESCRIPTION]. [OPTION_B_DESCRIPTION — if applicable, else omit].
+
+Technology: [SERVER_PLATFORM]; [PROTOCOL_PRIMARY] primary; [PROTOCOL_SECONDARY] where required; [DB_TYPE] on-premises; [UI_DESCRIPTION].
+
+Data acquisition: [ACQUISITION_METHOD] from [SOURCE_SYSTEMS]. [BUFFERING_DESCRIPTION — if applicable].
+
+Storage: [DB_TYPE] with [RETENTION_POLICY] and [HOUSEKEEPING_DESCRIPTION].
+
+Integration pattern: [INTEGRATION_DESCRIPTION]. Diagram: [DIAGRAM_TOOL] with [ANNOTATION_GUIDANCE].

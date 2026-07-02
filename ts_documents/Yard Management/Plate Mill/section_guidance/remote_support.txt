@@ -1,0 +1,5 @@
+Role: Defines post-commissioning remote maintenance support scope, duration, conditions, and constraints.
+Required: [SUPPORT_PERIOD] from project metadata or commercial agreement.
+Infer: Support covers troubleshooting and issue resolution only within the TS-defined scope of supply. Infrastructure and network configuration to enable remote access must be provided by BUYER. Working hours: 9:00 AM to 5:00 PM IST, Monday to Friday, excluding national holidays. NDA must be signed before remote support sessions begin. Dedicated internet or leased line at site to be arranged by BUYER.
+Never invent: SLA response times; on-site visit commitments during remote support period; support scope beyond the agreed TS scope.
+Structure: Two to three short paragraphs. (1) Support duration ([SUPPORT_PERIOD] from project completion date), scope (troubleshooting, issue resolution within TS scope only). (2) BUYER responsibility for infrastructure enabling remote access; access to remote terminal to be made available to SELLER as required. (3) Working hours and NDA requirement.

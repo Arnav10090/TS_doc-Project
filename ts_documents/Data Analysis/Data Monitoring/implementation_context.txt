@@ -1,0 +1,11 @@
+Implementation phases: M1 — Engineering & Architecture (~4w): finalize meter list, IP addressing, KPI calculation formulas, and report formats; M2 — Hardware Procurement & Staging (~8-12w): procuring server hardware, software licenses, and field data concentrators; M3 — FAT (~2w): testing the software application with simulated meter inputs and verifying report generation; M4 — Installation & Commissioning (~6w): installing servers, configuring field gateways, establishing communication to meters, verifying data accuracy; M5 — Handover & Go-Live (~2w): operator training, handover of as-built documentation. Total durations indicative.
+
+FAT: Verification of the customized dashboard layouts, automated report generation logic, and alarm configuration using simulated data.
+
+Buyer obligations: Ensure all field meters are installed, calibrated, and have communication modules (Modbus/Ethernet) ready; provide network connectivity from meters to the central server; provide calculation formulas for custom KPIs.
+
+Value addition: Creation of role-specific dashboards (e.g., Plant Manager view vs. Shift Operator view).
+
+Standard exclusions: Installation or calibration of physical field meters (unless explicitly in scope); laying new fiber optic cables across the plant.
+
+Risks: Incompatible or faulty communication modules on legacy field meters can cause significant integration delays.

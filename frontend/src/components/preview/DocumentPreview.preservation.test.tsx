@@ -86,13 +86,49 @@ describe('DocumentPreview - Preservation Property Tests: Non-Deleted Section Beh
         />
       );
 
-      // Assert: Section heading should render
-      const introductionHeading = screen.queryByText(/INTRODUCTION/i);
-      expect(introductionHeading).not.toBeNull();
+      // Assert: Section heading should render (may appear in TOC and page)
+      const introductionHeadings = screen.queryAllByText(/INTRODUCTION/i);
+      expect(introductionHeadings.length).toBeGreaterThan(0);
 
       // Assert: Content should be present (template text with replacements)
       const tenderRefText = screen.queryByText(/REF-12345/i);
       expect(tenderRefText).not.toBeNull();
+    });
+
+    it('renders imported rich text and markdown formatting cleanly for paragraph and text sections', () => {
+      const sectionContents = {
+        cover: { solution_full_name: 'Test Solution' },
+        introduction: {
+          tender_reference: 'TS-PMYMS-2026-001',
+          tender_date: '29 Jun 2026',
+          paragraphs: [
+            '<p>Imported introduction paragraph.</p>',
+            '## Additional Context\nSolution overview for the facility.',
+          ],
+        },
+        process_flow: {
+          text: '## Flow Summary\nSystem integration happens through the middleware layer.',
+        },
+      };
+
+      renderWithRouter(
+        <DocumentPreview
+          projectId={projectId}
+          activeSectionKey={activeSectionKey}
+          sectionContents={sectionContents}
+          onSectionClick={onSectionClick}
+        />
+      );
+
+      expect(screen.getByText(/Imported introduction paragraph\./)).not.toBeNull();
+      expect(screen.getByText(/Additional Context/)).not.toBeNull();
+      expect(screen.getByText(/Solution overview for the facility\./)).not.toBeNull();
+      expect(screen.getByText(/Flow Summary/)).not.toBeNull();
+      expect(
+        screen.getByText(/System integration happens through the middleware layer\./),
+      ).not.toBeNull();
+      expect(screen.queryByText(/## Additional Context/)).toBeNull();
+      expect(screen.queryByText(/## Flow Summary/)).toBeNull();
     });
 
     it('should render abbreviations section with table rows when key exists in sectionContents', () => {
@@ -117,9 +153,9 @@ describe('DocumentPreview - Preservation Property Tests: Non-Deleted Section Beh
         />
       );
 
-      // Assert: Section heading should render
-      const abbreviationsHeading = screen.queryByText(/ABBREVIATIONS USED/i);
-      expect(abbreviationsHeading).not.toBeNull();
+      // Assert: Section heading should render (may appear in TOC and page)
+      const abbreviationsHeadings = screen.queryAllByText(/ABBREVIATIONS USED/i);
+      expect(abbreviationsHeadings.length).toBeGreaterThan(0);
 
       // Assert: Table content should render
       const apiText = screen.queryByText(/API/);
@@ -152,8 +188,8 @@ describe('DocumentPreview - Preservation Property Tests: Non-Deleted Section Beh
       );
 
       // Assert: Section heading should render
-      const featuresHeading = screen.queryByText(/DESIGN SCOPE OF WORK/i);
-      expect(featuresHeading).not.toBeNull();
+      const featuresHeadings = screen.queryAllByText(/DESIGN SCOPE OF WORK/i);
+      expect(featuresHeadings.length).toBeGreaterThan(0);
 
       // Assert: Feature titles should render
       const feature1 = screen.queryByText(/Feature 1/);
@@ -191,8 +227,8 @@ describe('DocumentPreview - Preservation Property Tests: Non-Deleted Section Beh
       );
 
       // Assert: Section heading should render
-      const abbreviationsHeading = screen.queryByText(/ABBREVIATIONS USED/i);
-      expect(abbreviationsHeading).not.toBeNull();
+      const abbreviationsHeadings = screen.queryAllByText(/ABBREVIATIONS USED/i);
+      expect(abbreviationsHeadings.length).toBeGreaterThan(0);
 
       // Assert: Placeholder text should render
       const placeholder = screen.queryByText(/No abbreviations defined/i);
@@ -243,8 +279,8 @@ describe('DocumentPreview - Preservation Property Tests: Non-Deleted Section Beh
       );
 
       // Assert: Section heading should render
-      const featuresHeading = screen.queryByText(/DESIGN SCOPE OF WORK/i);
-      expect(featuresHeading).not.toBeNull();
+      const featuresHeadings = screen.queryAllByText(/DESIGN SCOPE OF WORK/i);
+      expect(featuresHeadings.length).toBeGreaterThan(0);
 
       // Assert: Placeholder text should render
       const placeholder = screen.queryByText(/No features defined yet/i);
@@ -397,20 +433,20 @@ describe('DocumentPreview - Preservation Property Tests: Non-Deleted Section Beh
 
       // Assert: Sections should be numbered sequentially
       // 1. EXECUTIVE SUMMARY
-      const executiveSummary = screen.queryByText(/1\.\s+EXECUTIVE SUMMARY/i);
-      expect(executiveSummary).not.toBeNull();
+      const executiveSummary = screen.queryAllByText(/1\.[ \t]+EXECUTIVE SUMMARY/i);
+      expect(executiveSummary.length).toBeGreaterThan(0);
 
       // 2. GENERAL OVERVIEW (parent heading)
-      const generalOverview = screen.queryByText(/2\.\s+GENERAL OVERVIEW/i);
-      expect(generalOverview).not.toBeNull();
+      const generalOverview = screen.queryAllByText(/2\.[ \t]+GENERAL OVERVIEW/i);
+      expect(generalOverview.length).toBeGreaterThan(0);
 
       // 3. OFFERINGS (parent heading)
-      const offerings = screen.queryByText(/3\.\s+OFFERINGS/i);
-      expect(offerings).not.toBeNull();
+      const offerings = screen.queryAllByText(/3\.[ \t]+OFFERINGS/i);
+      expect(offerings.length).toBeGreaterThan(0);
 
       // 4. TECHNOLOGY STACK (parent heading)
-      const techStack = screen.queryByText(/4\.\s+TECHNOLOGY STACK/i);
-      expect(techStack).not.toBeNull();
+      const techStack = screen.queryAllByText(/4\.[ \t]+TECHNOLOGY STACK/i);
+      expect(techStack.length).toBeGreaterThan(0);
     });
 
     it('should adjust section numbering when middle sections are deleted', () => {
@@ -435,21 +471,21 @@ describe('DocumentPreview - Preservation Property Tests: Non-Deleted Section Beh
 
       // Assert: Section numbering should skip deleted OFFERINGS group
       // 1. EXECUTIVE SUMMARY
-      const executiveSummary = screen.queryByText(/1\.\s+EXECUTIVE SUMMARY/i);
-      expect(executiveSummary).not.toBeNull();
+      const executiveSummary = screen.queryAllByText(/1\.[ \t]+EXECUTIVE SUMMARY/i);
+      expect(executiveSummary.length).toBeGreaterThan(0);
 
       // 2. GENERAL OVERVIEW
-      const generalOverview = screen.queryByText(/2\.\s+GENERAL OVERVIEW/i);
-      expect(generalOverview).not.toBeNull();
+      const generalOverview = screen.queryAllByText(/2\.[ \t]+GENERAL OVERVIEW/i);
+      expect(generalOverview.length).toBeGreaterThan(0);
 
       // OFFERINGS should NOT render after fix (all sections deleted)
-      const offerings = screen.queryByText(/3\.\s+OFFERINGS/i);
+      const offerings = screen.queryByText(/3\.[ \t]+OFFERINGS/i);
       // After fix, OFFERINGS heading should not render when all sections are deleted
       expect(offerings).toBeNull();
 
       // 3. TECHNOLOGY STACK (renumbered after fix since OFFERINGS is skipped)
-      const techStack = screen.queryByText(/3\.\s+TECHNOLOGY STACK/i);
-      expect(techStack).not.toBeNull();
+      const techStack = screen.queryAllByText(/3\.[ \t]+TECHNOLOGY STACK/i);
+      expect(techStack.length).toBeGreaterThan(0);
     });
 
     it('should number subsections correctly within a group', () => {
@@ -475,20 +511,20 @@ describe('DocumentPreview - Preservation Property Tests: Non-Deleted Section Beh
 
       // Assert: Subsections should be numbered correctly
       // 2.1 INTRODUCTION
-      const introduction = screen.queryByText(/2\.1\s+INTRODUCTION/i);
-      expect(introduction).not.toBeNull();
+      const introduction = screen.queryAllByText(/2\.1\s+INTRODUCTION/i);
+      expect(introduction.length).toBeGreaterThan(0);
 
       // 2.2 ABBREVIATIONS USED
-      const abbreviations = screen.queryByText(/2\.2\s+ABBREVIATIONS USED/i);
-      expect(abbreviations).not.toBeNull();
+      const abbreviations = screen.queryAllByText(/2\.2\s+ABBREVIATIONS USED/i);
+      expect(abbreviations.length).toBeGreaterThan(0);
 
       // 2.3 PROCESS FLOW
-      const processFlow = screen.queryByText(/2\.3\s+PROCESS FLOW/i);
-      expect(processFlow).not.toBeNull();
+      const processFlow = screen.queryAllByText(/2\.3\s+PROCESS FLOW/i);
+      expect(processFlow.length).toBeGreaterThan(0);
 
       // 2.4 OVERVIEW OF
-      const overview = screen.queryByText(/2\.4\s+OVERVIEW OF/i);
-      expect(overview).not.toBeNull();
+      const overview = screen.queryAllByText(/2\.4\s+OVERVIEW OF/i);
+      expect(overview.length).toBeGreaterThan(0);
     });
   });
 
@@ -519,12 +555,11 @@ describe('DocumentPreview - Preservation Property Tests: Non-Deleted Section Beh
       );
 
       // Assert: SectionWrapper should be clickable (has onClick handler)
-      // We can't directly test the click handler without triggering it,
-      // but we can verify the section renders and is interactive
-      const introductionHeading = screen.queryByText(/INTRODUCTION/i);
+      // Query the page heading specifically to avoid matching TOC entries.
+      const introductionHeading = screen.getByRole('heading', { name: /INTRODUCTION/i });
       expect(introductionHeading).not.toBeNull();
 
-      // Verify the section has the expected structure
+      // Verify the section wrapper has an interactive cursor style
       expect(container.querySelector('[style*="cursor"]')).not.toBeNull();
     });
 

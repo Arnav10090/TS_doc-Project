@@ -1,0 +1,6 @@
+Purpose: Lists pre-conditions Buyer must satisfy before SELLER can commence on-site commissioning activities.
+Required Inputs: No project-specific inputs required
+Safe Inferences: Standard prerequisites for HSM CYMS/SYMS commissioning: readiness of the crane system including all required hardware and sensors (Buyer scope); remote connection setup established
+Must Not Invent: Specific crane readiness acceptance criteria, specific network performance thresholds, additional prerequisites without scope basis
+Suggested Structure: Brief introductory sentence. Short bulleted list of prerequisites. Each item states the pre-condition clearly. Concise and unambiguous.
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

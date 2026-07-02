@@ -1,0 +1,6 @@
+## documentation_control
+Role: Describes the documentation package delivered by Seller as part of the OTCSS engagement.
+Required: Solution name context; confirmed scope of deliverables.
+Infer: OTCSS documentation typically includes: OT Cybersecurity Policy documents; plant-specific SOP documents; tool installation and configuration guides; system handover documents; training materials and manuals for implemented tools; final post-deployment audit/assessment report.
+Never invent: Specific document titles not confirmed; certification documents; regulatory submission documents.
+Structure: One paragraph on documentation philosophy (documentation aligned to implemented scope and tools). One bulleted list of specific deliverables: Policy documents, SOPs, tool manuals/configuration guides, system handover, training materials, assessment report. Concise.

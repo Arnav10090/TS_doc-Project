@@ -1,0 +1,7 @@
+[DRAFT — ADAPT FOR IT HARDWARE]
+Structure: Formal opening citing enquiry reference and date, client name and plant/facility name, brief description of what HICAD was asked to propose. One short paragraph.
+Avoid: Technical content, phase details, or value claims in this section.
+Tone: Formal, professional, third-party-audit-ready language. Use "HICAD" as seller name.
+UGS-specific: Reference the specific units/production lines named in project metadata; do not generalize.
+--- Template structure reminder ---
+Content: Formal opening referencing enquiry. Required: tender_reference, tender_date, clientname, clientlocation from project metadata. Use placeholders if absent: [TENDER_REF], [TENDER_DATE], [CUSTOMER_NAME], [SITE_LOCATION]. Tone: factual, formal, concise.

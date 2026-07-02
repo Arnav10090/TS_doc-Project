@@ -1,0 +1,5 @@
+Role: Table listing all software components being supplied by SELLER within the agreed scope.
+Required: Software components from project metadata or standard Plate Mill stack. License quantities derivable from hardware counts.
+Infer: Standard observed software stack: Windows Server OS (for PMYMS servers), Windows Client OS (for client desktops), Microsoft Office (for server and client machines), MS SQL Server (for PMYMS database), Antivirus (for all machines), Python (for PMYMS server), Django Framework (for PMYMS server), Angular Framework (for PMYMS server), Docker (for PMYMS server deployment), Server Backup Software (for PMYMS servers), Android Application (mobile access, if in scope).
+Never invent: Specific version strings — use "Current version at time of detailed engineering" for all software versions. License counts not derivable from confirmed hardware quantities.
+Fields (repository row structure): rows.name = software component name. Version field: always "Current version at time of detailed engineering." Quantity: derived from hardware counts or stated as project-dependent.

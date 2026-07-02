@@ -1,0 +1,18 @@
+Standard Exclusion List (apply to every UGS project): interfaces with systems not named in TS; OS patches/antivirus updates after delivery; source code of core UGS platform; modifications to existing L1, L2, MES, ERP, automation systems; erection and civil works; firewalls and networking infrastructure; PDA software and hardware; mechanical equipment; performance guarantees on productivity, quality, yield, or process capability; supervision of buyer personnel, contractors, agents.
+
+Implementation Phases:
+Initiation → Pre-Engineering (buyer provides tag lists/docs, M1 gate) → Basic Engineering (system design + buyer approval, M2 gate) → Detailed Design (config, tag mapping, HX if Option B) → FAT (seller facility, M3 gate) → Shipping → Site Preparation/buyer parallel (M4 gate) → Commissioning (install, integrate, test, train, snag, handover) → Handover (docs, work completion cert, remote support starts).
+Critical path: M1 (tag list delivery) and M2 (design approval) are the most common delays. Both are buyer-gated. On-site man-days: project-dependent, agreed commercially. Travel excluded.
+
+Testing:
+FAT (seller facility): all configured flows tested against simulated sources, security config review, FAT report issued — gates shipment.
+SAT/Commissioning (site): live acquisition per unit, OPC UA server test with real consumer, email via buyer SMTP, user accounts, documentation check. UGS is read-only — removing it has no impact on plant L1/L2 operations.
+Acceptance artifacts: FAT report, commissioning checklist, work completion cert, system operation doc, hardware spec, interface doc.
+
+Standard Buyer Obligations: provide complete tag lists before design; configure L1 data acquisition servers for required protocol interface; provide site access; arrange buyer-scope hardware on schedule; provide network connectivity and firewall rules; provide SMTP details if email alerting in scope; maintain VPN/internet for remote support; make 3rd-party OEM engineers available at commissioning; respond to technical queries promptly.
+
+Standard Exclusions: interfaces with systems not named in TS; OS patches/antivirus updates after delivery; source code of core UGS platform; modifications to existing L1, L2, MES, ERP systems; erection and civil works; firewalls and networking infrastructure; PDA software and hardware; mechanical equipment; performance guarantees on productivity, quality, yield; supervision of buyer personnel.
+
+Standard Assumptions: source systems can expose required interface; tag list, data format, communication parameters finalized in detailed engineering; buyer network provides adequate bandwidth; named units = complete scope (additional units = change order); IP addresses and domain details provided by buyer during engineering.
+
+Value Addition / PoC: complimentary, time-limited on UGS server infrastructure. Commercial continuation requires separate contract. IP remains with seller. Not a deployment commitment; provided as-is without SLAs.

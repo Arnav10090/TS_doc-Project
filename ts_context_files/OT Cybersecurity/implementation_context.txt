@@ -1,0 +1,107 @@
+# IMPLEMENTATION CONTEXT
+
+## Implementation Phases
+### Stage 0: Project Planning
+Key activities: identify and engage key stakeholders; create draft work plan with tasks, durations, start/end dates, and resource assignments; finalize work plan and site visit schedule; obtain access to existing documentation and network diagrams; conduct stakeholder discussions to inform the target network architecture; prepare asset discovery scope template and define the device boundary (production units, asset types).
+Deliverables: Detailed Project Plan; Asset Discovery Template.
+Buyer role: approve scope and objectives; nominate stakeholders and SMEs; provide site access and existing documentation; endorse governance and reporting cadence.
+
+### Stage 1: OT Asset Discovery and Inventory
+Key activities: obtain plant monitoring team approval for discovery activities; perform passive tool-based discovery using SPAN/TAP on identified network switches (tool is project-dependent); supplement with manual documentation where required; capture key asset attributes (model, manufacturer, device ID, IP address, protocol, criticality level, owner); validate and finalize the asset inventory with plant stakeholders.
+Deliverables: Asset Register.
+Buyer role: enable site entry and safe discovery windows; supply existing diagrams, asset lists, policies, and vendor access details; review and validate asset inventories with stakeholders.
+Critical constraint: No active scanning of OT endpoints at any time. All discovery is passive and non-intrusive. Any configuration change requires MOC approval.
+
+### Stage 2: To-Be Network Architecture
+Key activities: validate the As-Is network diagram using asset discovery data, aligned with the Purdue model; map connectivity of OT devices, switches, firewalls, controllers, IoT sensors, and workstations; design security controls for the target state, applying Zero Trust principles across IT/OT boundaries, enabling MFA and SRA, and establishing controlled OT-IT data flows; evaluate the installation and integration of cyber tools (SRA, IDS, vulnerability management, asset management); draft the To-Be architecture and validate through stakeholder workshops and technical reviews; incorporate OT-specific monitoring and detection mechanisms; define the implementation roadmap aligned with plant schedules and governance checkpoints.
+Deliverables: To-Be Network Diagram; Connectivity Assessment Report; Cyber Tools Recommendation.
+Buyer role: share existing network diagrams and documentation; approve budget and procure agreed cyber tools; review and approve the implementation timeline. Architecture approval is the most common delay point — define a turnaround expectation.
+
+### Stage 3: Tools Implementation and Dashboards
+Key activities:
+  Deploy Threat Detection Sensors (IDS) — configure sensors aligned with ICS protocols and ICS threat intelligence modules; enable behavior-based anomaly detection (AI/ML); deploy ICS-specific threat detection policies and signatures for the OT environment.
+  OT Asset and Vulnerability Management — configure the automatic asset discovery tool to collect managed and unmanaged inventory from the OT environment; integrate the OT asset inventory into the vulnerability management tool for continuous detection of security vulnerabilities, configuration anomalies, and outdated firmware across the network.
+  Secure Access Management — deploy SRA tools and enforce all vendor connections through the SRA with MFA and RBAC; configure VPN connectivity from vendor networks to the SRA appliance; no direct OT network exposure for external parties.
+  Monitoring Dashboards — configure and integrate logs from SRA, vulnerability management, asset management, and IDS tools into unified OT-specific monitoring dashboards; dashboards cover Threat, Vulnerability, and Remote Access visibility.
+Deliverables: IDS, Asset Management, Vulnerability Management, and SRA tools installed, configured, and tested; OT-specific dashboards for Threat, Vulnerability, and Remote Access.
+Buyer role: provide authorized and controlled access to OT environments; review and approve deployment plans, proposed architecture, policies, and security configurations.
+
+### Stage 5: OT Cybersecurity Policy, SOP Documents, and Training
+Key activities:
+  Policy and SOP development — define OT/ICS cybersecurity policies and governance SOPs aligned with ISA/IEC 62443, NIST SP 800-82 CSF, and ISO 27001; develop policies covering asset management, vulnerability management, incident response, patching process, change management, and access control.
+  Training and awareness — conduct a leadership awareness session (1 comprehensive session); conduct workforce sessions for engineering, maintenance, operations, and vendors (2 sessions); deliver technical training for OT maintenance teams on implemented tools, configurations, and incident handling procedures (2 technical sessions); provide manuals and documentation for all newly implemented cyber tools.
+  Post-deployment audit — conduct a high-level security assessment after all tools are deployed to identify the achieved security maturity level; deliver an assessment report.
+Deliverables: OT Cybersecurity Policy and SOP documents; training completion records; system handover documentation; final audit/assessment report.
+Buyer role: provide access for leadership, OT operators, and vendors for workshops and interviews; schedule training and awareness sessions; acknowledge and approve shared documentation; issue Work Completion Certificate.
+
+Note: Stage 4 is not a standard OTCSS phase designation. If encountered in project documentation, treat as part of Stage 3 (tools implementation) or Stage 5 (policy/training) per the actual scope of activities described.
+
+### Post-Implementation Support
+Remote Support ([SUPPORT_PERIOD_REMOTE] from Work Completion): Remote troubleshooting, system fine-tuning, data gathering, and issue resolution within the scope of supply. Change requests, new features, and additional integrations are handled as separate commercial agreements. Effective working hours: 9:00 AM to 5:00 PM IST, Monday to Friday, excluding national holidays. NDA between Buyer and Seller must be signed before remote support commences.
+
+Onsite SV Support ([SUPPORT_PERIOD_ONSITE] from Work Completion): One Cybersecurity Engineer deployed onsite to monitor the solution console, work with plant stakeholders to address identified actions, and support day-to-day OT cybersecurity operations. Effective working hours: 9:00 AM to 5:00 PM IST, Monday to Friday, excluding national holidays. Seller may rotate the assigned SV per operational availability.
+
+## Testing
+All assessment and monitoring activities use passive, non-intrusive techniques — zero impact on production at all times.
+
+Tool deployment verification: installation and configuration of IDS sensors, core appliances, vulnerability management tools, and SRA appliances verified against agreed deployment architecture.
+
+Traffic capture verification: SPAN/TAP configuration confirmed by validating that IDS sensors receive and process OT network traffic.
+
+IDS detection test: threat detection policies and ICS-specific signatures verified in the OT environment.
+
+Vulnerability management verification: asset ingestion and CVE mapping confirmed against the delivered asset inventory.
+
+SRA verification: vendor connection workflow, MFA enforcement, RBAC, session recording, and audit log generation confirmed end-to-end.
+
+Dashboard integration test: data from IDS, vulnerability management, and SRA tools confirmed to appear in unified OT monitoring dashboards.
+
+Post-deployment audit: high-level security maturity assessment conducted after all tools are live.
+
+No Factory Acceptance Test (FAT) in the traditional simulation sense — OTCSS acceptance follows work completion milestones based on on-site deployment verification, not factory simulation. No active scanning of OT assets during any testing phase.
+
+## Risks
+1. Incomplete or inaccurate asset information from Buyer: All work is based on information and evidence provided by Buyer. Withheld or misrepresented information limits delivery accuracy. Owner: Buyer.
+2. Buyer hardware procurement delays: Aggregation switches, server room infrastructure, and network accessories in Buyer scope must be provisioned and ready before Seller can deploy. Owner: Buyer.
+3. Network configuration unavailability: Required VLAN configurations, SPAN settings, and OT firewall rules must be configured by Buyer before IDS sensors and core appliances can be commissioned. Owner: Buyer.
+4. Stakeholder coordination gaps: Delayed technical query responses or stakeholder unavailability during site visits extend project timelines proportionally. Owner: Buyer.
+5. Third-party OEM availability: OEM engineers required for specific asset access or configuration support must be arranged by Buyer for the relevant site visit windows. Owner: Buyer.
+6. Scope changes from undiscovered assets or subnets: Asset discovery may reveal OT assets or network segments not anticipated in the original scope. Additional scope requires a separate commercial change order. Owner: Shared.
+7. Network infrastructure constraints: Insufficient SPAN port capacity, inadequate bandwidth, or switch configuration limitations may require architectural adjustments. Owner: Shared.
+8. Tool subscription renewal: IDS, vulnerability management, and SRA tool licenses must be renewed by Buyer before expiry to maintain continuous protection. Owner: Buyer (post-delivery).
+9. Remote support link unavailability: Buyer must establish and maintain a dedicated internet connection for Seller's remote support access. NDA must be executed before sessions begin. Owner: Buyer.
+10. Cybersecurity incident post-delivery: If Buyer fails to follow established cybersecurity guidelines or maintain network security controls, Seller is not liable for resulting incidents or damages. Owner: Buyer.
+
+## Standard Assumptions (CORE / COMMON)
+- All information provided by Buyer is treated as accurate; Seller works only from the evidence and data provided.
+- Physical wiring, cabling, racking, and infrastructure changes are Buyer scope; Seller provides configuration guidance and validation only.
+- No active scanning of OT endpoints at any point during the project.
+- All configuration changes and security control enablement require formal MOC approval per plant governance.
+- Asset discovery template and scope boundary are finalized before Stage 1 site activities begin.
+- Named production units constitute the complete scope; additional units require a formal change order.
+- A project coordinator (SPOC) is nominated by Buyer to serve as the daily liaison with Seller.
+- Site visit travel dates are communicated and planned at least one week in advance.
+- OPE (lodging and travel expenses) are reimbursed based on actual costs if site visits are required during post-implementation support.
+- Tool license subscriptions are quoted for [SUBSCRIPTION_PERIOD] and must be renewed by Buyer before expiry.
+- Final assessment reports are presented to Buyer leadership; the number of presentation sessions is project-dependent (OBSERVED: up to 2 sessions in sample).
+- The exact quantity and model of tools are finalized by mutual agreement between Buyer and Seller after architecture confirmation.
+
+## Standard Exclusions (CORE)
+- Replacement or upgrade of existing PLC, DCS, HMI, or other automation hardware.
+- Corporate IT security components (IT firewalls, corporate SOC infrastructure, IT antivirus).
+- Legacy system upgrades beyond the network-level integration required for cyber tool deployment.
+- Firewalls, IPS, NAC, SIEM platform buildout, full SOC integration, EDR/MDR deployment, and war room setup.
+- Network redesign, network segmentation, or VLAN restructuring (existing network architecture is preserved).
+- Issuance of compliance certifications or initiation of formal regulatory audits.
+- Standalone OT security assessment (unless explicitly confirmed in project scope).
+- Modifications to existing Level-1, Level-2, MES, ERP, or other automation system software or hardware.
+- Erection activities and civil engineering works.
+- Hardware and software not explicitly described in the project proposal.
+- Source code of core cybersecurity tool platforms.
+- Mechanical equipment supply or modification.
+- Troubleshooting of mechanical, operational, or process performance issues.
+- PDA software and related hardware.
+- Software patches, OS updates, antivirus updates, and software maintenance after delivery (all Buyer scope).
+- Performance guarantees on productivity, quality, yield, or process capability.
+- Supervision, management, or scheduling of Buyer personnel, contractors, or agents.
+- Interface with external devices or systems not explicitly named in the proposal.

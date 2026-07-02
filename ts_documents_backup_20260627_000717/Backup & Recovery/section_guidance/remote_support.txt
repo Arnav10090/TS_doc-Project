@@ -1,0 +1,7 @@
+[DRAFT — ADAPT FOR BACKUP & RECOVERY]
+Structure: Scope statement (what remote support covers), working hours/SLA, NDA requirement sentence, VPN responsibility clause (buyer scope), exclusion of on-site travel from remote support.
+Avoid: Committing to specific response times unless confirmed. No SLA guarantees.
+Tone: Contractually precise; state obligations clearly for both parties.
+UGS-specific: Buyer controls and maintains VPN link. All remote sessions require valid NDA. HICAD does not provide VPN infrastructure.
+--- Template structure reminder ---
+Two paragraphs: (1) Scope and duration [SUPPORT_PERIOD]. (2) VPN/remote link responsibility (buyer), NDA requirement, excluded items. Tone: contractual. No SLA time commitments unless agreed.

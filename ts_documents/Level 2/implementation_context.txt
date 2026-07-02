@@ -1,0 +1,28 @@
+Standard Exclusion List (apply to every L2 PMS project): interfaces with systems not explicitly named in TS; OS patches, antivirus updates, and other software maintenance after delivery; source code of the core L2 platform; modifications to existing L1, legacy L2, MES, or L3/ERP systems; erection activities and civil work; mechanical equipment supply or modification; troubleshooting of mechanical, operational, or process issues unrelated to the L2 application; data-acquisition/historian middleware software and hardware, where positioned as a separate product; firewalls and other networking infrastructure; performance guarantees regarding productivity, quality, yield, or process capability.
+
+Implementation Phases:
+Formal order acceptance (M0) → System design (M1: design document approval) → Hardware engineering and software design (parallel) → Software development — programming and testing (M2) → Shop test/FAT at seller facility (M3) → Software shipping → Site commissioning: deployment, communication testing with L1 and L3, reporting/alert configuration, backup, go-live, overall test, monitoring, commissioning report (M4/M5: work completion).
+Critical path: design document approval and timely delivery of buyer-side interface data (recipe tables, L1/L3 schema) are the most common sources of delay — both buyer-gated. On-site man-days: project-dependent, agreed commercially; travel days excluded.
+
+Testing:
+FAT/shop test (seller facility): validates configured PDI/PDO flows, setup/adaptive logic (if in scope), and reporting against simulated or representative data; sign-off gates shipment.
+Commissioning/SAT (site): live interface test with L1, live interface test with L3 (if present), reporting and email/SMS alert verification, backup verification, go-live, monitoring period, commissioning report.
+Acceptance artifacts: FAT/shop test result, commissioning report, work completion certificate, functional specification, hardware specification, software specification, system interface document.
+
+Risks:
+1. Buyer's recipe/look-up table data, procedures, or algorithms not provided or incomplete — impairs setup/adaptive accuracy; owner: Buyer
+2. L3 PDI feed delayed, malformed, or absent — forces fallback to manual entry; owner: Buyer
+3. L1/L3 interface protocol and parameters not finalized in time for detailed design; owner: Shared
+4. Existing database/L3 schema undocumented or not provided; owner: Buyer
+5. Adaptive/learning function scope misunderstood as covering all parameters when commercially limited to one; owner: Shared
+6. Network/VPN/internet connectivity not ready at commissioning; owner: Buyer
+7. Shutdown window insufficient for cutover, communication testing, and go-live; owner: Shared
+8. Buyer's third-party OEM/equipment engineers unavailable; owner: Buyer
+9. Scope creep from undocumented or additional production lines beyond those named in TS; owner: Shared
+10. Buyer does not execute post-handover network/cybersecurity configuration responsibilities; owner: Buyer
+
+Standard Buyer Obligations: project execution coordination and timely query response; arrange buyer-scope hardware ahead of schedule; provide network cables/accessories beyond seller scope; site access for data collection/discussion; dedicated internet connection; medical facility access for seller representatives on-site; provide existing L1 backup, recent production data, and L3 database schema where applicable; make 3rd-party OEM engineers available if required; provide access to existing recipe/look-up tables and mathematical models; manage network configuration for email/SMS alerting.
+
+Standard Assumptions: buyer provides accurate, complete plant technical data ahead of design; buyer's existing L1 system can expose required interface (upgrades are buyer scope); buyer provides existing recipe/look-up tables, mathematical models, and algorithms for setup and adaptive functions; L1↔L2 and L2↔L3 interface protocol and parameters finalized during detailed engineering; buyer network provides adequate bandwidth and routing; named production lines/units = complete scope (additional lines = change order); if existing database is to be reused, it is available and accessible.
+
+Value Addition / PoC: complimentary, time-limited, hosted on existing L2 server infrastructure. Does not constitute deployment commitment. IP remains with seller. Buyer must purchase via separate commercial contract to continue use. Seller may withdraw if buyer does not proceed. Not provided with production SLAs.

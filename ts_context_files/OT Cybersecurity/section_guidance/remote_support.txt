@@ -1,0 +1,6 @@
+## remote_support
+Role: Defines post-commissioning remote support scope, duration, and conditions.
+Required: [SUPPORT_PERIOD_REMOTE] from metadata.
+Infer: Scope is limited to troubleshooting, system fine-tuning, data gathering, and issue resolution within the supplied scope. Change requests, additional features, and new integrations are out of scope and require separate commercial agreement. Working hours are Seller office hours (9:00 AM–5:00 PM IST, Monday–Friday), excluding national holidays. NDA between Buyer and Seller must be executed before any remote support session begins. Buyer is responsible for establishing, maintaining, and managing the network/internet link for remote access.
+Never invent: SLA response times; on-site visits within the remote support period unless explicitly confirmed.
+Structure: Two short paragraphs. (1) Coverage, duration ([SUPPORT_PERIOD_REMOTE]), and scope limitations (troubleshooting and issue resolution only; extras need separate commercial agreement; effective working hours). (2) Buyer establishes and manages the internet/VPN link; NDA required before sessions; sessions coordinated with Buyer SPOC.

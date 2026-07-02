@@ -1,0 +1,11 @@
+Implementation phases: M1 — Engineering & Design (~8w): requirements finalization, FDS, tag list, interface spec; M2 — Development (~12w): L2 application configuration, L1 interface development, database schema, reporting; M3 — FAT (~4w): factory acceptance test at seller premises, L1 simulator used; M4 — Installation & Commissioning (~6w): site deployment, L1 live connections, parallel run with existing system; M5 — Handover (~2w): training, documentation submission, go-live sign-off. All durations indicative.
+
+FAT: Full functional test of all configured production units against FDS. Signed FAT report and closure of punch list required before equipment dispatch.
+
+Buyer obligations: Provide finalized tag list and L1 interface specifications before M2 start; provide OPC server access credentials; provide IT/OT network infrastructure and firewall rules; ensure L1 systems are commissioned and stable before M4; assign a buyer-side project coordinator; confirm L3 ERP interface specification before M2.
+
+Value addition: Complimentary 30-day post-go-live hypercare support; access to system health dashboard for 3 months. Scope-limited; IP remains with Hitachi India.
+
+Standard exclusions: L1 PLC/SCADA modifications; L3 ERP customization; civil/electrical works; UPS/power supply; OT network infrastructure; weighbridge hardware; barcode readers or RFID hardware. L2 cannot modify L1 control logic.
+
+Risks: L3 ERP interface specification must be confirmed before M2 — unresolved ERP interface extends timeline. Tag count to be confirmed at detailed engineering.

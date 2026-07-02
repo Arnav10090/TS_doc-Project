@@ -1,0 +1,6 @@
+## value_addition
+Role: Describes complimentary value-added items offered alongside the main OTCSS scope.
+Required: [POC_PLATFORM], [POC_PERIOD] from metadata (if PoC is offered); confirmation of which value-added items are included.
+Infer: Standard OTCSS value additions: complimentary remote maintenance support ([SUPPORT_PERIOD_REMOTE]); onsite Cybersecurity Engineer ([SUPPORT_PERIOD_ONSITE]); RBAC user accounts feature on delivered tools; complimentary PoC of digital transformation or analytics solutions ([POC_PLATFORM] deployed for [POC_PERIOD] on existing server infrastructure for demonstration purposes). Future possibilities that may be noted but are not commitments: scalability to additional lines, SMS alerts, AI/ML analytics, MES/ERP integration, cloud integration, mobile dashboard.
+Never invent: PoC platform capabilities not in confirmed scope; deployment commitments beyond the PoC period; costs or pricing.
+Structure: Bulleted list of confirmed value additions. For PoC: state platform ([POC_PLATFORM]), duration ([POC_PERIOD]), hosting, objectives, and explicit scope limitations (demonstration only; commercial continuation requires separate contract; Seller may withdraw if Buyer does not proceed). Scope-limiting language is mandatory.

@@ -1,0 +1,6 @@
+## overall_gantt
+Role: Image-backed Gantt section. User uploads the schedule diagram. Section holds textual companion describing the implementation and post-implementation schedule.
+Required: Nothing specific; PO acceptance date from metadata if available.
+Infer: All canonical OTCSS implementation phases (Stage 0 through Stage 5) plus post-implementation support periods. All durations are indicative only. Milestones M1 (Project Plan), M2 (Asset Discovery List), M3 (Cyber Tool Installation), M4 (Dashboards deployed), M5 (Training Report and Assessment Report). Post-implementation: remote support for [SUPPORT_PERIOD_REMOTE], onsite SV for [SUPPORT_PERIOD_ONSITE]. Week 1 = PO acceptance date.
+Never invent: Specific calendar dates unless PO date is in metadata; committed durations; specific man-day breakdowns not confirmed.
+Structure: 2–3 sentence intro summarizing total indicative duration and key phases. Milestones M1–M5 listed. Indicative-only caveat: "All durations are for reference only. Buyer prerequisite delays in architecture approval, hardware provisioning, and site access scheduling will cause proportional delivery delays." For draw.io chart generation, output week-based GanttTask JSON (task, phase, start_week, duration_weeks, milestone, dependencies) — backend converts to mxGraph XML.

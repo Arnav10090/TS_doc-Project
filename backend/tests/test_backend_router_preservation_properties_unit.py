@@ -21,7 +21,7 @@ Run tests on UNFIXED code.
 EXPECTED OUTCOME: Tests PASS (this confirms baseline behavior to preserve)
 """
 import pytest
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, settings, strategies as st, HealthCheck
 
 from app.generation.completion import calculate_section_completion
 
@@ -203,7 +203,7 @@ def test_full_project_percentage_calculation_with_hardcoded_27():
 @given(
     completion_ratio=st.floats(min_value=0.1, max_value=0.9)
 )
-@settings(max_examples=10, deadline=5000)
+@settings(max_examples=10, deadline=5000, suppress_health_check=[HealthCheck.function_scoped_fixture])
 def test_excluded_sections_preservation_property(completion_ratio):
     """
     Property-based test for excluded sections preservation.

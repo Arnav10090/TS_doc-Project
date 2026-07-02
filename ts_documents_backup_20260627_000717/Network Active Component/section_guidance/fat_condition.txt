@@ -1,0 +1,7 @@
+[DRAFT — ADAPT FOR NETWORK ACTIVE COMPONENT]
+Structure: FAT scope (what is tested — all configured flows, simulated sources, security config review), test criteria (acceptance pass/fail), deliverable (FAT report), shipment gate statement.
+Avoid: Committing to FAT duration in weeks; use metadata value or "agreed commercially."
+Tone: Contractually clear. The FAT report must be signed before shipment — state explicitly.
+UGS-specific: FAT conducted at HICAD facility. Buyer attendance optional but recommended. FAT sign-off (M3 gate) triggers shipment authorization.
+--- Template structure reminder ---
+Short bulleted list of FAT test items. FAT report = mandatory output. Shipment conditional on signed FAT report. Do not invent pass/fail thresholds.

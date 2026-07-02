@@ -1,0 +1,7 @@
+Phase structure: M1 Definition (~1w) → M2 Hardware Delivery (~4-6w) → M3 FAT (~1w) → M4 Installation (~2w) → M5 Evaluation (~2-4w). Total indicative: ~10-14w from PO.
+
+Critical path: Identification of the suitable POC target subsystem gates M1. Hardware procurement lead times gate M4.
+
+Shutdown Gantt: REQUIRED. Short, targeted shutdown windows are required to install the POC hardware and perform the cutover. A rollback window must also be scheduled in case the POC fails to meet success criteria during the evaluation period. Typical shutdown window is 4-8 hours.
+
+Draw.io format: week-based GanttTask JSON — fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies[].

@@ -1,0 +1,6 @@
+## third_party_sw
+Role: Documents third-party software or infrastructure requirements not supplied by Seller, primarily the remote support network link.
+Required: Statement that remote support requires a Buyer-provided and Buyer-managed internet/VPN connection.
+Infer: Buyer establishes, manages, and controls the remote support network link at all times. Seller has no authority over the link configuration. NDA must be executed before any remote support session begins. All other network infrastructure (OT firewall rules, SPAN configuration, server room connectivity) is also Buyer-managed.
+Never invent: Specific VPN product names; specific bandwidth requirements not confirmed.
+Fields: sw4_name = standard statement — "VPN/Broadband Remote Link — provided and managed by Buyer; NDA required before remote support sessions commence." Use sw1_name–sw3_name for any other confirmed third-party requirements; leave blank if none.

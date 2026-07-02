@@ -1,0 +1,2 @@
+[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
+Phase-gate organized list. Each: prerequisite → which seller activity it gates. Standard gates: design start, config start, commissioning start. Do not add prerequisites for unconfirmed systems.

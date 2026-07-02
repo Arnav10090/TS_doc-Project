@@ -1,0 +1,6 @@
+## buyer_prerequisites
+Role: Pre-conditions Buyer must satisfy before Seller can begin each project phase. Focuses on prerequisites that gate specific Seller work.
+Required: Conditions from project metadata; standard OTCSS phase prerequisites.
+Infer: Standard OTCSS phase gates: Before Stage 1 begins — site access granted; existing network diagrams, documentation, and asset lists provided; scope and objectives approved; Stage 0 project plan accepted. Before Stage 2 begins — asset discovery list reviewed and validated by Buyer stakeholders. Before Stage 3 begins — To-Be architecture design approved; Buyer-scope hardware (aggregation switches, server room infrastructure, network cables) provisioned and ready; OT firewall rules and SPAN configurations completed by Buyer; Buyer-scope tools procurement completed. Before Stage 5 begins — tools deployed and operational; workshop scheduling confirmed. Before post-implementation support begins — dedicated internet/VPN link established; NDA executed.
+Never invent: Prerequisites for unconfirmed systems.
+Structure: Bulleted list organized by phase gate. Each item states the prerequisite and the Seller activity it gates.

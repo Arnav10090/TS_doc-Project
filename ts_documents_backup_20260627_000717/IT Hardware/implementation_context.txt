@@ -1,0 +1,11 @@
+Implementation phases: M1 — Sizing & BOM Finalization (~3w): confirming rack space, power/cooling capacity, compute sizing; M2 — Hardware Delivery (~8-12w): procurement and shipping to site; M3 — Staging & FAT (~1w): typically limited to physical inspection and basic power-on self-test (POST); M4 — Installation (~2w): racking, stacking, cabling, and basic out-of-band management configuration (e.g., iLO/iDRAC); M5 — Handover (~1w): hardware handover to IT teams for OS/Software installation. Total durations indicative.
+
+FAT: Generally limited to visual inspection against the BOM.
+
+Buyer obligations: Provide suitable data center environment (HVAC, raised floor, clean power feeds); provide IP addresses for out-of-band management; perform OS and application software installation (unless specifically included in the scope).
+
+Value addition: Asset tagging and comprehensive cable labeling (both ends); provision of detailed rack elevation Visio diagrams.
+
+Standard exclusions: Software installation (Hypervisor, OS, Applications) unless explicitly scoped; civil/electrical modifications to the server room; migration of existing IT workloads.
+
+Risks: Insufficient cooling or power capacity in the existing server room can delay installation.

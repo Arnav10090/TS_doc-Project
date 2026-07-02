@@ -1,0 +1,6 @@
+## system_config
+Role: Image-backed section. User uploads the OT cybersecurity architecture diagram. This section holds the textual companion describing the selected architecture and tool deployment topology.
+Required: [ARCHITECTURE_OPTION]; [NUM_SENSORS]; [NUM_PLANTS]; DMZ topology context.
+Infer: Standard architectural description for the confirmed option. Option 1: aggregation switch collects OT traffic from multiple subnetworks; single IDS sensor per area connects to aggregation switch via SPAN; single IDS core appliance in DMZ serves entire site. Option 2: IDS sensors connect to individual OT subnetwork switches via SPAN; IDS core appliances deployed per process area; Enterprise Manager in DMZ provides centralized management. Both options: SRA appliance in DMZ provides zero-trust remote access.
+Never invent: Component counts not from metadata; IP addresses; VLAN details; physical rack layout specifics; specific vendor product names not confirmed.
+Structure: 2–3 sentences describing the selected architecture option, how cybersecurity tools are positioned relative to the OT network layers and DMZ, and how vendors access OT assets through the SRA. Reference Purdue model alignment. State key parameters inline when confirmed. End with: "The above configuration is for reference only and is subject to finalization during detailed engineering."

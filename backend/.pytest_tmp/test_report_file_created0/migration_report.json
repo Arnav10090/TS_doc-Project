@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-07-02T18:30:17.211495",
+  "output_dir": "C:\\Users\\Asus\\Desktop\\HICAD Projects\\TS-Doc_Project\\backend\\.pytest_tmp\\test_report_file_created0\\output",
+  "passed": true,
+  "content_loss_pct": 4.07,
+  "content_loss_chars": 1576,
+  "duplication_detected": true,
+  "errors": [],
+  "warnings": [
+    "Potential content duplication detected between output files. Review files for overlapping content.",
+    "domain_context.txt: Exceeds recommended size (7083 chars > 1200 max). Consider trimming content.",
+    "architecture_context.txt: Exceeds recommended size (7774 chars > 1200 max). Consider trimming content.",
+    "implementation_context.txt: Exceeds recommended size (8621 chars > 1200 max). Consider trimming content.",
+    "cybersecurity_context.txt: Exceeds recommended size (2109 chars > 1200 max). Consider trimming content.",
+    "gantt_context.txt: Exceeds recommended size (2344 chars > 1200 max). Consider trimming content.",
+    "Uncategorized content: 229 chars could not be automatically classified. Review and manually assign to appropriate files."
+  ],
+  "info": [
+    "Content coverage: 95.9% of unique original words found in output.",
+    "5/5 output files have content."
+  ],
+  "split_method": "regex",
+  "file_sizes": {
+    "domain_context.txt": 7083,
+    "architecture_context.txt": 7774,
+    "implementation_context.txt": 8621,
+    "cybersecurity_context.txt": 2109,
+    "gantt_context.txt": 2344
+  },
+  "uncategorized_chars": 229
+}

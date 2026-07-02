@@ -1,0 +1,9 @@
+Level 2 Production Management System (L2 PMS) is the operational bridge between plant floor automation (Level 1 PLCs/DCS/SCADA) and enterprise business systems (Level 3 MES/ERP). It orchestrates production workflows, tracks material genealogy, monitors quality metrics, and provides real-time visibility into manufacturing operations. L2 PMS is distinct from L1 control systems (which manage process control) and L3 enterprise systems (which handle business planning and logistics).
+
+Core capabilities: Real-time material tracking and genealogy (heat/coil/plate traceability); production order management and execution; quality data collection with statistical process control (SPC); OEE and KPI dashboards; shift reporting and production logs; weighbridge and material flow integration; alarm management and event correlation; historian connectivity for process data archival.
+
+Business value: Eliminates manual production logging and reduces data entry errors; enables complete material traceability for quality audits and certifications; provides real-time OEE visibility for performance optimization; reduces reconciliation efforts between shop floor and ERP; creates comprehensive audit trails for compliance and continuous improvement initiatives.
+
+Typical industries: Integrated steel mills, aluminum smelters, paper mills, cement plants, automotive manufacturing, food & beverage processing — any continuous or discrete manufacturing environment requiring tight coordination between process control and business systems.
+
+Plant context: Manufacturing facilities with existing Level 1 automation infrastructure (PLCs, SCADA, HMIs), operational technology (OT) networks separated from IT networks, and enterprise systems requiring production data integration. L2 PMS connects to L1 via industrial protocols (OPC UA/DA, Modbus, Profinet) and to L3 via database replication, web services, or message queuing.

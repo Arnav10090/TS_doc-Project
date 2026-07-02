@@ -1,0 +1,4 @@
+Structure: One short subsection per PoC platform. State what the platform demonstrates (e.g., scheduling, digital permits, automated analytics/ML), where it runs (L2 server infrastructure), demonstration duration (from metadata), and continuation/withdrawal terms. Explicit scope-limiting language required.
+Avoid: Inventing platform capabilities not listed in scope. Do not promise deployment timelines or commercial terms. PoC ≠ production deployment commitment.
+Tone: Offer-qualification. Clear boundaries on what PoC is and is not.
+Level 2-specific: PoC is complimentary, time-limited, hosted on existing L2 server infrastructure. IP remains with seller. Buyer must purchase separately to continue. Seller may withdraw if buyer does not proceed.

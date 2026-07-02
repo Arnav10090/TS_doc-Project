@@ -267,7 +267,9 @@ describe('SectionSidebar - Preservation Property Tests', () => {
       // With 5 sections total and 4 auto-complete sections, the total is 5 - 4 = 1
       // Only 1 section (cover) is completable, and it's marked complete
       // Should show "1 / 1 sections complete" because auto-complete sections are excluded
-      expect(screen.getByText(/1 \/ 1 sections complete/i)).toBeInTheDocument();
+      const match1 = /1 \/ 1 sections complete/i;
+      const progressEl1 = screen.getByTestId('sections-complete');
+      expect((progressEl1.textContent || '').replace(/\s+/g, ' ').trim()).toMatch(match1);
     });
 
     it('should correctly count completed sections excluding auto-complete', () => {
@@ -291,7 +293,9 @@ describe('SectionSidebar - Preservation Property Tests', () => {
       // This is a problematic test case - it has fewer than 4 auto-complete sections
       // The completed count is 2 (cover + executive_summary, excluding binding_conditions)
       // Should show "2 / 0 sections complete" which is mathematically odd but correct per the implementation
-      expect(screen.getByText(/2 \/ 0 sections complete/i)).toBeInTheDocument();
+      const match2 = /2 \/ 0 sections complete/i;
+      const progressEl2 = screen.getByTestId('sections-complete');
+      expect((progressEl2.textContent || '').replace(/\s+/g, ' ').trim()).toMatch(match2);
     });
   });
 

@@ -1,0 +1,6 @@
+Purpose: Specifies the documentation deliverables SELLER will provide as part of the supply scope.
+Required Inputs: No project-specific inputs required beyond scope confirmation
+Safe Inferences: Standard documentation package: Screen Design Document, Hardware Specifications, Software Specifications, CYMS & SYMS Application Operation Manual. All four are SELLER supply scope items (BD/BE/DD/SU phases).
+Must Not Invent: Additional documentation items beyond confirmed scope, specific document format standards, delivery timelines or version control procedures
+Suggested Structure: Single paragraph listing the documentation deliverables. Brief inline enumeration of the four standard deliverable types.
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

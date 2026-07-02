@@ -1,0 +1,5 @@
+Role: Defines Work Completion Certificate (WCC) criteria and deemed-issuance conditions.
+Required: References to scope sections; [WCC_PERIOD] from commercial agreement.
+Infer: Four criteria: (1) Supply of hardware and software per scope of supply (ref: Division of Engineering). (2) Deployment of PMYMS (software commissioned and functional). (3) Submission of all documentation per Documentation Control scope. (4) Commissioning man-days completed per agreed allocation. Deemed-issued clause: if BUYER does not issue WCC within [WCC_PERIOD] of all criteria being met, WCC is deemed issued. BUYER acknowledgment through WCC that SELLER has fulfilled all contractual obligations.
+Never invent: Specific deadline periods not commercially agreed.
+Structure: Bulleted list of four criteria, followed by one paragraph on WCC issuance procedure (BUYER issues within [WCC_PERIOD]; deemed issued if not issued in time; any issues to be mutually discussed). One final sentence: WCC issuance = acknowledgment of SELLER fulfilling all contractual obligations.

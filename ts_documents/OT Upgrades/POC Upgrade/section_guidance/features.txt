@@ -1,0 +1,7 @@
+[DRAFT — ADAPT FOR OT UPGRADES/POC UPGRADE]
+Structure: Bulleted feature list grouped by capability area (Data Acquisition, Configuration & Management, Data Storage, OPC UA Server, Security, Optional). Mark value-added items with "(Value-Added)" suffix.
+Avoid: Listing features not confirmed in metadata. Do not include HX if not in scope.
+Tone: Product-feature list style. Each bullet: capability name + one-line buyer benefit.
+UGS-specific: Always include web-based config UI, OPC UA server role, RBAC, audit trail as core. Email alerting and HX as optional/conditional.
+--- Template structure reminder ---
+Structure: Numbered subsections per feature. Each: short title, description, buyer benefit. Mark value-added items explicitly. Required: product-specific capability list. Do not invent capabilities not in scope.

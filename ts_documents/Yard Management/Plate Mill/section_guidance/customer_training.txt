@@ -1,0 +1,5 @@
+Role: Defines the training delivered by SELLER during commissioning.
+Required: [TRAINING_DAYS], [TRAINEE_COUNT] from project metadata or commercial agreement.
+Infer: On-site classroom training during commissioning. Covers mutually agreed topics on PMYMS web application. Training agenda agreed between BUYER and SELLER before delivery.
+Never invent: Specific training topics, certification programs, or assessment commitments. Post-commissioning training sessions unless separately agreed.
+Structure: One to two paragraphs. State: at-site classroom training during commissioning, maximum [TRAINEE_COUNT] persons, maximum [TRAINING_DAYS] days, covers mutually agreed PMYMS web application topics, agenda to be agreed before training commencement.

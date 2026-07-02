@@ -65,16 +65,42 @@ pytest tests/test_completion.py tests/test_context_builder.py tests/test_filenam
 ```
 
 ### All Tests (Requires Database)
+
+There are two common ways to run the full test suite while using the Dockerized PostgreSQL database:
+
+- Recommended: run tests inside the backend container (uses Docker network hostname `db`):
+
 ```bash
-# Start Docker containers first
-docker-compose up -d
+# Start only the DB (faster) or the full compose
+docker compose up -d db
 
-# Run all tests
-pytest tests/ -v
-
-# Run with coverage
-pytest tests/ --cov=app --cov-report=html
+# Run tests inside the backend container (uses the compose network)
+docker exec -w /app $(docker ps --filter "name=ts_generator_backend" --format "{{.ID}}") python -m pytest -q
 ```
+
+- Alternative: run tests on the host but point the test DB to the container's mapped port (`localhost:5432`). This requires exporting the environment variables so tests connect to `localhost` instead of the compose network hostname `db`.
+
+PowerShell (Windows):
+```powershell
+docker compose up -d db
+$env:DATABASE_URL = "postgresql+asyncpg://ts_user:ts_password@localhost:5432/ts_generator_test"
+$env:SYNC_DATABASE_URL = "postgresql://ts_user:ts_password@localhost:5432/ts_generator_test"
+cd backend
+python -m pytest -q
+```
+
+Bash (macOS / Linux):
+```bash
+docker compose up -d db
+export DATABASE_URL="postgresql+asyncpg://ts_user:ts_password@localhost:5432/ts_generator_test"
+export SYNC_DATABASE_URL="postgresql://ts_user:ts_password@localhost:5432/ts_generator_test"
+cd backend
+python -m pytest -q
+```
+
+Notes:
+- Running tests inside the backend container is simpler because the default test configuration expects the DB hostname `db` (the Docker Compose service name).
+- When running on host, you must set `DATABASE_URL`/`SYNC_DATABASE_URL` to `localhost` so the test engine connects to the container's published port.
 
 ### Integration Tests Only
 ```bash
@@ -85,9 +111,9 @@ pytest tests/integration/ -v
 
 Integration tests use a separate test database:
 - **Database**: `ts_generator_test`
-- **URL**: `postgresql+asyncpg://postgres:postgres@db:5432/ts_generator_test`
+- **Default URL (inside container network)**: `postgresql+asyncpg://ts_user:ts_password@db:5432/ts_generator_test`
 
-The test database is created and dropped for each test to ensure isolation.
+When running tests on the host (not inside the backend container), set the `DATABASE_URL` and `SYNC_DATABASE_URL` environment variables to point to `localhost:5432` with the same credentials shown above. The test fixtures create and drop tables to ensure isolation per test run.
 
 ## Fixtures
 

@@ -1,0 +1,6 @@
+## hardware_specs
+Role: Table of all hardware items supplied by Seller as part of the OTCSS solution.
+Required: Architecture option; [NUM_SENSORS]; [NUM_IDS_CORE] if confirmed; SRA hardware items; any other hardware confirmed in project scope.
+Infer: Standard OTCSS hardware items: IDS sensor appliances (hardware server units, small/standard variant sized by monitored asset count per area); IDS core appliance (server-class hardware deployed in DMZ, sized by total asset count and sensor count); Enterprise Manager appliance or server (Option 2 only, centralized management); SRA appliance / access point hardware (deployed in DMZ, sized by concurrent session and managed device count). Aggregation network switches are Buyer-provided — exclude from Seller BOM or note clearly as Buyer scope.
+Never invent: Specific model numbers; exact RAM, storage, or CPU specifications (write "sized per asset count and deployment scope — confirmed at detailed engineering"); specific vendor product codes not confirmed.
+Fields: name (equipment name), maker ("OEM per confirmed tool selection" if not confirmed), qty (from metadata or [NUM_SENSORS] placeholder), specs_line1 through specs_line4. Use specs_line1 for: "Sized per asset count and deployment scope — confirmed at detailed engineering." Leave unused spec lines blank.

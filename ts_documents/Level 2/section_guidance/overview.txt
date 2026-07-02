@@ -1,0 +1,4 @@
+Structure: Business context (current problem), problem statement (what is lacking), proposed solution summary, key benefits. Use sub-headings or short paragraphs.
+Avoid: Deep architecture detail; no protocol names here. Do not repeat Executive Summary content. Do not invent productivity/yield improvement claims.
+Tone: Business-analytical. Frame around buyer's operational challenge, not seller's product.
+Level 2-specific: Emphasize manual/disconnected production tracking, no fact-based visibility. L2 PMS as the orchestration and traceability layer between L1 and L3.

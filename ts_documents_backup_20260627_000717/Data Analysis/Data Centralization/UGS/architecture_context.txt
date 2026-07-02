@@ -1,0 +1,14 @@
+Architecture Options:
+Option A (Direct): UGS server polls each unit's data acquisition server centrally. No edge hardware. Use when network reliability is high.
+Option B (HX per unit): HX edge controller at each unit feeds central UGS server. Use when network reliability cannot be guaranteed.
+Layers (both options): Field → L1 (PLCs, PDA servers, L1 LAN) → L2 (supervisory, L2 LAN) → OT Boundary (firewalls, buyer scope) → IT (UGS server, managed switch, downstream consumers) → Remote Access (buyer-controlled VPN).
+
+Protocols: Primary: OPC UA. Also: OPC DA, Modbus RTU/TCP, TCP/IP raw, UDP, MQTT, DBlink/SQL. Protocol selection is project-dependent. Outbound: UGS OPC UA server for live subscriptions; SQL for batch (heavy queries degrade acquisition performance — discourage).
+
+Data Acquisition: Configurable polling tiers (all values project-dependent). Tag capacity architecturally scalable — [NUM_TAGS] from project metadata. Do not assume a specific number.
+
+Data Storage: Centralized on-premises SQL database. Retention: configurable FIFO ([RETENTION_PERIOD] from metadata). Automated housekeeping prevents manual DBA effort. No write-back to source systems.
+
+Technology Stack Patterns (observed, not defaults): Software: browser-based frontend, C#/.NET Core backend, SQL Server, Windows Server, enterprise antivirus. Versions: "current at detailed engineering start." Hardware: enterprise tower/rack server (sizing by tag count, polling frequency, retention — never state specific RAM/storage), FHD monitor, HIL-approved managed switch, network cabling, HX controller + junction box (if Option B). Buyer provides: server room, power, firewall, SMS gateway (if needed), erection materials.
+
+Diagram layers (top to bottom): Remote Support (buyer VPN) → IT Layer (UGS server, switch, consumers) → OT/IT Boundary (OT firewalls, buyer scope) → L2 Layer → L1 Layer → [HX Layer, Option B only] → Field. No IP addresses or VLANs — finalized in engineering.

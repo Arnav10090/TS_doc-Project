@@ -1,0 +1,7 @@
+Phase structure: M1 Tag Eng (~4w) → M2 Hardware Delivery (~6-8w) → M3 FAT (~2w) → M4 Config (~6w) → M5 Handover (~2w). Total indicative: ~20-22w from PO.
+
+Critical path: Finalized tag list with polling parameters gates M4 configuration. Network readiness gates M4 deployment.
+
+Shutdown Gantt: NOT REQUIRED. Historian deployment and connection to L1/L2 sources is non-intrusive and can be performed while the plant is operating. Passive data collection begins immediately upon connection.
+
+Draw.io format: week-based GanttTask JSON — fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies[].

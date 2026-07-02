@@ -1,0 +1,2 @@
+[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
+Single unified table: sr_no, component, technology/make, note. Version: 'current version at detailed engineering start.' Hardware sizing: 'sized per [parameter] — confirmed at detailed engineering.'

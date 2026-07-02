@@ -1,0 +1,9 @@
+Architecture: Redundant ring or star topology for high availability (sub-50ms recovery). Demilitarized Zone (DMZ) between IT and OT networks. L3 core switches, L2 distribution/edge switches, and ruggedized computing hardware.
+
+Technology: Industrial switches/routers (Cisco IE series, Hirschmann, Scalance); Rugged servers (Dell XR series, HPE Edgeline) or panel PCs (Advantech, Siemens IPC); Fiber optic backbone (Single-mode/Multi-mode) and Cat6/Cat6a copper edge connections; IEEE 802.11ac/ax for industrial wireless.
+
+Data acquisition: N/A for data. Infrastructure supports standard OT protocols (PROFINET, EtherNet/IP, Modbus TCP) transparently.
+
+Storage: N/A.
+
+Integration pattern: Network integration points with existing IT core and L1 PLC drops. Diagram: physical network topology showing fiber/copper runs, switch locations, and rack layouts.

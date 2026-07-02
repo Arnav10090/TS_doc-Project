@@ -1,0 +1,4 @@
+Structure: BOM-style table (Item | Qty | Specification | Supplier). Server sized by tag count from metadata (never hardcode RAM/storage). Include: enterprise tower/rack server, FHD monitor, HIL-approved managed switch, network cabling. HX controller + junction box only if Option B in metadata.
+Avoid: Specific brands or model numbers. No specific RAM/storage values — "sized per tag count and retention period."
+Tone: Procurement-specification. Vendor-neutral unless metadata specifies otherwise.
+Buyer provides: server room, power supply, firewall equipment, earthing.

@@ -1,0 +1,2 @@
+[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
+Content: Data/process flow description from source to destination. Required: system names or placeholders. Annotate flow with protocol/tier labels where applicable. One clear paragraph; avoid bullet lists.

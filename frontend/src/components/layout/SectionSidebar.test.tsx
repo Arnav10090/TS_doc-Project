@@ -140,8 +140,9 @@ describe('SectionSidebar - Bug Condition: Dynamic Total Calculation', () => {
 
     // Assert: The progress indicator should show "14 / 24 sections complete"
     // This assertion will FAIL on unfixed code because line 127 has totalCompletable = 27
-    const progressText = screen.getByText(/14 \/ 24 sections complete/i);
-    expect(progressText).toBeInTheDocument();
+    const matchA = /14 \/ 24 sections complete/i;
+    const progressElA = screen.getByTestId('sections-complete');
+    expect((progressElA.textContent || '').replace(/\s+/g, ' ').trim()).toMatch(matchA);
   });
 
   it('should display "10 / 22 sections complete" when 22 sections exist (5 deleted)', () => {
@@ -208,8 +209,9 @@ describe('SectionSidebar - Bug Condition: Dynamic Total Calculation', () => {
 
     // Assert: The progress indicator should show "10 / 22 sections complete"
     // This assertion will FAIL on unfixed code because line 127 has totalCompletable = 27
-    const progressText = screen.getByText(/10 \/ 22 sections complete/i);
-    expect(progressText).toBeInTheDocument();
+    const matchB = /10 \/ 22 sections complete/i;
+    const progressElB = screen.getByTestId('sections-complete');
+    expect((progressElB.textContent || '').replace(/\s+/g, ' ').trim()).toMatch(matchB);
   });
 
   it('should display "20 / 26 sections complete" when 26 sections exist (1 deleted)', () => {
@@ -290,8 +292,9 @@ describe('SectionSidebar - Bug Condition: Dynamic Total Calculation', () => {
 
     // Assert: The progress indicator should show "20 / 26 sections complete"
     // This assertion will FAIL on unfixed code because line 127 has totalCompletable = 27
-    const progressText = screen.getByText(/20 \/ 26 sections complete/i);
-    expect(progressText).toBeInTheDocument();
+    const matchC = /20 \/ 26 sections complete/i;
+    const progressElC = screen.getByTestId('sections-complete');
+    expect((progressElC.textContent || '').replace(/\s+/g, ' ').trim()).toMatch(matchC);
   });
 
   /**
@@ -643,8 +646,9 @@ describe('SectionSidebar - Preservation: Completion Calculation Unchanged', () =
 
       // Assert: The completed count should be 27 (31 total - 4 auto-complete)
       // Even though all 31 sections are marked complete, only 27 should count
-      const progressText = screen.getByText(/27 \/ 27 sections complete/i);
-      expect(progressText).toBeInTheDocument();
+      const matchD = /27 \/ 27 sections complete/i;
+      const progressElD = screen.getByTestId('sections-complete');
+      expect((progressElD.textContent || '').replace(/\s+/g, ' ').trim()).toMatch(matchD);
     });
 
     it('should count only non-auto-complete sections when partially complete', () => {
@@ -715,8 +719,9 @@ describe('SectionSidebar - Preservation: Completion Calculation Unchanged', () =
 
       // Assert: The completed count should be 15 (not 19)
       // The 4 auto-complete sections should be excluded from the count
-      const progressText = screen.getByText(/15 \/ 27 sections complete/i);
-      expect(progressText).toBeInTheDocument();
+      const matchE = /15 \/ 27 sections complete/i;
+      const progressElE = screen.getByTestId('sections-complete');
+      expect((progressElE.textContent || '').replace(/\s+/g, ' ').trim()).toMatch(matchE);
     });
   });
 
@@ -781,8 +786,9 @@ describe('SectionSidebar - Preservation: Completion Calculation Unchanged', () =
       render(<SectionSidebar {...mockProps} sectionContents={fullProjectSectionContents} />);
 
       // Assert: Should display "15 / 27 sections complete"
-      const progressText = screen.getByText(/15 \/ 27 sections complete/i);
-      expect(progressText).toBeInTheDocument();
+      const matchF = /15 \/ 27 sections complete/i;
+      const progressElF = screen.getByTestId('sections-complete');
+      expect((progressElF.textContent || '').replace(/\s+/g, ' ').trim()).toMatch(matchF);
     });
 
     it('should display "0 / 27 sections complete" for a full project with no completed sections', () => {
@@ -829,8 +835,9 @@ describe('SectionSidebar - Preservation: Completion Calculation Unchanged', () =
       render(<SectionSidebar {...mockProps} sectionContents={fullProjectSectionContents} />);
 
       // Assert: Should display "0 / 27 sections complete"
-      const progressText = screen.getByText(/0 \/ 27 sections complete/i);
-      expect(progressText).toBeInTheDocument();
+      const matchG = /0 \/ 27 sections complete/i;
+      const progressElG = screen.getByTestId('sections-complete');
+      expect((progressElG.textContent || '').replace(/\s+/g, ' ').trim()).toMatch(matchG);
     });
   });
 

@@ -1,0 +1,9 @@
+Architecture: Centralized Historian Server (or redundant pair). Data collectors/interfaces distributed closer to data sources if necessary (e.g., OPC interfaces on L2 network). Client tools installed on engineering workstations or accessed via web browser.
+
+Technology: Historian Software (GE Proficy Historian, AVEVA PI System, Rockwell FactoryTalk Historian, or open-source TSDB like InfluxDB for specific applications); Server OS: Windows Server; Underlying database is typically a proprietary time-series engine, not SQL; Data Collection: OPC DA/UA clients, native driver APIs.
+
+Data acquisition: Continuous polling or subscription (OPC UA) to PLC/SCADA tags at configurable frequencies (e.g., 100ms, 1s, 5s). Exception-based logging often used to reduce storage (only record when value changes by a deadband).
+
+Storage: Proprietary archive files. High compression ratio. Configurable online retention (e.g., 1-5 years) with older archives moved to cheaper offline storage.
+
+Integration pattern: Collects from L1/L2 (OPC/Native), provides data to L3/Enterprise via standard APIs (REST, SQL query wrappers, OPC HDA). Diagram: Data flow from L1 sources → Collectors → Central Historian → Clients/L3.

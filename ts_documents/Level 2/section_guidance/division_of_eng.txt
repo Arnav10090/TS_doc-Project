@@ -1,0 +1,4 @@
+Structure: Responsibility matrix table. Columns: No. | Category | Item | BD | BE | DD | SU | ER | COM. Codes: B=Buyer, S=Seller, B/S=Joint. Categories: Services, System Engineering, Hardware, Software, Interface with External Systems (L1 side and L2 side; L3 side and L2 side — each interface appears twice showing dual-entry pattern), Training, Construction and Engineering, Pre-Engineering Activities, Documents.
+Avoid: Leaving ambiguous cells empty — use explicit B, S, or B/S. Do not invent activities not in standard L2 PMS scope. Responsibility assignments must have project basis.
+Tone: Matrix/table format. Terse row descriptions, consistent with scope_definitions abbreviations.
+Level 2-specific: Number/names of production lines affects per-line interface items. HA option affects backup-server line items. L3 presence affects L2–L3 interface items.

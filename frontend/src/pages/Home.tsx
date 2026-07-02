@@ -9,7 +9,7 @@ import toast from 'react-hot-toast'
 
 const HomePage = () => {
   const navigate = useNavigate()
-  const openNewProjectModal = useUiStore((state) => state.openNewProjectModal)
+  const { openNewProjectModal } = useUiStore()
   const [projects, setProjects] = useState<ProjectSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)

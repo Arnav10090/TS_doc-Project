@@ -1,0 +1,4 @@
+Structure: Scope statement (what training covers — system operation, configuration UI, user admin, OPC UA consumer orientation), delivery point (at commissioning, on-site), duration from metadata, agenda mutuality note.
+Avoid: Committing to specific training days unless confirmed. No off-site training unless in metadata.
+Tone: Practical, commitment-clear. State that detailed agenda is mutually agreed before delivery.
+UGS-specific: Training is on-site at buyer facility. Standard users: operators, supervisors, IT admin. Buyer responsible for trainees' availability.

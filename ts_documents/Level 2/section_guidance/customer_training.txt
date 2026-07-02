@@ -1,0 +1,4 @@
+Structure: Scope statement (what training covers — operational use of L2 PMS), delivery point (on-site at commissioning), duration from metadata, agenda mutuality note.
+Avoid: Committing to specific training days unless confirmed. No off-site training unless in metadata. No certification or assessment commitments.
+Tone: Practical, commitment-clear. State that detailed agenda is mutually agreed before delivery.
+Level 2-specific: Training is on-site at buyer facility during commissioning. Buyer responsible for trainees' availability.

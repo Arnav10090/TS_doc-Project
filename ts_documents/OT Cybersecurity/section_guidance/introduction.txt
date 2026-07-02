@@ -1,0 +1,6 @@
+## introduction
+Role: Formal opening of the TS, capturing the enquiry reference, client identification, and scope framing used throughout the document.
+Required: [TENDER_REF] (placeholder if absent), [TENDER_DATE] (placeholder if absent), [CUSTOMER_NAME], [SITE_LOCATION], [PRODUCTION_ZONE].
+Infer: Standard response-to-enquiry framing; reference to the integrated OT cybersecurity scope covered by this TS; brief Seller commitment statement.
+Never invent: Tender reference numbers, dates, or client contact details not in metadata; specific enquiry subject text not in metadata.
+Structure: Short factual paragraph referencing the enquiry, client, site, and scope. Populate tender_reference, tender_date, clientname, clientlocation from project metadata. If absent, use placeholders. Conclude with a brief Seller commitment to delivering the OTCSS solution.

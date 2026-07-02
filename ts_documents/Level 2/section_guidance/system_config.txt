@@ -1,0 +1,4 @@
+Structure: State selected architecture option (single server vs. HA online/backup, from metadata), number of production lines, brief description of how lines connect to L2 server(s), reference-only caveat, finalization note.
+Avoid: Stating IP addresses, VLANs, or specific hardware specs here — those belong in hardware_specs. No component counts not from metadata. No physical layout specifics.
+Tone: Technical-reference. Must include "for reference only — subject to finalization during detailed engineering."
+Level 2-specific: State three-tier topology. If HA not in scope, describe single-server option. If HA confirmed, describe online/backup with heartbeat.

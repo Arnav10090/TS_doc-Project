@@ -1,0 +1,6 @@
+[DRAFT — ADAPT FOR OT CYBERSECURITY]
+Structure: Four subsections in order: (1) Software Licenses (buyer responsible for renewals after warranty); (2) Changes (HICAD may update software at its discretion; versions stated are "at detailed engineering start"); (3) Confidentiality (this document is confidential, not for third-party distribution); (4) Limitation of Liability (HICAD liability capped per contract value; no consequential/indirect damages).
+Avoid: Generating novel legal language. Use only approved template phrasing for each subsection. Do not merge or reorder the four subsections.
+Tone: Legal-disclaimer. Precise, boilerplate. No creative rewording of liability clauses.
+--- Template structure reminder ---
+Four subsections: Software Licenses, Changes Due to Technical Improvements, Confidentiality, Limitation of Liability. Approved template language only. No novel legal clauses.

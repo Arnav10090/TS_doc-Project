@@ -1,0 +1,7 @@
+Advanced Data Analysis Solution — provides predictive and prescriptive analytics capabilities for industrial processes. Utilizes Machine Learning (ML) and Artificial Intelligence (AI) models built on historical plant data (from Historians or L2 systems) to optimize yield, predict equipment failure, or optimize energy consumption. Sits at Level 3/4 of the Purdue model.
+
+Core capabilities: Data ingestion from historians and ERP systems; data cleaning and preprocessing pipelines; model training and validation frameworks (e.g., AutoML); real-time scoring/inference engine; dashboards for visualizing predictions and insights; model drift monitoring and automated retraining.
+
+Business drivers: Move from reactive to predictive maintenance, discover hidden correlations affecting product quality, reduce raw material or energy waste through optimized setpoint recommendations, capture domain expertise into scalable algorithms.
+
+Plant environment: Requires a mature data foundation (existing Historian or robust L2 data logging with good data quality). Does not directly control L1 PLCs (operates in advisory/open-loop mode).

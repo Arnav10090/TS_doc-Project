@@ -1,0 +1,6 @@
+## shutdown_gantt
+Role: Image-backed schedule for maintenance windows or phased deployment activities. For OTCSS, no plant-wide production shutdown is required — passive monitoring is non-intrusive.
+Required: Whether a maintenance window is required (from metadata); if yes, specific activities and estimated duration.
+Infer: OTCSS deployment is passive and non-intrusive — no production shutdown is required. Physical sensor installation (rack mounting, cabling for IDS sensors and SRA appliances) may require brief local maintenance windows managed as permits-to-work coordinated with the plant operations team.
+Never invent: Shutdown requirement if not confirmed in metadata.
+Structure: If no shutdown/maintenance window is required: state explicitly — "OTCSS implementation is passive and non-intrusive; no production shutdown is required. Physical sensor installation may be coordinated as brief permits-to-work with plant operations." If metadata confirms a specific maintenance window requirement: generate week-based GanttTask JSON entries for that window's activities only (same format as overall_gantt). If a second schedule image is used for the remote support / onsite monitoring period, describe that timeline instead.

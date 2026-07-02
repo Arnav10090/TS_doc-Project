@@ -1,0 +1,28 @@
+# section_guidance.txt — Section Guidance File Template
+# Target size: 150–300 chars (truncated to 500 chars at load time)
+# Purpose: Per-section LLM writing guidance — structure, tone, prohibited inventions
+# File name: {section_key}.txt  (e.g., executive_summary.txt, features.txt)
+#
+# AUTHORING GUIDE — Four elements (all optional but recommended):
+#   Structure: What format/outline to use (bullets, table, paragraphs, subsections)
+#   Required:  Inputs from project metadata or context (use [PLACEHOLDER] notation)
+#   Infer:     What the AI can safely assume from standard patterns
+#   Avoid:     What the AI must NOT invent or overcommit to
+#   Tone:      Audience-appropriate register (management / contractual / technical)
+#
+# BEST PRACTICES:
+#   - Keep to 150–300 chars for the live file (be dense, no redundancy)
+#   - Use [PLACEHOLDER] for project-specific values that vary per project
+#   - Reference template section headings where helpful ("Template: FAT Condition")
+#   - One line per guidance element is sufficient; semicolons for compound items
+#   - Do NOT duplicate guidance already present in shared context files
+#
+# DELETE this header block and replace below with actual section guidance
+# ─────────────────────────────────────────────────────────────────────────────
+
+Structure: [FORMAT — e.g., 2-3 paragraphs / bullet list / table with sr_no+column+column]
+Required: [METADATA_FIELD_1], [METADATA_FIELD_2]; use [PLACEHOLDER] if absent.
+Infer: [STANDARD_PATTERN_1]; [STANDARD_PATTERN_2].
+Avoid: [PROHIBITED_INVENTION_1]; [PROHIBITED_INVENTION_2].
+Tone: [REGISTER — e.g., management-level / contractual / technical-factual].
+[PRODUCT_TYPE]-specific: [ANY_PRODUCT_SPECIFIC_GUIDANCE].

@@ -1,0 +1,4 @@
+Structure: Scope statement (what remote support covers), working hours/SLA, NDA requirement sentence, connectivity responsibility clause (buyer scope), exclusion of on-site travel from remote support.
+Avoid: Committing to specific response times unless confirmed. No SLA guarantees.
+Tone: Contractually precise; state obligations clearly for both parties.
+Level 2-specific: Buyer establishes and manages connectivity. All remote sessions require valid NDA. Seller does not provide VPN infrastructure.

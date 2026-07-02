@@ -1,0 +1,29 @@
+## Gantt Guidance (all values indicative only)
+
+Phases (OBSERVED, not commitments):
+- Phase 1 — Engineering Survey: Joint site study; gate: basic data collection complete
+- Phase 2 — Engineering Review Meeting: Scope alignment and kickoff
+- Phase 3 — Basic Engineering: System design document production; gate: BUYER design approval (M1)
+- Phase 4 — Detailed Design + Software Development: Duration [SW_DEV_DURATION] from M1; BUYER approval delay causes proportional delivery delay
+- Phase 5 — Pre-Commissioning: Internal testing and hardware readiness
+- Phase 6 — Commissioning and Launch: On-site deployment, integration, training; gate: crane availability + site readiness (M2)
+- Phase 7 — Handover: Documentation, Work Completion Certificate (M3), remote support start
+
+Scale examples (OBSERVED, not commitments — use indicative language):
+- Small Plate Mill scope (few integrations, limited yard): approximately 6–8 months from PO acceptance
+- Medium scope (full integration suite, standard yard): approximately 8–12 months from PO acceptance
+- Large scope (multiple yards, complex integrations): approximately 12–16 months from PO acceptance
+
+Shutdown Gantt:
+- PMYMS software deployment itself does not require a full plant shutdown.
+- Commissioning activities involving crane integration (sensor installation, testing) require crane availability and may require brief maintenance windows.
+- Shutdown duration and timing determined by crane availability agreed between BUYER and SELLER during engineering.
+- If no production shutdown is confirmed, state that commissioning is planned during normal operations with crane availability windows agreed by BUYER.
+- Shutdown Gantt content (if applicable): installation of crane-side sensors and wireless APs (BUYER execution), gateway installation (joint), integration testing windows, software go-live.
+
+Draw.io Gantt format: week-based JSON tasks with fields — task (task name), phase (phase label), start_week (integer, week 1 = PO acceptance date), duration_weeks (integer), milestone (boolean), dependencies (array of predecessor task indices). Backend converts to mxGraph XML.
+
+Mandatory indicative language: "The above schedule is indicative for reference only. Final schedule to be mutually agreed upon at project kickoff. Delays in [M1 — design document approval] or [M2 — site readiness] by BUYER will result in proportional delivery delays."
+
+
+---

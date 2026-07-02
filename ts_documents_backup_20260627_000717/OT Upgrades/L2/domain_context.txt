@@ -1,0 +1,7 @@
+Level 2 — Production Management System (L2 PMS) — is the software layer between plant floor automation (Level 1 PLCs/sensors) and enterprise systems (Level 3 MES/ERP). Collects real-time production data, tracks material flows, enforces production orders, and provides supervisory visibility. Sits strictly between L1 (field/control) and L3 (enterprise). NOT a SCADA replacement, DCS, or ERP extension.
+
+Core capabilities (all L2 deployments): real-time material tracking and genealogy; production order management and scheduling integration; quality data collection and SPC monitoring; OEE/KPI calculation and dashboards; shift reporting and production log generation; interface to weighbridges, billet trackers, and coil/slab tracking; alarm management and event logging; historian integration for process data.
+
+Business drivers: eliminate manual production logging, improve material traceability (heat/coil/plate genealogy), enable real-time OEE visibility, reduce reconciliation effort between L1 data and L3 ERP, create audit trail for quality certification.
+
+Plant environment: integrated steel/metals/paper manufacturing plant with existing L1 PLCs (Siemens S7, AB, GE), HMIs, and weighbridges. OT LAN (L1/L2 network) separated from IT. L2 connects upstream to L1 via OPC/PLC tags and downstream to L3 ERP via database replication or web services.

@@ -22,6 +22,8 @@ interface SectionSidebarProps {
   isResizing?: boolean;
   onResizeStart?: (event: React.PointerEvent<HTMLDivElement>) => void;
   onResizeStep?: (delta: number) => void;
+  isCollapsed?: boolean;
+  onToggleCollapsed?: () => void;
 }
 
 interface SectionInfo {
@@ -114,6 +116,8 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
   isResizing = false,
   onResizeStart,
   onResizeStep,
+  isCollapsed = false,
+  onToggleCollapsed,
 }) => {
   const sectionCompletion = useProjectStore((state) => state.sectionCompletion);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -150,9 +154,17 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
     }
   ).length;
 
-  // Always use 27 as the total completable sections (predefined only)
-  const totalCompletable = 27;
-  const completionPercentage = Math.round((completedCount / totalCompletable) * 100);
+  // Compute total completable sections:
+  // - If the project includes custom sections, keep the canonical 27 total
+  // - Otherwise calculate total as Object.keys(sectionContents).length - 4 (exclude auto-complete)
+  const totalKeys = sectionContents ? Object.keys(sectionContents).length : 0;
+  const hasCustomSections = sectionContents
+    ? Object.keys(sectionContents).some((k) => isCustomSectionKey(k))
+    : false;
+
+  const totalCompletable = hasCustomSections ? 27 : Math.max(0, totalKeys - 4);
+
+  const completionPercentage = totalCompletable === 0 ? 0 : Math.round((completedCount / totalCompletable) * 100);
 
   const getSectionStatus = (sectionKey: string): 'complete' | 'visited' | 'not_started' => {
     if (sectionCompletion[sectionKey] === true) {
@@ -213,6 +225,48 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
       onResizeStep(16);
     }
   };
+
+  if (isCollapsed) {
+    return (
+      <aside
+        style={{
+          width,
+          position: 'fixed',
+          left: 0,
+          top: '56px',
+          bottom: 0,
+          backgroundColor: '#FFFFFF',
+          borderRight: '1px solid #E5E7EB',
+          display: 'flex',
+          alignItems: 'center',
+          flexDirection: 'column',
+          paddingTop: '12px',
+          overflow: 'hidden',
+        }}
+      >
+        <button
+          type="button"
+          onClick={onToggleCollapsed}
+          title="Open left sidebar"
+          aria-label="Open left sidebar"
+          style={{
+            width: '32px',
+            height: '32px',
+            border: '1px solid #D1D5DB',
+            borderRadius: '4px',
+            backgroundColor: '#FFFFFF',
+            color: '#1F2937',
+            cursor: 'pointer',
+            fontSize: '18px',
+            fontWeight: 700,
+            lineHeight: 1,
+          }}
+        >
+          &gt;
+        </button>
+      </aside>
+    );
+  }
 
   return (
     <aside
@@ -276,13 +330,44 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
       >
         <div
           style={{
-            fontSize: '14px',
-            fontWeight: 600,
-            color: '#1A1A2E',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
             marginBottom: '8px',
           }}
         >
-          {completedCount} / {totalCompletable} sections complete
+          <div
+            data-testid="sections-complete"
+            style={{
+              fontSize: '14px',
+              fontWeight: 600,
+              color: '#1A1A2E',
+            }}
+          >
+            {`${completedCount} / ${totalCompletable} sections complete`}
+          </div>
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            title="Collapse left sidebar"
+            aria-label="Collapse left sidebar"
+            style={{
+              width: '28px',
+              height: '28px',
+              border: '1px solid #D1D5DB',
+              borderRadius: '4px',
+              backgroundColor: '#FFFFFF',
+              color: '#1F2937',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 700,
+              lineHeight: 1,
+              flexShrink: 0,
+            }}
+          >
+            &lt;
+          </button>
         </div>
         <div
           style={{
@@ -330,6 +415,8 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
               {visibleSections.map((section) => {
                 const isActive = activeSectionKey === section.key;
                 const status = getSectionStatus(section.key);
+                const lockedSections = ['binding_conditions', 'cybersecurity', 'disclaimer', 'scope_definitions'];
+                const isLocked = lockedSections.includes(section.key);
 
                 return (
                   <button
@@ -378,7 +465,11 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
                         {section.label}
                       </span>
                     </div>
-                    <CompletionBadge status={status} />
+                    {isLocked ? (
+                      <span style={{ fontSize: '16px', display: 'inline-block' }} title="locked">🔒</span>
+                    ) : (
+                      <CompletionBadge status={status} />
+                    )}
                   </button>
                 );
               })}

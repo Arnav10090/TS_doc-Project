@@ -1,0 +1,12 @@
+Gantt Phases (all durations indicative only — not commitments):
+Order Acceptance (M0) → System Design (M1: design document approval) → Hardware Engineering / Software Design (parallel) → Software Development — Programming and Testing (M2) → Shop Test/FAT (M3: sign-off) → Software Shipping → Commissioning (M4) → Work Completion (M5).
+
+Scale examples (observed, not defaults): single-line, no L3 integration tends to run shorter; multi-line with L3 integration and HA tends to run longer. Do not promote any specific week/month count as standard.
+
+Draw.io format: week-based JSON with fields: task name, phase, start_week (integer, week 1 = PO acceptance), duration_weeks (integer), milestone (bool), dependencies (array of predecessor indices). Backend converts to mxGraph XML.
+
+Critical Path: design document approval (M1) and timely delivery of buyer-side interface data (recipe tables, L1/L3 schema) are buyer-gated milestones. Buyer prerequisite delays cause proportional delivery delays — state this explicitly.
+
+Shutdown Gantt: applicable when commissioning cutover requires a production shutdown window. Structure as Before-MSD (preparation, deployment) / Main Shutdown (communication tests with L1 and L3, reporting/alert setup, backup) / After-MSD (go-live, overall test, monitoring, commissioning report), with day offsets relative to shutdown start, not calendar dates. If no shutdown required, state explicitly in one sentence.
+
+Mandatory language: All durations are indicative. Final schedule agreed at PO acceptance. Buyer prerequisite delays (recipe data, L1/L3 schema, design approval, site readiness) will proportionally extend delivery.

@@ -1,0 +1,7 @@
+Phase structure: M1 Engineering (~4w) → M2 Hardware Delivery (~8-12w) → M3 FAT (~2w) → M4 Installation (~6w) → M5 Handover (~2w). Total indicative: ~22-26w from PO.
+
+Critical path: Identification of all field meter communication parameters gates M4 commissioning. Server hardware delivery gates M3 FAT and M4 installation.
+
+Shutdown Gantt: NOT REQUIRED. Connecting communication cables to existing field meters and gateways can usually be performed while the process is running, as long as it does not disrupt the primary control loop.
+
+Draw.io format: week-based GanttTask JSON — fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies[].

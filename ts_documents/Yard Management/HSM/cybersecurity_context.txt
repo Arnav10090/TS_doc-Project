@@ -1,0 +1,13 @@
+## Cybersecurity
+BUYER is solely responsible for all cybersecurity domains of the deployed system and plant:
+- Cybersecurity, Information Security, Hardware Security, Personal Data Security
+- Overall Data Security, Network Security, Equipment Security
+- Firewall configuration and maintenance
+- Preventing unauthorized access to existing plant systems
+- Maintaining confidentiality and proper usage of information in the application
+
+SELLER's obligations are limited to: recommending prompt implementation of security updates and patching for CYMS/SYMS components within SELLER scope; delivering antivirus at delivery; recommending use of supported software versions.
+
+SELLER is not liable for any direct, indirect, incidental, consequential, or special damages from cybersecurity incidents, data breaches, unauthorized access, or any security-related events.
+
+Do not generate any text assigning cybersecurity responsibility to SELLER beyond recommending updates. Do not generate SELLER liability language for security events.

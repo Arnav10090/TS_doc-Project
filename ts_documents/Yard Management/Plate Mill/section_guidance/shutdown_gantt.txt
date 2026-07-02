@@ -1,0 +1,5 @@
+Role: Image-backed shutdown activity schedule for commissioning activities requiring crane or production downtime.
+Required: Whether a production shutdown is required (from project metadata); if yes, which cranes and duration; shutdown timing constraints from BUYER.
+Infer: PMYMS software deployment does not require a full plant shutdown. Commissioning activities involving crane-side sensor installation and integration testing require crane availability windows agreed by BUYER. If no formal shutdown is confirmed, state that commissioning activities are planned during normal plant operations with crane availability windows to be agreed between BUYER and SELLER during detailed engineering.
+Never invent: Shutdown requirement if not confirmed in project metadata; specific shutdown duration without BUYER agreement.
+Structure: If no shutdown confirmed: one-sentence statement confirming non-intrusive deployment with crane availability windows to be agreed. If shutdown confirmed: week-based GanttTask JSON for shutdown-window activities only (crane sensor installation, gateway commissioning, integration testing, go-live) — same format as overall_gantt.

@@ -1,0 +1,54 @@
+## Diagram Guidance (semantic only — no mxGraph XML)
+Architecture layers (top to bottom):
+- Client Access Layer: operator/supervisor workstations with browser-based access; multiple client PCs at yard and control room locations
+- Application Server Layer: CYMS and SYMS application servers (online + backup); hosts web application, API engine, database, and report engine; containerized deployment
+- Integration Layer: API/interface connections to HSM L1, Mill L2/L3, Caster L1/L2, Slab Transfer Car, Pellet Conveyor L1/L2; crane data feed
+- Crane Subsystem Layer (BUYER scope): EOT cranes and Semi-Gantry cranes with position sensors, pick/drop sensors, onboard controllers, and WAPs
+- Physical Yard Layer: Coil Yard bays and Slab Yard bays as configurable grid
+
+Diagram conventions:
+- Clearly mark BUYER-scope vs. SELLER-scope components (dashed boundary or legend)
+- Show system boundary between CYMS/SYMS application and external systems
+- Mark network connectivity (Wi-Fi or wired — TBD)
+- Show MES/ERP as "Future Scope" if depicted
+- No IP addresses, VLANs, or port numbers — finalized during engineering
+
+## Gantt Guidance (all values indicative only)
+Every Gantt output must carry: "INDICATIVE FOR REFERENCE ONLY"
+Every Shutdown Gantt must carry: "The above shutdown schedule provided is for reference only. The final shutdown schedule will be determined through discussion and mutual agreement between the BUYER & SELLER."
+
+Overall Project Gantt:
+Total OBSERVED duration: [OVERALL_PROJECT_MONTHS] months from formal order acceptance (OBSERVED: ~16 months ≈ ~69 weeks).
+Draw.io format: week-based JSON tasks — fields: task (name), phase (category), start_week (integer, week 1 = PO acceptance), duration_weeks (integer), milestone (bool), dependencies (array of predecessor task indices).
+
+OBSERVED week-scale pattern (all indicative):
+- Formal Order Acceptance: start_week 1, milestone=true
+- System Design: start_week 1, duration_weeks ~12
+- Hardware Engineering: start_week 5, duration_weeks ~12
+- Software Design: start_week 9, duration_weeks ~12
+- Software Development: start_week 17, duration_weeks ~32
+- Shop Test & QMS Testing: start_week 33, duration_weeks ~20
+- Hardware & Software Shipping: start_week 45, duration_weeks ~12
+- System Readiness at Site: start_week 53, duration_weeks ~8
+- Commissioning: start_week 57, duration_weeks ~8
+
+Required Gantt note (always include): "After Approval on System Design Document Seller will take [SW_DEV_MONTHS_AFTER_SDD] Months for Software development & Testing. In the event of a delay in System design document approvals from the Customer, it will lead to an overall delay in the delivery."
+
+Shutdown Gantt:
+Shutdown IS typically required for HSM CYMS/SYMS commissioning (crane integration requires a live test window).
+OBSERVED shutdown window: approximately 8 days total (≈1.5 weeks in draw.io week-based format).
+OBSERVED activities and day sequence (relative to MSD, day 1 = first shutdown day):
+- Shutdown Preparation Check: before MSD, days -2 to -1
+- Latest System Save Check: before MSD, day -1
+- Network Checking: MSD day 1
+- Interface Checking: MSD days 1-2
+- IO Check: MSD days 2-3
+- New Crane Connection Test: MSD days 3-4
+- Manual/Automatic Test: MSD days 4-5
+- Overall Test: MSD days 5-6
+- Monitoring: MSD day 6 through after-MSD
+
+For draw.io week-based JSON for shutdown, express days as fractional weeks (e.g., 1 day ≈ 0.15 weeks) or use day-granularity integer fields with a note that the chart represents days not weeks.
+
+
+---

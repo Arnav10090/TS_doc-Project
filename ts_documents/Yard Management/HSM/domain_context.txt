@@ -1,0 +1,181 @@
+## What HSM Is
+HSM CYMS/SYMS is a web-based digital yard management solution for Hot Strip Mill (HSM) steel plants. It occupies the Manufacturing Execution / Digital Layer: above Level-1 (L1) real-time control and below MES/ERP enterprise systems. CYMS (Coil Yard Management System) tracks hot-rolled coils from production receipt through storage, inventory management, retrieval, and dispatch. SYMS (Slab Yard Management System) tracks slabs from caster/transfer receipt through storage, scheduling, retrieval, and furnace charging. The system provides real-time tracking, digital yard visualization, intelligent storage optimization, crane coordination, event logging, and operational analytics through a centralized web application fully customized per site.
+
+NOT a Level-1 (L1) real-time control system.
+NOT a Level-2 (L2) process automation or setpoint system.
+NOT a SCADA system.
+NOT a MES/ERP system.
+NOT a Crane Control System (crane hardware remains exclusively in Buyer scope).
+NOT a Weighing Management System.
+NOT responsible for production performance, yield, or quality guarantees.
+NOT a firewall or network security management system.
+
+## Core Capabilities (CORE)
+Every HSM CYMS/SYMS deployment includes:
+- Live Tracking: real-time coil and slab location tracking from crane position sensor data (X, Y, Z axis) and pick/drop events
+- Yard Visualization: digital yard map in 2D grid view (zones, rows, columns) with slot occupancy and material status
+- 3D Visualization: three-dimensional yard view for enhanced spatial situational awareness
+- Intelligent Storage and Retrieval: software-guided placement and retrieval logic in both manual and automatic (auto) crane modes
+- Event Logging: timestamped audit trail of crane movement, pick, and drop events with override history
+- Ease of Traceability: trace any coil or slab by ID to current and historical yard positions
+- Search & Retrieval: operator search by coil/slab ID, grade, heat number, or other material attributes
+- Manual Corrections: operator capability to correct yard position records where sensor data is inconsistent
+- Reports: standard and configurable operational reports on inventory, crane activity, yard utilization, and material status
+- Yard Configuration: configurable grid layout (bays, zones, rows, columns) modifiable in software without code changes
+- Instruction Generation & Management: generation and management of crane work instructions to coordinate material movement sequences
+- Screen & Dashboard Modification: configurable operator dashboards and screens adaptable to site requirements
+- Smart Inventory Management: centralized digital inventory with material status classification (e.g., Produced, Quality Hold, Ready to Dispatch, In-Dispatch) visible to operators and supervisors
+- API Support: application programming interfaces for integration with L1, L2, and future external systems
+
+## Optional/Value-Added Capabilities (COMMON / OPTIONAL)
+Must be confirmed in project scope before including in any TS section:
+
+- Software-Based Anti-Collision Alarms (COMMON): zone-based software logic generating alerts when crane movements risk collision; entirely on application side with no hardware interlock
+- Zone-Based Crane Movement Control (COMMON): software-side zone restriction and movement coordination for multiple cranes in shared airspace
+- Crane Performance KPI Dashboard (COMMON): real-time and historical KPIs — yard turnaround time, crane utilization, idle rate tracking, benchmark comparison
+- Crane Work Order Management (COMMON): optimized sequencing and assignment of crane movement instructions for energy and time savings
+- Optimized Stacking Algorithm (OPTIONAL): algorithm for optimized coil and slab stacking considering safety, weight, and retrieval efficiency
+- Email Reporting (OPTIONAL, PoC): automated scheduled dispatch of operational reports and log data to specified recipients; contents and frequency agreed during engineering
+- SMS Alerts (OPTIONAL, PoC): real-time SMS notifications to plant executives on significant yard events; event triggers agreed during engineering; SIM card is Buyer scope
+- AutoML Platform (OPTIONAL, PoC): ML automation platform for data preprocessing, feature engineering, model selection, evaluation, hyperparameter tuning, and predictive/prescriptive insights; time-limited demonstration only
+
+## Business Drivers
+- Inventory accuracy: eliminate manual tracking errors, duplicate records, and material misplacement in large multi-bay yards
+- Operational visibility: real-time digital view of yard status for managers, supervisors, and operators
+- Retrieval efficiency: reduce time and crane cycles to locate and retrieve specific coils/slabs for dispatch or furnace charging
+- Crane utilization: improve productivity by eliminating search cycles and providing optimized movement instructions
+- Material traceability: complete digital audit trail from production to dispatch for quality, order tracking, and compliance
+- Safety: reduce crane collision risk and improve zone management in congested yards with manual and automated cranes
+- Digital transformation enablement: foundational yard data infrastructure for future AI analytics, centralized plant dashboards, and MES/ERP integration
+- Reporting automation: replace manual reporting with digital automated reports for management decision-making
+
+## Operational Environment
+- Plant type: Hot Strip Mill (HSM) in a steel manufacturing facility with continuous casting (CCM) upstream
+- Yard types: Coil Yard (hot-rolled coils) and Slab Yard (continuous caster slabs)
+- Material handling: EOT (Electric Overhead Travelling) cranes, Semi-Gantry cranes, forklifts, Slab Transfer Cars — configuration is project-specific
+- Crane modes: manual operator-driven and automatic, coexisting simultaneously
+- Adjacent systems: HSM L1, L2, Mill L2/L3, Caster L1/L2, Slab Transfer Car systems, Pellet Conveyor L1/L2; scope of integration is project-specific
+- Operational tempo: 24×7 plant operations; system must handle real-time updates from multiple simultaneous crane events
+- Network: industrial plant network; connectivity between crane-mounted edge devices and server over Wi-Fi or wired network — confirmed during detailed engineering
+- Physical footprint: multi-bay yard; bay names, row/column counts, and dimensions are Buyer-supplied project data
+
+# DOMAIN GLOSSARY
+
+CYMS (Coil Yard Management System)
+Software system for real-time tracking, visualization, inventory management, and retrieval coordination of hot-rolled coils in a coil yard. One of the two primary modules of HSM CYMS/SYMS.
+Usage: Use when referring specifically to the coil yard functions; use "CYMS & SYMS" when referring to both systems collectively.
+
+SYMS (Slab Yard Management System)
+Software system for real-time tracking, visualization, inventory management, and retrieval coordination of slabs in a slab yard. The second primary module.
+Usage: Use when referring specifically to slab yard functions.
+
+HSM (Hot Strip Mill)
+Steel processing mill that rolls slabs into hot-rolled coils through roughing and finishing mill stands. The plant context within which CYMS/SYMS deploys. Identifies the TS type and upstream production process.
+
+EOT Crane (Electric Overhead Travelling Crane)
+Primary material handling equipment. Travels on elevated rails to pick and place coils or slabs. Position sensors (X, Y, Z) on EOT cranes feed real-time location data to CYMS/SYMS.
+
+Semi-Gantry Crane
+Crane with one rail at elevated level and one at ground level; typically used in slab yards. Operates alongside EOT cranes. Distinct from a full gantry crane.
+
+Coil
+Hot-rolled steel strip wound into a cylindrical roll after exiting the hot strip mill. Primary material object tracked by CYMS. Attributes: Coil ID, weight, outer diameter, inner diameter, width, strip thickness, grade, temperature (at entry), status.
+
+Slab
+Rectangular cast steel product from a continuous caster. Input material to the HSM furnace and rolling mill. Primary material object tracked by SYMS. Attributes: Slab ID, weight, length, width, thickness, grade, heat number, status.
+
+Bay
+A defined physical section of the yard, typically bounded by structural columns. Yards are organized into multiple named bays. Each bay may have its own dedicated crane(s). Bay names are Buyer-supplied project data.
+
+Slot / Position
+A defined storage location in the yard grid, identified by Bay, Zone, Row, Column, and Layer coordinates. Each slot has an occupancy state (empty or occupied with material ID and attributes).
+
+Pick/Drop Event
+A discrete operational event detected by crane-mounted load or magnet sensors. Pick = crane lifted material. Drop = crane placed material at a location. Each event triggers a CYMS/SYMS slot inventory update.
+
+Digital Yard Map
+Software-based representation of the physical yard grid showing all slot positions and current occupancy status in real time. Displayed in 2D and 3D visualization modes. Fully configurable per site layout.
+
+Pile (Slab Yard)
+A stack of slabs at a single ground-level storage location. Multiple slabs are stacked in a pile up to a defined maximum per-pile count. Piles are organized into rows within bays.
+
+HI / Layer (Coil Yard)
+Height index — the vertical stacking level for coils in a bay. Project-specific maximum HI (number of stacking layers) determined by crane capacity and yard design. Not a fixed default value.
+
+L1 (Level-1 System)
+Real-time PLC/controller-based automation layer directly controlling mill equipment and cranes. CYMS/SYMS interfaces with L1 for coil tracking data and crane position feeds. L1 modifications for integration are Buyer scope.
+
+L2 (Level-2 System)
+Process optimization and setpoint management layer above L1. CYMS/SYMS may interface with L2 for material data. L2 modifications are Buyer scope.
+
+L3 / MES (Level-3 / Manufacturing Execution System)
+Manufacturing execution and production planning layer. MES/ERP integration with CYMS/SYMS is designated Future Scope in the base proposal unless confirmed by project metadata.
+
+CCM / Caster (Continuous Casting Machine)
+Upstream equipment that solidifies liquid steel into slabs. Caster L1 and L2 systems provide slab identity and tracking data to SYMS at point of production.
+
+Slab Transfer Car
+Equipment that transfers slabs between the caster area and the slab yard or between yard sections. Interfaces with SYMS for material tracking handoff. Buyer scope for hardware and interface modifications.
+
+Forklift
+Ground-level material handling equipment used in coil yards for smaller or lower-weight coil movement. Tracked by CYMS along with EOT cranes.
+
+Anti-Collision (Software-Based)
+Software alarm and zone management feature in CYMS/SYMS detecting potential crane collision situations and alerting operators. Does not physically interrupt crane movement (no hardware interlock). Distinct from crane-side hardware safety systems.
+
+Work Order (Crane Work Order)
+Digitally generated and managed instruction set assigned to a crane, specifying source and destination positions for a material movement operation. Generated by CYMS/SYMS for optimized crane logistics and energy savings.
+
+KPI (Key Performance Indicator)
+Quantitative operational metrics on the CYMS/SYMS dashboard. Examples: yard turnaround time, crane utilization rate, idle rate, on-time shipping rate, inventory accuracy, number of unpositioned coils/slabs.
+
+FAT (Factory Acceptance Test) / Shop Test
+Pre-shipment testing of the CYMS/SYMS system conducted at SELLER's facility to verify software functionality before site deployment. Mandatory gate before shipment.
+
+MSD (Main Shutdown Day)
+Designated plant shutdown day used as the reference anchor (day 0 / day 1) for the shutdown commissioning schedule. Shutdown Gantt activities are expressed in days relative to MSD.
+
+SDD (System Design Document)
+Design document prepared by SELLER during the design phase, submitted to BUYER for review and approval. SDD approval is the gating event for commencement of software development. Delays in approval cause proportional delivery delays.
+
+WCC (Work Completion Certificate)
+Formal certificate issued by BUYER to SELLER upon satisfactory completion of the project scope. Triggers contractual completion and initiates the remote support period. Deemed issued by BUYER if not formally issued within [WCC_DAYS] days of criteria fulfillment.
+
+NDA (Non-Disclosure Agreement)
+Confidentiality agreement signed between BUYER and SELLER before commencement of remote support activities.
+
+PoC (Proof of Concept)
+Complimentary time-limited demonstration of advanced digital solutions (AutoML platform, email reporting, SMS alerts) conducted on the CYMS/SYMS server. PoC solutions are not part of the contracted supply; continued use requires a separate commercial agreement. SELLER not bound by performance guaranty or remote support for PoC solutions.
+
+AutoML Platform
+Machine learning automation platform offered as a PoC item. Capabilities: automated data preprocessing, feature engineering, model selection, model evaluation, hyperparameter tuning, predictive and prescriptive analytics. Demonstration-only deployment; no production SLA.
+
+Email Reporting (PoC)
+Automated scheduled dispatch of operational reports (shipping reports, log data, etc.) to specified recipients at predefined frequency. Contents and schedule finalized during engineering. Network configuration for email delivery is Buyer responsibility.
+
+SMS Alerts (PoC)
+Real-time SMS notifications to plant executives about significant yard events. Event triggers and content agreed during engineering. SIM card and SMS gateway are Buyer scope.
+
+CADS (Composite Automation & Digital Solutions)
+SELLER product portfolio category encompassing automation and digital transformation offerings, within which CYMS/SYMS and associated PoC solutions reside.
+
+DX (Digital Transformation)
+Broader business program within which CYMS/SYMS serves as a foundational digital enabler; includes AI analytics, centralized plant dashboards, and IT/business process maturity programs.
+
+Docker
+Containerization platform used for deployment of the CYMS/SYMS application stack. (OBSERVED technology — not a requirement.)
+
+Django
+Python-based web application framework used for the CYMS/SYMS backend. (OBSERVED technology — not a requirement.)
+
+Angular
+TypeScript-based frontend web framework for the CYMS/SYMS web application UI, accessible through standard web browsers. (OBSERVED technology — not a requirement.)
+
+KVM Extender
+Hardware device enabling remote console access to server systems over a cabled link. Allows operator/supervisor access from distributed workstations to application servers. (OBSERVED hardware — quantities per project.)
+
+BD / BE / DD / SU / ER / COM
+Scope responsibility codes: BD = Basic Data, BE = Basic Engineering, DD = Detail Design, SU = Supply or Service, ER = Erection, COM = Commissioning. X/Y notation = primary by X with support from Y.
+
+
+---

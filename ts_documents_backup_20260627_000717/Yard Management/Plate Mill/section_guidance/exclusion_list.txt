@@ -1,0 +1,6 @@
+[DRAFT — ADAPT FOR YARD MANAGEMENT/PLATE MILL]
+Structure: Bulleted exclusion list. Standard UGS exclusions: interfaces with systems not named in this TS; OS patches and antivirus updates after delivery; UGS platform source code; modifications to existing L1, L2, MES, ERP, automation systems; civil and erection works; firewalls and networking infrastructure (buyer scope); PDA software and hardware; mechanical equipment; performance guarantees on productivity, quality, or yield; supervision of buyer personnel, contractors, or agents.
+Avoid: Inventing project-specific exclusions not in standard list unless in metadata. Do not word exclusions ambiguously — scope disputes arise from unclear language.
+Tone: Legal-exclusion list style. Each item clear and unambiguous.
+--- Template structure reminder ---
+Bulleted list. One to two sentences per item. Standard exclusions for this product type. Do not add exclusions not grounded in standard scope patterns.

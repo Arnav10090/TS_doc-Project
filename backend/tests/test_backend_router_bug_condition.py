@@ -16,11 +16,13 @@ the completion percentage should be calculated using the actual section count:
 Expected to FAIL on unfixed code (line 80 has completion_percentage = int((completed_count / 27) * 100))
 """
 import pytest
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, settings, strategies as st, HealthCheck
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.sections.models import SectionData
+from app.projects.models import Project
+from sqlalchemy import delete
 
 
 def sections_with_deletions_strategy():
@@ -65,7 +67,7 @@ def sections_with_deletions_strategy():
 
 
 @given(test_data=sections_with_deletions_strategy())
-@settings(max_examples=20, deadline=10000)
+@settings(max_examples=20, deadline=10000, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @pytest.mark.asyncio
 async def test_backend_completion_percentage_bug_condition(
     client: AsyncClient, 
@@ -95,6 +97,11 @@ async def test_backend_completion_percentage_bug_condition(
     if len(sections_dict) >= 27:
         return
     
+    # Clear any existing projects/sections to make each Hypothesis example deterministic
+    await db_session.execute(delete(SectionData))
+    await db_session.execute(delete(Project))
+    await db_session.commit()
+
     # Create a test project
     project = await create_test_project()
     
@@ -121,6 +128,9 @@ async def test_backend_completion_percentage_bug_condition(
             else:
                 content = {"substantial_content": f"Complete content for {section_key}"}
         
+        # Update local sections_dict to reflect the actual content written to the DB
+        sections_dict[section_key] = content
+
         section = SectionData(
             project_id=project.id,
             section_key=section_key,
@@ -135,6 +145,7 @@ async def test_backend_completion_percentage_bug_condition(
     assert response.status_code == 200
     
     projects = response.json()
+    print("DEBUG: projects response ->", projects)
     assert len(projects) == 1
     project_summary = projects[0]
     
@@ -155,6 +166,8 @@ async def test_backend_completion_percentage_bug_condition(
     
     # Get actual completion percentage from API response
     actual_completion_percentage = project_summary["completion_percentage"]
+    print("DEBUG: expected_completed_count=", expected_completed_count, "actual_total_sections=", actual_total_sections)
+    print("DEBUG: expected_completion_percentage=", expected_completion_percentage, "actual_completion_percentage=", actual_completion_percentage)
     
     # This assertion should FAIL on unfixed code because the backend uses hardcoded 27
     # instead of actual_total_sections in the calculation

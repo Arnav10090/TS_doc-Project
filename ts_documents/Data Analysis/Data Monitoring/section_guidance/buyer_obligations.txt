@@ -1,0 +1,6 @@
+[DRAFT — ADAPT FOR DATA ANALYSIS/DATA MONITORING]
+Structure: Bulleted list of buyer obligations in imperative tone. Standard UGS obligations: provide complete tag lists before design freeze (M1), configure L1 PDA servers for required interface protocol, provide site access and safety permits, arrange buyer-scope hardware on schedule, provide network connectivity and firewall rules, provide SMTP credentials if email alerting in scope, maintain VPN link for remote support, make OEM engineers available during commissioning, respond to technical queries within agreed SLA.
+Avoid: Using passive or ambiguous language. Each obligation must be a clear, actionable imperative.
+Tone: Contractually precise. Phase-gating implications stated where relevant (M1, M2, M4 gates).
+--- Template structure reminder ---
+Bulleted imperative list ('Provide...', 'Arrange...', 'Ensure...', 'Configure...'). Each item specific enough to be referenced contractually. Include all standard prerequisites for this product type.

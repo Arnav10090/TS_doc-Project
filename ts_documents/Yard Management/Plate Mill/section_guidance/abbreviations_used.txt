@@ -1,0 +1,5 @@
+Role: Provides standard expansions for abbreviations used in the Plate Mill TS document.
+Required: Project-specific abbreviations from metadata.
+Infer: Standard IT/OT abbreviations (OPC UA, OPC DA, SCADA, PLC, HMI, PDA, FAT, SAT, RBAC, SQL, VPN, NDA, TS, PO, PM) + Plate Mill specific (PMYMS, HTC, FN, Q, TMCP, EOT, LT, CT, L1, L2, L3, MES, ERP, SAP, WCC, BD, BE, DD, SU, ER, COM).
+Never invent: Expansions that conflict with the domain glossary or standard industry usage.
+Structure: Two-column table (Abbreviation | Expansion). List standard abbreviations first, then project-specific ones. Note: AI button is typically suppressed for this section; generate only if explicitly requested.

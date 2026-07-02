@@ -1,0 +1,9 @@
+Architecture: Centralized management server with distributed sensors or collectors. Sensors are deployed at strategic points in the network (usually core or distribution switches) to monitor traffic passively. Optional active scanning modules for deep-dive discovery.
+
+Technology: Asset Discovery Platform (Claroty, Dragos, Nozomi Networks, or Tenable OT); physical or virtual sensors connecting to SPAN/Mirror ports; central management console (on-premise VM or appliance).
+
+Data acquisition: Passive Network Monitoring via SPAN/Mirror ports (analyzing industrial protocols like Modbus, DNP3, S7); active OT-safe querying (WMI, SNMP, ICMP) limited to approved zones/devices.
+
+Storage: Centralized database (built-in to platform appliance) for asset metadata, communications baselines, and historical topologies. Configurable data retention for logs and baselines.
+
+Integration pattern: Integration with existing IT ITSM/CMDB tools (e.g., ServiceNow) via REST APIs. SIEM integration for passing asset-related security events (Syslog/CEF). Diagram: Central server with distributed sensors at OT network choke points, SPAN port connections.

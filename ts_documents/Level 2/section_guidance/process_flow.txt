@@ -1,0 +1,4 @@
+Structure: Short descriptive paragraph explaining production-unit flow path (L3/manual PDI → L2 setup/adaptive → L1 processing → L2 PDO → L3), followed by annotation notes for the accompanying diagram.
+Avoid: Generating actual draw.io XML here. Do not list protocol names or downstream system names unless confirmed in metadata.
+Tone: Technical-descriptive. Diagram-text must align — describe what the diagram shows.
+Level 2-specific: Reference [PRODUCTION_LINE_NAME] and [PRODUCT_UNIT_TYPE] placeholders. Distinguish PDI/PDO production-order flow from bulk data-acquisition flow.

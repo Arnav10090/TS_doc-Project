@@ -1,0 +1,77 @@
+# ARCHITECTURE CONTEXT
+
+## Architecture Options
+### Option 1 — Aggregation Switch Architecture (OBSERVED)
+One aggregation network switch is deployed per process area (or per site when traffic density permits). All existing OT subnetwork switches in the area connect to the aggregation switch. A SPAN (port mirroring) port on the aggregation switch mirrors all OT traffic to a single IDS sensor. One IDS core appliance is deployed in the DMZ, receiving telemetry from IDS sensors across all process areas over a secure channel. This option minimizes sensor count and is preferred when a single aggregation switch can capture all required traffic. Aggregation switches are typically Buyer-provided.
+
+### Option 2 — Per-Subnetwork Architecture (OBSERVED)
+IDS sensors connect directly to individual managed network switches within each OT subnetwork on the shop floor. A SPAN port on each subnetwork switch mirrors traffic to the local IDS sensor. IDS core appliances are deployed per process area or per site depending on sensor count and connectivity constraints. An Enterprise Manager (EM) in the DMZ provides centralized management and unified visibility across all IDS core appliances and sensors. This option is used when aggregation is not viable due to network ring topologies, heterogeneous switch configurations, or bandwidth constraints. In ring topologies with heterogeneous switches, individual switches may require connection to dedicated sensors, with USB-to-NIC adapters where sensor port density requires it (vendor-dependent).
+
+### SRA Deployment (Standard — applies to both options)
+A Secure Remote Access appliance and one or more access points are deployed in the DMZ. External vendors and OEM service personnel connect through an internet gateway (Buyer-managed) to the SRA appliance. The SRA enforces MFA, RBAC, session approval workflow, and session recording before allowing access to any OT host. No vendor has direct OT network exposure.
+
+### Logical Network Layer Alignment (Purdue Model)
+- Field / L0-L1: PLCs, sensors, actuators, field control devices.
+- Control / L2: DCS, SCADA servers, HMIs, engineering stations, L2 LAN switches.
+- Supervision / L3 (if present): Historians, production databases, site-level management systems.
+- DMZ (Cybersecurity Tool Layer): IDS core appliances, SRA appliance, Enterprise Manager (Option 2). Isolated from L2 by OT firewall (Buyer scope).
+- IT / L4+: Corporate IT, ERP, MES — outside OTCSS scope unless SRA connectivity is explicitly included.
+
+## Protocols (OBSERVED / OPTIONAL)
+Traffic monitoring is protocol-aware but entirely passive. The IDS tools must support ICS-specific protocol dissection. Observed protocols in industrial OT environments (presence is project-specific — do NOT assume any protocol):
+- Modbus TCP/RTU (common in PLC environments)
+- Profinet (Siemens OT environments)
+- EtherNet/IP (Rockwell Automation environments)
+- OPC UA / OPC DA (SCADA, historian, and supervisory integration)
+- DNP3 (utility and power distribution environments)
+- IEC 60870-5-101/104 (utility environments)
+- S7comm (Siemens S7 PLC environments)
+
+Protocol coverage is determined during Stage 1 asset discovery. Do not assume any specific protocol without project confirmation.
+
+Remote access uses encrypted tunneling through the SRA appliance. SRA vendor and tunneling protocol are project-dependent.
+
+## Data Acquisition
+OT cybersecurity data is acquired exclusively via passive, non-intrusive techniques:
+- Traffic monitoring: SPAN/TAP on OT switches mirrors traffic to IDS sensors without injecting any packets into the OT network.
+- Asset inventory: Derived entirely from passive traffic analysis. No active probes or scanning of OT endpoints is permitted at any time.
+- Vulnerability data: Inferred from asset fingerprinting (firmware version, model, manufacturer) identified through passive observation, then mapped against CVE databases and ICS-CERT advisories.
+- SRA session data: Captured by the SRA appliance — session start/end times, user identity, commands issued, and files transferred.
+- OT-specific event logs: IDS alerts, SRA access events, and asset change events aggregated into OT monitoring dashboards.
+
+Management of Change (MOC) approval is required for any configuration change, security control enablement, or system modification before implementation.
+
+## Data Storage
+- IDS alert, asset, and vulnerability data is stored on the IDS core appliance(s) and Enterprise Manager (if deployed) within the DMZ.
+- SRA session recordings and access audit logs are stored on the SRA appliance.
+- OT monitoring dashboards aggregate and visualize data from these tools.
+- Data retention, backup, and archiving policies are defined in the OT Cybersecurity Policy and SOP documentation delivered in Stage 5.
+- No centralized external data warehouse is supplied by Seller in the base scope.
+- Integration with a customer SOC or SIEM, if required in future, is handled as a separate engagement.
+
+## Integration Patterns
+1. IDS sensors to IDS core appliance: Encrypted, authenticated communication from deployed passive sensors to the core platform through the OT firewall (Buyer-configured rules required).
+2. IDS core to Enterprise Manager (Option 2 only): Centralized multi-core management and aggregated visibility from a single EM console.
+3. OT cybersecurity tools to OT monitoring dashboards: Log and alert data from IDS, SRA, and vulnerability management tools aggregated for unified OT-specific dashboard views.
+4. SRA appliance to external internet gateway: Buyer-managed internet/VPN link; Seller configures only the SRA appliance side.
+5. OT tools to customer SOC/SIEM (OPTIONAL — not in base scope): Log forwarding integration for external SOC consumption requires separate scope definition and commercial agreement.
+6. Vulnerability data to IT patching or ticketing workflows (OPTIONAL): Output of the vulnerability management tool can be consumed by Buyer's IT/OT maintenance teams; this integration is not in base OTCSS scope.
+
+## Technology Stack Patterns (OBSERVED)
+Technology choices are entirely project-dependent. The following patterns are OBSERVED from historical engagements and must not be treated as defaults:
+
+IDS, Asset Management, and Vulnerability Management: Purpose-built OT cybersecurity platforms. Observed vendors include Claroty (CTD sensor + core appliance + EMC), Tenable OT Security (configurable sensor + core platform + enterprise manager), Dragos, Armis, and Microsoft Defender for IoT. Vendor selection is based on architecture option, asset count, protocol support, and customer preference — confirmed at detailed engineering.
+
+Secure Remote Access: Dedicated OT-aware SRA platforms with purpose-built zero-trust architecture for industrial environments. Observed vendor: Claroty Secure Access. Vendor selection is project-dependent.
+
+Sensors: Hardware appliances (server-class) deployed per process area, available in small/medium/large variants sized by the asset count of the monitored subnetwork.
+
+Core Appliances: Server-class hardware deployed in the DMZ, sized by total monitored asset count and sensor quantity.
+
+Enterprise Manager: Central management appliance or VM for multi-core deployments (Option 2). Manages multiple IDS core appliances from a single console.
+
+Aggregation Network Switches: Standard managed Ethernet switches supporting SPAN configuration and sufficient free ports for sensor connections. Typically Buyer-provided; not Seller supply.
+
+Tool Licensing: Annual subscription model covering software licenses, firmware updates, and threat intelligence feeds. License tiers are asset-count based. Subscription period is [SUBSCRIPTION_PERIOD].
+
+Software specifications must never include specific version strings — write "current version at implementation start." Hardware specifications must never include specific RAM, storage, or CPU values — write "sized per asset count and deployment scope — confirmed at detailed engineering."

@@ -1,0 +1,4 @@
+Structure: Formal opening citing enquiry reference and date, client name and plant/facility name, named production line(s) and scope covered. One short paragraph.
+Avoid: Technical content, phase details, or value claims in this section.
+Tone: Formal, professional, third-party-audit-ready language. Use "Hitachi India" as seller name.
+Level 2-specific: Reference the specific production line(s) named in project metadata; do not generalize.

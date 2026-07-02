@@ -1,0 +1,4 @@
+Structure: Use only approved TS boilerplate clauses. Standard structure: scope limited to TS-defined content; services outside = buyer responsibility; no performance guarantees; conditions for site exit (idling, buyer non-compliance, force majeure, unmet prerequisites, non-conducive site circumstances); no liability for equipment damage unless stated; no responsibility for system modification unless stated; contract effective date = PO acceptance date.
+Avoid: Generating novel legal clauses not in approved template. Do not add jurisdiction-specific content without explicit metadata. No penalty or indemnity terms.
+Tone: Legal-boilerplate. Do not paraphrase or soften contractual language. Use exact approved phrasing.
+Level 2-specific: Binding conditions are standard across L2 PMS projects — do not project-customize unless metadata explicitly requires.

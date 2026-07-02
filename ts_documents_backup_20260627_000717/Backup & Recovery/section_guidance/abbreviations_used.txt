@@ -1,0 +1,7 @@
+[DRAFT — ADAPT FOR BACKUP & RECOVERY]
+Structure: Two-column table (Abbreviation | Expansion). List standard UGS abbreviations first, then project-specific ones from metadata.
+Standard set: UGS, HX, OPC UA, OPC DA, SCADA, PLC, HMI, PDA, MES, ERP, FAT, SAT, RBAC, SQL, VPN, NDA, TS, PO, PM.
+Avoid: Defining terms that are self-explanatory or not used in the document.
+Note: AI button is typically suppressed for this section; generate only if explicitly requested.
+--- Template structure reminder ---
+Format: Two-column table (Abbreviation | Meaning). Include: standard project abbreviations + product-specific terms. Do not invent abbreviations not used in the document.

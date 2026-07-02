@@ -1,0 +1,9 @@
+Architecture: Client-server or cloud-based architecture. A central analytics server (or cluster) handles data ingestion, model training, and inference. End-users access dashboards via a web browser.
+
+Technology: Python-based data science stack (Pandas, Scikit-learn, TensorFlow/PyTorch); Data ingestion tools (Apache Kafka, NiFi); Storage (PostgreSQL, MongoDB, or Data Lake); Dashboarding (Grafana, PowerBI, or custom web frontend); Operating System (Linux preferred for ML workloads, Windows supported).
+
+Data acquisition: Batch data extraction (CSV/SQL dumps) for initial model training. Streaming data connection (OPC UA, MQTT, REST APIs) for live inference.
+
+Storage: Time-series database for incoming live data buffering. Relational database for storing model metadata, predictions, and user configurations.
+
+Integration pattern: Connects to L2/L3 databases for historical training data. Connects to live data feeds for inference. Outputs predictions to a dashboard or writes back to an L3 database. Diagram: Data flow from source → ingestion → ML engine → visualization.

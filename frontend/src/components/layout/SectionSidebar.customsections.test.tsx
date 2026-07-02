@@ -191,18 +191,20 @@ describe('SectionSidebar - Custom Sections Integration', () => {
       executive_summary: { content: 'Summary' },
       features: { list: ['Feature 1'] },
       binding_conditions: { content: 'Binding' },
-      // Add 5 custom sections
-      'custom_section_1': { title: 'Custom 1', subsections: [], insertAfterKey: 'features' },
-      'custom_section_2': { title: 'Custom 2', subsections: [], insertAfterKey: 'features' },
-      'custom_section_3': { title: 'Custom 3', subsections: [], insertAfterKey: 'features' },
-      'custom_section_4': { title: 'Custom 4', subsections: [], insertAfterKey: 'features' },
-      'custom_section_5': { title: 'Custom 5', subsections: [], insertAfterKey: 'features' },
+      // Add 5 custom sections with realistic keys so they are detected as custom
+      'custom_section_1704067200000_11111111-1111-4111-8111-111111111111': { title: 'Custom 1', subsections: [], insertAfterKey: 'features' },
+      'custom_section_1704067200001_22222222-2222-4222-8222-222222222222': { title: 'Custom 2', subsections: [], insertAfterKey: 'features' },
+      'custom_section_1704067200002_33333333-3333-4333-8333-333333333333': { title: 'Custom 3', subsections: [], insertAfterKey: 'features' },
+      'custom_section_1704067200003_44444444-4444-4444-8444-444444444444': { title: 'Custom 4', subsections: [], insertAfterKey: 'features' },
+      'custom_section_1704067200004_55555555-5555-4555-8555-555555555555': { title: 'Custom 5', subsections: [], insertAfterKey: 'features' },
     };
 
     render(<SectionSidebar {...mockProps} sectionContents={sectionContents} />);
 
     // Verify completion count shows "2 / 27" (not affected by custom sections)
-    expect(screen.getByText(/2 \/ 27 sections complete/i)).toBeInTheDocument();
+    const match = /2 \/ 27 sections complete/i;
+    const progressEl = screen.getByTestId('sections-complete');
+    expect((progressEl.textContent || '').replace(/\s+/g, ' ').trim()).toMatch(match);
   });
 
   it('should not show completion badges for custom sections', () => {

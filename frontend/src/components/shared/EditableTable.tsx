@@ -1,4 +1,5 @@
 import React from 'react';
+import ExpandableTableFrame from './ExpandableTableFrame';
 
 interface Column {
   key: string;
@@ -15,6 +16,7 @@ interface EditableTableProps {
   onAddRow?: () => void;
   onDeleteRow?: (index: number) => void;
   lockedRows?: number[];
+  title?: string;
 }
 
 const EditableTable: React.FC<EditableTableProps> = ({
@@ -23,6 +25,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
   onChange,
   onAddRow,
   onDeleteRow,
+  title = 'Table',
 }) => {
   const handleCellChange = (rowIndex: number, columnKey: string, value: any) => {
     const updatedRows = [...rows];
@@ -33,123 +36,127 @@ const EditableTable: React.FC<EditableTableProps> = ({
     onChange(updatedRows);
   };
 
-  return (
-    <div className="editable-table">
-      <table
-        style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          border: '1px solid #E5E7EB',
-        }}
-      >
-        <thead>
-          <tr style={{ backgroundColor: '#F9FAFB' }}>
-            {columns.map((column) => (
-              <th
-                key={column.key}
-                style={{
-                  padding: '12px',
-                  textAlign: 'left',
-                  borderBottom: '2px solid #E5E7EB',
-                  fontWeight: 600,
-                  color: '#1A1A2E',
-                }}
-              >
-                {column.label}
-              </th>
-            ))}
-            {onDeleteRow && (
-              <th
-                style={{
-                  padding: '12px',
-                  width: '60px',
-                  borderBottom: '2px solid #E5E7EB',
-                }}
-              />
-            )}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              {columns.map((column) => {
-                const cellValue = row[column.key] || '';
+  const renderTable = () => (
+    <table
+      style={{
+        width: '100%',
+        borderCollapse: 'collapse',
+        border: '1px solid #E5E7EB',
+      }}
+    >
+      <thead>
+        <tr style={{ backgroundColor: '#F9FAFB' }}>
+          {columns.map((column) => (
+            <th
+              key={column.key}
+              style={{
+                padding: '12px',
+                textAlign: 'left',
+                borderBottom: '2px solid #E5E7EB',
+                fontWeight: 600,
+                color: '#1A1A2E',
+              }}
+            >
+              {column.label}
+            </th>
+          ))}
+          {onDeleteRow && (
+            <th
+              style={{
+                padding: '12px',
+                width: '60px',
+                borderBottom: '2px solid #E5E7EB',
+              }}
+            />
+          )}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, rowIndex) => (
+          <tr key={rowIndex}>
+            {columns.map((column) => {
+              const cellValue = row[column.key] || '';
 
-                return (
-                  <td
-                    key={column.key}
-                    style={{
-                      padding: '8px 12px',
-                      borderBottom: '1px solid #E5E7EB',
-                      backgroundColor: '#FFFFFF',
-                    }}
-                  >
-                    {column.multiline ? (
-                      <textarea
-                        value={cellValue}
-                        onChange={(event) =>
-                          handleCellChange(rowIndex, column.key, event.target.value)
-                        }
-                        style={{
-                          width: '100%',
-                          padding: '6px',
-                          border: '1px solid #E5E7EB',
-                          borderRadius: '4px',
-                          fontFamily: 'inherit',
-                          fontSize: 'inherit',
-                          minHeight: '60px',
-                          resize: 'vertical',
-                        }}
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        value={cellValue}
-                        onChange={(event) =>
-                          handleCellChange(rowIndex, column.key, event.target.value)
-                        }
-                        style={{
-                          width: '100%',
-                          padding: '6px',
-                          border: '1px solid #E5E7EB',
-                          borderRadius: '4px',
-                          fontFamily: 'inherit',
-                          fontSize: 'inherit',
-                        }}
-                      />
-                    )}
-                  </td>
-                );
-              })}
-              {onDeleteRow && (
+              return (
                 <td
+                  key={column.key}
                   style={{
                     padding: '8px 12px',
                     borderBottom: '1px solid #E5E7EB',
-                    textAlign: 'center',
+                    backgroundColor: '#FFFFFF',
                   }}
                 >
-                  <button
-                    type="button"
-                    onClick={() => onDeleteRow(rowIndex)}
-                    style={{
-                      padding: '4px 8px',
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      color: '#E60012',
-                      cursor: 'pointer',
-                      fontSize: '18px',
-                    }}
-                    title="Delete row"
-                  >
-                    X
-                  </button>
+                  {column.multiline ? (
+                    <textarea
+                      value={cellValue}
+                      onChange={(event) =>
+                        handleCellChange(rowIndex, column.key, event.target.value)
+                      }
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '4px',
+                        fontFamily: 'inherit',
+                        fontSize: 'inherit',
+                        minHeight: '60px',
+                        resize: 'vertical',
+                      }}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={cellValue}
+                      onChange={(event) =>
+                        handleCellChange(rowIndex, column.key, event.target.value)
+                      }
+                      style={{
+                        width: '100%',
+                        padding: '6px',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '4px',
+                        fontFamily: 'inherit',
+                        fontSize: 'inherit',
+                      }}
+                    />
+                  )}
                 </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              );
+            })}
+            {onDeleteRow && (
+              <td
+                style={{
+                  padding: '8px 12px',
+                  borderBottom: '1px solid #E5E7EB',
+                  textAlign: 'center',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => onDeleteRow(rowIndex)}
+                  style={{
+                    padding: '4px 8px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    color: '#E60012',
+                    cursor: 'pointer',
+                    fontSize: '18px',
+                  }}
+                  title="Delete row"
+                >
+                  X
+                </button>
+              </td>
+            )}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+
+  return (
+    <div className="editable-table">
+      <ExpandableTableFrame title={title} renderTable={renderTable} />
       {onAddRow && (
         <button
           type="button"

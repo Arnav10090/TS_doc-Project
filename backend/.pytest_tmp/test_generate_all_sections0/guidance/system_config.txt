@@ -1,0 +1,2 @@
+[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
+2-3 sentences describing the selected configuration option and how units connect. State key parameters inline. End with reference-only caveat: 'The above configuration is for reference only and is subject to finalization during detailed engineering.'

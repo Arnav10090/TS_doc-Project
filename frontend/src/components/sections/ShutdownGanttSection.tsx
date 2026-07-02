@@ -139,6 +139,7 @@ const ShutdownGanttSection: React.FC<ShutdownGanttSectionProps> = ({ projectId }
           onClose={() => setIsModalOpen(false)}
           prompt={promptData.prompt}
           recommendedTools={promptData.recommended_tools}
+          downloadFilename="shutdown-gantt-prompt.txt"
         />
       )}
     </div>
@@ -146,3 +147,4 @@ const ShutdownGanttSection: React.FC<ShutdownGanttSectionProps> = ({ projectId }
 };
 
 export default ShutdownGanttSection;
+

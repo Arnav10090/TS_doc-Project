@@ -1,0 +1,9 @@
+Cybersecurity Responsibility:
+Buyer owns: all cybersecurity, information security, hardware/network/data security, patch management post-delivery, firewall configuration, VPN/remote-access link management.
+Seller does: delivers the application; recommends prompt patching and use of supported software versions.
+
+Key TS statements: seller not liable for security incidents, data breaches, or unauthorized access; NDA required before remote support sessions begin.
+
+Security Disclaimer Guidelines: Do NOT generate novel legal cybersecurity clauses. Use only approved TS boilerplate. Required structure: (1) patch recommendation paragraph; (2) buyer's full security responsibility statement; (3) seller's liability limitation clause; (4) NDA requirement for remote support sessions.
+
+Hard prohibitions: Do not invent product-level certifications, cybersecurity guarantees, or specific compliance claims (e.g., IEC 62443 certification) unless confirmed in metadata.

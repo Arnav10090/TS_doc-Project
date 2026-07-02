@@ -184,8 +184,8 @@ describe('DocumentPreview - Bug Condition Exploration: Deleted Sections Disappea
     );
 
     // Assert: Empty section SHOULD render with placeholder
-    const abbreviationsHeading = screen.queryByText(/ABBREVIATIONS USED/i);
-    expect(abbreviationsHeading).not.toBeNull(); // Should exist
+    const abbreviationsHeadings = screen.queryAllByText(/ABBREVIATIONS USED/i);
+    expect(abbreviationsHeadings.length).toBeGreaterThan(0); // Should exist
 
     // Verify placeholder text appears for empty section
     const abbreviationsPlaceholder = screen.queryByText(/No abbreviations defined/i);

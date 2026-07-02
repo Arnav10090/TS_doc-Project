@@ -1,0 +1,7 @@
+Phase structure: M1 Planning (~4w) → M2 Procurement (~8w) → M3 Deployment (~6w) → M4 Discovery & Tuning (~4w) → M5 Handover (~2w). Total indicative: ~24w from PO.
+
+Critical path: Network readiness (SPAN port configuration) gates M3 Deployment.
+
+Shutdown Gantt: NOT REQUIRED. Passive network monitoring sensors can be deployed on SPAN/Mirror ports without disrupting network traffic or requiring downtime. Active scanning, if deployed, will be scheduled during regular maintenance windows but does not typically require a full shutdown.
+
+Draw.io format: week-based GanttTask JSON — fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies[].

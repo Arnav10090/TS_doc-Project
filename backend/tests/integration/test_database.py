@@ -3,7 +3,7 @@ Integration tests for database schema and constraints.
 """
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, inspect
+from sqlalchemy import select, inspect, text
 from sqlalchemy.exc import IntegrityError
 
 
@@ -17,7 +17,7 @@ async def test_all_tables_exist_after_migrations(db_session: AsyncSession):
     
     # Query database for existing tables
     result = await db_session.execute(
-        "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+        text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
     )
     existing_tables = {row[0] for row in result.fetchall()}
     

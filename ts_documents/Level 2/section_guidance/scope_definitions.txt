@@ -1,0 +1,3 @@
+Structure: Define the six standard phase abbreviations used in the division table: BD (Basic Data), BE (Basic Engineering), DD (Detail Design), SU (Supply or Service), ER (Erection), COM (Commissioning). Define X/Y notation (X = primary responsible, Y = supporting). Short definitional block.
+Avoid: Adding non-standard abbreviations unless confirmed in metadata. Do not invent abbreviations not used in the TS.
+Tone: Formal definition style. Must be consistent with division_of_eng table entries.

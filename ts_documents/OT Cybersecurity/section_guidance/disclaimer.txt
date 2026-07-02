@@ -1,0 +1,11 @@
+## disclaimer
+Role: Standard legal disclaimers covering software licenses, technical improvement rights, confidentiality, and liability limitation.
+Required: Standard clauses; contract price reference for liability cap.
+Never invent: Contract price values; penalty amounts; novel legal clauses beyond approved boilerplate.
+Structure: Four subsections — Software Licenses (use limited to services provided; buyer right to use for system lifetime; no duplication/distribution; third-party software licenses buyer responsibility); Changes Due to Technical Improvements (Seller reserves right to supply systems differing in detail from this document; continuous improvement policy); Confidentiality of Information / NDA (document is company secret; reproduction or disclosure to third parties prohibited without Seller management written authorization); Limitation of Liability and Consequential Damages (Seller total liability capped at 100% of contract price; no indirect or consequential damages including loss of profit, loss of production, or business interruption; document confidentiality). Use approved template language only.
+
+
+---
+
+
+End of OT Cybersecurity context.txt

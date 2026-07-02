@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { downloadTextFile } from '../../utils/downloadHelper';
 
 interface RecommendedTool {
   name: string;
@@ -12,6 +13,7 @@ interface AiPromptModalProps {
   onClose: () => void;
   prompt: string;
   recommendedTools: RecommendedTool[];
+  downloadFilename?: string;
 }
 
 const AiPromptModal: React.FC<AiPromptModalProps> = ({
@@ -19,6 +21,7 @@ const AiPromptModal: React.FC<AiPromptModalProps> = ({
   onClose,
   prompt,
   recommendedTools,
+  downloadFilename = 'ai-diagram-prompt.txt',
 }) => {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -39,6 +42,10 @@ const AiPromptModal: React.FC<AiPromptModalProps> = ({
   const handleCopyPrompt = () => {
     navigator.clipboard.writeText(prompt);
     toast.success('Prompt copied to clipboard!');
+  };
+
+  const handleDownloadPrompt = () => {
+    downloadTextFile(prompt, downloadFilename, 'text/plain;charset=utf-8', 'Prompt file downloaded');
   };
 
   if (!isOpen) return null;
@@ -92,7 +99,7 @@ const AiPromptModal: React.FC<AiPromptModalProps> = ({
               color: '#6B7280',
             }}
           >
-            ×
+            &times;
           </button>
         </div>
 
@@ -114,22 +121,38 @@ const AiPromptModal: React.FC<AiPromptModalProps> = ({
           />
         </div>
 
-        <button
-          type="button"
-          onClick={handleCopyPrompt}
-          style={{
-            padding: '10px 20px',
-            border: 'none',
-            borderRadius: '4px',
-            backgroundColor: '#E60012',
-            color: '#FFFFFF',
-            cursor: 'pointer',
-            fontWeight: 500,
-            marginBottom: '24px',
-          }}
-        >
-          📋 Copy Prompt
-        </button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
+          <button
+            type="button"
+            onClick={handleCopyPrompt}
+            style={{
+              padding: '10px 20px',
+              border: 'none',
+              borderRadius: '4px',
+              backgroundColor: '#E60012',
+              color: '#FFFFFF',
+              cursor: 'pointer',
+              fontWeight: 500,
+            }}
+          >
+            &#128203; Copy Prompt
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadPrompt}
+            style={{
+              padding: '10px 20px',
+              border: 'none',
+              borderRadius: '4px',
+              backgroundColor: '#0EA5E9',
+              color: '#FFFFFF',
+              cursor: 'pointer',
+              fontWeight: 500,
+            }}
+          >
+            Download Prompt File
+          </button>
+        </div>
 
         <div style={{
           borderTop: '1px solid #E5E7EB',
@@ -167,7 +190,7 @@ const AiPromptModal: React.FC<AiPromptModalProps> = ({
                     marginBottom: '4px',
                   }}
                 >
-                  {tool.name} →
+                  {tool.name} &rarr;
                 </a>
                 <p style={{
                   margin: 0,
@@ -213,3 +236,5 @@ const AiPromptModal: React.FC<AiPromptModalProps> = ({
 };
 
 export default AiPromptModal;
+
+

@@ -1,0 +1,6 @@
+Purpose: Specifies the software components in SELLER scope supplied as part of the CYMS/SYMS system.
+Required Inputs: Confirmed software list from project engineering; [NUM_SERVERS], [NUM_CLIENT_PCS] for license quantities
+Safe Inferences: Software categories: Server OS (OBSERVED: Windows Server 2022 64-bit), productivity software (OBSERVED: Microsoft Office), development IDE (OBSERVED: Visual Studio), backup software (OBSERVED: Acronics or equivalent), antivirus (OBSERVED: Trend Micro or equivalent), Python, Django Framework, Angular Framework, Docker, database engine (OBSERVED: MS SQL Server 2022 Standard Edition with CALs). BUYER responsible for maintaining valid licenses for any BUYER-scope third-party software.
+Must Not Invent: Specific version numbers as contractual requirements, specific license types or CAL counts as defaults — quantities are project engineering outcomes
+Suggested Structure: Software specification table: SR.NO | Equipment/Software Name | Maker | Quantity (Nos.). Quantities from project metadata. Version: "current version at detailed engineering start" — do not hardcode version strings as requirements.
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

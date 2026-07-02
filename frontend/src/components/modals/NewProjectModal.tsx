@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { createProject } from '../../api/projects'
 import { useUiStore } from '../../store/ui.store'
 import toast from 'react-hot-toast'
+import TSTypeSelector from '../TSTypeSelector'
+import type { Project } from '../../types'
 
 const NewProjectModal = () => {
   const navigate = useNavigate()
   const { isNewProjectModalOpen, closeNewProjectModal } = useUiStore()
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Partial<Project> & { doc_version: string }>({
     solution_name: '',
     solution_full_name: '',
     solution_abbreviation: '',
@@ -18,6 +20,7 @@ const NewProjectModal = () => {
     ref_number: '',
     doc_date: '',
     doc_version: '0',
+    ts_type: '',
   })
   
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -33,16 +36,19 @@ const NewProjectModal = () => {
     return () => window.removeEventListener('keydown', handleEscape)
   }, [isNewProjectModalOpen, closeNewProjectModal])
 
+  // TS types are provided by `TSTypeSelector` which fetches them when mounted
+
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const isFormValid = () => {
     return (
-      formData.solution_name.trim() !== '' &&
-      formData.solution_full_name.trim() !== '' &&
-      formData.client_name.trim() !== '' &&
-      formData.client_location.trim() !== ''
+      (formData.solution_name ?? '').trim() !== '' &&
+      (formData.solution_full_name ?? '').trim() !== '' &&
+      (formData.client_name ?? '').trim() !== '' &&
+      (formData.client_location ?? '').trim() !== '' &&
+      (formData.ts_type ?? '').trim() !== ''
     )
   }
 
@@ -57,7 +63,10 @@ const NewProjectModal = () => {
     setIsSubmitting(true)
     
     try {
-      const newProject = await createProject(formData)
+      const payload: Partial<Project> & { doc_version?: string } = { ...formData }
+      // normalize empty ts_type by removing the key so backend defaults apply
+      if (!payload.ts_type) delete (payload as Partial<Project>).ts_type
+      const newProject = await createProject(payload)
       toast.success('Project created successfully')
       closeNewProjectModal()
       navigate(`/editor/${newProject.id}`)
@@ -82,138 +91,144 @@ const NewProjectModal = () => {
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       onClick={handleOverlayClick}
     >
-      <div className="bg-surface rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-surface rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-border">
           <h2 className="text-2xl font-bold text-text">Create New Project</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6">
-          <div className="space-y-4">
-            {/* Solution Name */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Row 1 */}
             <div>
               <label className="block text-sm font-semibold text-text mb-1">
                 Solution Name <span className="text-primary">*</span>
               </label>
               <input
                 type="text"
-                value={formData.solution_name}
+                value={formData.solution_name ?? ''}
                 onChange={(e) => handleChange('solution_name', e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="e.g., MES System"
               />
             </div>
 
-            {/* Solution Full Name */}
             <div>
               <label className="block text-sm font-semibold text-text mb-1">
                 Solution Full Name <span className="text-primary">*</span>
               </label>
               <input
                 type="text"
-                value={formData.solution_full_name}
+                value={formData.solution_full_name ?? ''}
                 onChange={(e) => handleChange('solution_full_name', e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="e.g., Manufacturing Execution System"
               />
             </div>
 
-            {/* Solution Abbreviation */}
             <div>
               <label className="block text-sm font-semibold text-text mb-1">
                 Solution Abbreviation
               </label>
               <input
                 type="text"
-                value={formData.solution_abbreviation}
+                value={formData.solution_abbreviation ?? ''}
                 onChange={(e) => handleChange('solution_abbreviation', e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="e.g., MES"
               />
             </div>
 
-            {/* Client Name */}
+            {/* Row 2 */}
             <div>
               <label className="block text-sm font-semibold text-text mb-1">
                 Client Name <span className="text-primary">*</span>
               </label>
               <input
                 type="text"
-                value={formData.client_name}
+                value={formData.client_name ?? ''}
                 onChange={(e) => handleChange('client_name', e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="e.g., ABC Manufacturing Ltd"
               />
             </div>
 
-            {/* Client Location */}
             <div>
               <label className="block text-sm font-semibold text-text mb-1">
                 Client Location <span className="text-primary">*</span>
               </label>
               <input
                 type="text"
-                value={formData.client_location}
+                value={formData.client_location ?? ''}
                 onChange={(e) => handleChange('client_location', e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="e.g., Mumbai, India"
               />
             </div>
 
-            {/* Client Abbreviation */}
             <div>
               <label className="block text-sm font-semibold text-text mb-1">
                 Client Abbreviation
               </label>
               <input
                 type="text"
-                value={formData.client_abbreviation}
+                value={formData.client_abbreviation ?? ''}
                 onChange={(e) => handleChange('client_abbreviation', e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="e.g., ABC"
               />
             </div>
 
-            {/* Reference Number */}
+            {/* Row 3 */}
             <div>
               <label className="block text-sm font-semibold text-text mb-1">
                 Reference Number
               </label>
               <input
                 type="text"
-                value={formData.ref_number}
+                value={formData.ref_number ?? ''}
                 onChange={(e) => handleChange('ref_number', e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="e.g., REF-2024-001"
               />
             </div>
 
-            {/* Document Date */}
             <div>
               <label className="block text-sm font-semibold text-text mb-1">
                 Document Date
               </label>
               <input
                 type="text"
-                value={formData.doc_date}
+                value={formData.doc_date ?? ''}
                 onChange={(e) => handleChange('doc_date', e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="e.g., 15 Jan 2024"
               />
             </div>
 
-            {/* Document Version */}
             <div>
               <label className="block text-sm font-semibold text-text mb-1">
                 Document Version
               </label>
               <input
                 type="text"
-                value={formData.doc_version}
+                value={formData.doc_version ?? ''}
                 onChange={(e) => handleChange('doc_version', e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="e.g., 0"
               />
             </div>
+          </div>
+
+          {/* TS Type Dropdown (full width below the grid) */}
+          <div className="mt-4">
+            <label className="block text-sm font-semibold text-text mb-1">
+              TS Type <span className="text-primary">*</span>
+            </label>
+            <TSTypeSelector
+              value={formData.ts_type || ''}
+              onChange={(v) => handleChange('ts_type', v)}
+              required
+            />
           </div>
 
           {/* Actions */}

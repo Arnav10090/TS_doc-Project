@@ -1,0 +1,6 @@
+Purpose: Defines the training SELLER will provide to BUYER's personnel at site during commissioning.
+Required Inputs: [TRAINING_MAX_PERSONS], [TRAINING_MAX_DAYS]
+Safe Inferences: Training conducted at site during commissioning; covers CYMS & SYMS web application operation; classroom training format at site; topics mutually agreed between SELLER and BUYER
+Must Not Invent: Specific training curriculum, online training provision, post-training support commitments, specific trainer qualifications, certification or assessment programs
+Suggested Structure: Single paragraph. State: at-site delivery during commissioning, maximum [TRAINING_MAX_PERSONS] persons, maximum [TRAINING_MAX_DAYS] days, subject coverage (CYMS & SYMS web application supply topics), format (classroom training), topic agreement (mutually agreed).
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

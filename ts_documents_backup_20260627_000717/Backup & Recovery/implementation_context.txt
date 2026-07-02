@@ -1,0 +1,11 @@
+Implementation phases: M1 — Sizing & Design (~3w): Identifying critical assets, defining RPO/RTO targets, sizing storage repositories, software licensing; M2 — Hardware/Software Delivery (~6-8w): Procurement and arrival of backup server, NAS/SAN, and licenses; M3 — Staging & FAT (~2w): Basic configuration of backup server and storage offline; M4 — Installation & Deployment (~4w): Deploying agents, configuring vCenter integration, setting up backup jobs and schedules; M5 — Commissioning & Handover (~2w): Performing test restores (bare-metal and VM), verifying backup completion, training operators. Total durations indicative.
+
+FAT: Verification of backup server installation, storage connectivity, and a simulated backup/restore of a test machine.
+
+Buyer obligations: Provide a comprehensive list of assets to be backed up, define RPO/RTO requirements, provide administrative credentials for target systems, provide necessary rack space and network ports, ensure target legacy systems have sufficient resources to run backup agents.
+
+Value addition: Disaster Recovery Runbook outlining step-by-step restoration procedures for key plant systems.
+
+Standard exclusions: Repairing pre-existing corruption on target systems preventing successful backups; upgrading legacy OS to support modern backup agents; offsite cloud storage configuration (unless explicitly contracted).
+
+Risks: Legacy systems (e.g., Windows NT/2000) may not be supported by modern image-based backup agents, requiring fallback to file-level or alternative methods.

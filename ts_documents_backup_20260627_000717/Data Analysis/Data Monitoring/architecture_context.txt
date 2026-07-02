@@ -1,0 +1,9 @@
+Architecture: Centralized Monitoring Server (typically Windows Server) hosting the application and database. Field data is collected via industrial gateways, OPC servers, or direct protocol polling. Clients access dashboards via web browsers.
+
+Technology: Application: SCADA-based platforms (e.g., Ignition, WinCC OA, Zenon) or dedicated EMS software; Database: MS SQL Server, PostgreSQL, or specialized Historian; Data Collection: Kepware, standard Modbus RTU/TCP, IEC 61850 for electrical substations.
+
+Data acquisition: Continuous polling of field meters (typically every 1 to 5 seconds for electrical, 15-60 seconds for utilities like gas/water).
+
+Storage: Relational database or Historian for long-term storage of meter readings, calculated KPIs, and alarms. Typical retention is 2-5 years.
+
+Integration pattern: Extracts data from L1/L2 devices and standardizes it into a central L3 repository for visualization and reporting. Diagram: Network architecture showing field meters connecting to data concentrators, then to the central EMS server.

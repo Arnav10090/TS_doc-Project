@@ -1,0 +1,9 @@
+Architecture: Multi-tier architecture. Central Yard Management Server (Windows/Linux VM); Application/Web Server for UI clients; SQL Database for inventory/transactions; Edge hardware (Crane PLCs, positioning sensors, Wireless Access Points).
+
+Technology: Application: Hitachi Yard Management System (YMS) or custom web-based tracking app (.NET/Java); Database: MS SQL Server / Oracle; Crane Positioning: Laser distance meters (SICK, Dimetix) or absolute encoders; Wireless: Industrial Wi-Fi (Cisco, Aruba) mesh network; Tablets: Ruggedized tablets (Panasonic, Getac).
+
+Data acquisition: Continuous polling of Crane PLCs via OPC DA/UA to update crane position (X, Y, Z hoist) and grab status. L3 interfaces (SOAP/REST/Database tables) for receiving production schedules and slab/coil data.
+
+Storage: Central relational database for inventory tracking, historical movements, and audit logs. Typical retention is 2-5 years online.
+
+Integration pattern: YMS sits between L3 MES (receives schedule, sends completion) and L2/L1 systems (reads crane position, sends target coordinates). Diagram: System overview showing YMS server interacting with MES, Crane PLCs over Wi-Fi, and operator tablets.

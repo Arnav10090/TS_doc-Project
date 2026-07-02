@@ -1,0 +1,3 @@
+Structure: Four subsections in order: (1) Software Licenses (buyer responsible for renewals after delivery); (2) Changes Due to Technical Improvements (seller may update software; versions stated are "at detailed engineering start"); (3) Confidentiality (this document is confidential, not for third-party distribution); (4) Limitation of Liability (seller liability capped per contract value; no consequential/indirect damages).
+Avoid: Generating novel legal language. Use only approved template phrasing. Do not merge or reorder the four subsections. No contract price values or penalty amounts.
+Tone: Legal-disclaimer. Precise, boilerplate. No creative rewording of liability clauses.

@@ -19,6 +19,7 @@ class Project(Base):
     ref_number = Column(String, nullable=True)
     doc_date = Column(String, nullable=True)
     doc_version = Column(String, default="0")
+    ts_type = Column(String, nullable=True)  # Nullable for backward compatibility with legacy projects
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     

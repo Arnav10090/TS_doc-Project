@@ -1,0 +1,7 @@
+Virtualization & Software Solution — provides hypervisor-based infrastructure for consolidating OT workloads (HMI, SCADA, Historian, Engineering Stations) onto fewer physical servers. Includes high-availability (HA) clusters, SAN/NAS storage integration, and centralized management. Designed specifically for deterministic performance required by OT applications, unlike generic IT virtualization.
+
+Core capabilities (all deployments): Type-1 Hypervisor deployment (VMware ESXi, Hyper-V); HA clustering with automated failover (vSphere HA / Hyper-V Failover Cluster); virtual networking (vSwitches) mapped to physical OT VLANs; shared storage configuration (iSCSI, Fibre Channel); automated VM backups; performance tuning for OT workloads (CPU pinning, memory reservations).
+
+Business drivers: reduce physical hardware footprint and energy consumption, decouple aging OT software from obsolete hardware, enable rapid disaster recovery and VM snapshots, provide seamless hardware upgrades without reinstalling legacy OS, improve system availability through HA clustering.
+
+Plant environment: industrial server room or localized OT data center. May involve migrating existing physical machines (P2V) running legacy OS (e.g., Windows 7, Server 2008) to virtual environments. Requires stable power, cooling, and integration with OT network core.

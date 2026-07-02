@@ -41,14 +41,23 @@ describe('generateDocument', () => {
   })
 
   it('should parse blob error response and make missing_sections accessible', async () => {
-    // Create a blob containing the error JSON
+    // Create a blob-like object containing the error JSON. In some Node test
+    // environments the native Blob may not expose `text()`; provide a
+    // lightweight object that behaves like a Blob for parsing purposes.
     const errorData = {
       detail: {
         message: 'Cannot generate document. Some required sections are incomplete.',
         missing_sections: ['cover', 'executive_summary', 'features']
       }
     }
-    const errorBlob = new Blob([JSON.stringify(errorData)], { type: 'application/json' })
+    const errorBlob = {
+      // Provide a text() method so generation.parse can read the payload
+      text: async () => JSON.stringify(errorData),
+      size: JSON.stringify(errorData).length,
+      type: 'application/json',
+      // mimic Blob constructor name for any checks
+      constructor: { name: 'Blob' },
+    }
 
     const mockError = {
       response: {
@@ -86,8 +95,13 @@ describe('generateDocument', () => {
   })
 
   it('should handle non-JSON blob errors gracefully', async () => {
-    // Create a blob with non-JSON content
-    const errorBlob = new Blob(['Internal Server Error'], { type: 'text/html' })
+    // Create a blob-like object with non-JSON content
+    const errorBlob = {
+      text: async () => 'Internal Server Error',
+      size: 'Internal Server Error'.length,
+      type: 'text/html',
+      constructor: { name: 'Blob' },
+    }
 
     const mockError = {
       response: {
@@ -107,8 +121,8 @@ describe('generateDocument', () => {
       await generateDocument('test-project-id')
       expect(true).toBe(false)
     } catch (error: any) {
-      // Should still throw the error, but data remains as blob
-      expect(error.response.data).toBeInstanceOf(Blob)
+      // Should still throw the error, but data remains as a blob-like object
+      expect(typeof error.response.data.text).toBe('function')
       expect(error.response.status).toBe(500)
     }
   })

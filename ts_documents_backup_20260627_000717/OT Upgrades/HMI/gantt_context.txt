@@ -1,0 +1,7 @@
+Phase structure: M1 Kick-off & Backup (~2w) → M2 Procurement & Eng (~6-8w) → M3 FAT (~1w) → M4 Installation & Cutover (~2w) → M5 Handover (~1w). Total indicative: ~12-14w from PO.
+
+Critical path: Availability of the original HMI application backups gates M2 engineering. Hardware delivery lead times also affect M2. Scheduled plant downtime gates M4 cutover.
+
+Shutdown Gantt: REQUIRED. Replacing the HMI hardware requires disconnecting the old node and connecting the new node to the live PLC network. This cutover and subsequent live I/O verification must be performed during a planned production stop. Typical cutover window is 4-8 hours per HMI node.
+
+Draw.io format: week-based GanttTask JSON — fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies[].

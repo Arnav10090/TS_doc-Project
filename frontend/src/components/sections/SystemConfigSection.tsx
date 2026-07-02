@@ -139,6 +139,7 @@ const SystemConfigSection: React.FC<SystemConfigSectionProps> = ({ projectId }) 
           onClose={() => setIsModalOpen(false)}
           prompt={promptData.prompt}
           recommendedTools={promptData.recommended_tools}
+          downloadFilename="architecture-diagram-prompt.txt"
         />
       )}
     </div>
@@ -146,3 +147,4 @@ const SystemConfigSection: React.FC<SystemConfigSectionProps> = ({ projectId }) 
 };
 
 export default SystemConfigSection;
+

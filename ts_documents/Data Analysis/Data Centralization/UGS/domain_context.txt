@@ -1,0 +1,9 @@
+UGS — Unified Gateway Solution — is industrial data integration middleware: collects process data from heterogeneous plant automation systems, normalizes it, stores it centrally, and redistributes to higher-level consumers. Sits at the OT/IT boundary. NOT a SCADA, visualization tool, or process controller.
+
+Core capabilities (all UGS deployments): centralized data acquisition from multiple production units via configurable polling; multi-protocol support (OPC UA primary when confirmed, Modbus, OPC DA, TCP/IP, UDP, MQTT, DBlink/SQL); browser-based web configuration UI with no custom programming for standard setup; on-premises SQL database with configurable FIFO retention and automated housekeeping; OPC UA server role exposing acquired data to downstream consumers; role-based user accounts with full audit trail; email alerting and remote support (value-added, project-dependent).
+
+Optional HX Edge Controller: installed at each production unit for local buffering, preprocessing, and protocol bridging. Prevents data loss during network disruptions. Use only when direct central polling is insufficient.
+
+Business drivers: eliminate siloed data per unit, replace point-to-point integrations, enable plant-wide KPI visibility, create digitalization foundation (MES, analytics, AI/ML, cloud), reduce manual reporting, apply consistent data governance. UGS never guarantees production performance, quality, or yield.
+
+Plant environment: continuous-process manufacturing with existing PLCs, HMIs, and data acquisition servers. OT network (L1/L2 LAN) separated from IT. OT firewalls always buyer scope. UGS integration is strictly read-only — it cannot configure existing L1/L2 systems.

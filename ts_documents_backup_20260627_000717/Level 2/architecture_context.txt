@@ -1,0 +1,9 @@
+System architecture: Three-tier hierarchical model — Level 1 (field devices and PLCs), Level 2 (production management servers and applications), Level 3 (enterprise ERP/MES systems). L2 PMS acts as the intelligent middleware layer, aggregating L1 real-time data and providing structured production information to L3 business systems.
+
+Technology stack: Server infrastructure (Windows Server or Linux-based), industrial-grade database systems (SQL Server, PostgreSQL, Oracle), application servers (IIS, Apache, Tomcat), web-based operator interfaces (HTML5/React/Angular), reporting engines (SSRS, Jasper, custom dashboards), redundancy options for high-availability deployments.
+
+Data acquisition layer: OPC UA/DA clients for PLC connectivity, Modbus TCP/RTU drivers, Profinet/EtherNet/IP adapters, MQTT brokers for IoT devices, configurable polling rates (1-60 second intervals), event-driven triggers, buffering and store-forward for network resilience.
+
+Integration protocols: Northbound L3 integration via database replication, REST/SOAP web services, message queuing (MSMQ, RabbitMQ), flat-file exchange (CSV/XML), EDI standards; southbound L1 integration via OPC, direct PLC drivers, database polling.
+
+Network topology: Typically deployed in the OT DMZ zone between L1 control network and L3 IT network, firewall-protected with strict rule sets, VLAN segmentation, role-based access control (RBAC), encrypted communications (TLS/SSL), air-gapped options for high-security environments.

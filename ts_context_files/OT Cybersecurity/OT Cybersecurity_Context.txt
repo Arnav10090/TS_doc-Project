@@ -1,0 +1,760 @@
+# **OT Cybersecurity** CONTEXT.TXT — Industrial Operational Technology (OT) Cybersecurity solution focused on securing industrial control systems, OT networks, critical infrastructure, and manufacturing environments through defense-in-depth architecture, IEC 62443 aligned security practices, secure remote access, network segmentation, asset visibility, vulnerability management, monitoring, incident response, and risk mitigation while maintaining plant availability and operational continuity.
+# Category knowledge base for Gemini AI Suggestions runtime grounding
+# Version: 1.0
+
+
+---
+
+
+# GLOBAL PRIORITY AND SAFETY RULES
+
+Priority order (highest wins):
+1. Project metadata
+2. Current saved section content
+3. Current draft content
+4. Historical OT Cybersecurity TS documents
+5. This file
+6. General industry knowledge
+
+Conflict rule: project-specific data always overrides this file.
+
+Missing data rule: use placeholders defined in the registry below. Do NOT assume any specific industry sector, OT vendor, IDS tool, architecture option, asset count, production unit configuration, or plant type unless higher-priority sources confirm it.
+
+### Placeholder Registry
+
+| Placeholder | Purpose | Expected Source | Example Value | Required |
+|---|---|---|---|---|
+| [CUSTOMER_NAME] | Buyer organization name | Project Metadata | "Acme Steel Ltd." | Required |
+| [SITE_NAME] | Plant or facility name | Project Metadata | "Rolling Mill Complex" | Required |
+| [SITE_LOCATION] | Geographic location of site | Project Metadata | "Pune, Maharashtra" | Required |
+| [TENDER_REF] | Enquiry or tender reference number | Project Metadata | "26/XXXX/OTCSS/01/v0" | Optional |
+| [TENDER_DATE] | Date of enquiry or tender | Project Metadata | "21 April 2026" | Optional |
+| [PRODUCTION_ZONE] | Operational zone or area being secured | Project Metadata | "Iron Making Zone" | Required |
+| [PLANT_LIST] | Comma-separated list of production units in scope | Project Metadata | "Blast Furnace-1, Sinter Plant, Coke Oven" | Required |
+| [NUM_PLANTS] | Number of production units in scope | Project Metadata | 5 | Required |
+| [NUM_ASSETS] | Estimated total OT asset count | Project Metadata | "up to 500" | Required |
+| [ARCHITECTURE_OPTION] | Selected deployment architecture variant | Project Metadata | "Option 1 (Aggregation Switch)" | Required |
+| [IDS_VENDOR] | Selected IDS/Asset Management/VM tool OEM | Project Metadata | "Claroty" | Optional |
+| [NUM_SENSORS] | Number of IDS sensors to be deployed | Project Metadata | 6 | Required |
+| [NUM_IDS_CORE] | Number of IDS core appliances | Project Metadata | 1 | Optional |
+| [SRA_VENDOR] | Secure Remote Access tool vendor | Project Metadata | "Claroty" | Optional |
+| [SUPPORT_PERIOD_REMOTE] | Duration of post-commissioning remote support | Project Metadata | "6 months" | Required |
+| [SUPPORT_PERIOD_ONSITE] | Duration of onsite SV cybersecurity engineer support | Project Metadata | "1 year" | Required |
+| [TRAINING_PERSONS] | Maximum number of personnel to be trained | Project Metadata | "5" | Required |
+| [TRAINING_DAYS] | Duration of hands-on training | Project Metadata | "3 days" | Required |
+| [POC_PLATFORM] | Name of PoC platform offered alongside the solution | Project Metadata | "AutoML Platform" | Optional |
+| [POC_PERIOD] | Duration of PoC demonstration period | Project Metadata | "2 months" | Optional |
+| [TOTAL_MANDAYS] | Total estimated project man-days | Project Metadata | "100" | Optional |
+| [SUBSCRIPTION_PERIOD] | Tool license subscription period | Project Metadata | "1 year" | Required |
+| [ENQUIRY_SUBJECT] | Subject line of the original enquiry | Project Metadata | "Enquiry of Integrated OT Cybersecurity Solution" | Optional |
+| [PM_DAYS] | Project management man-days | Project Metadata | "20" | Optional |
+| [DEV_DAYS] | Cybersecurity engineering / implementation man-days | Project Metadata | "60" | Optional |
+| [COMM_DAYS] | Commissioning and handover man-days | Project Metadata | "20" | Optional |
+
+Hard prohibitions:
+- Do not invent customer names, project IDs, IP addresses, prices, or contract terms.
+- Do not copy wording verbatim from historical documents.
+- Do not treat numbers from one historical proposal as category defaults.
+- Do not generate legal language when repository-approved boilerplate exists for that section.
+- Do not assume any specific IDS vendor, SRA vendor, asset count, production unit list, architecture option, industry sector, or plant type as a default.
+- Do not promise zero-day protection, guaranteed threat detection rates, or compliance certifications.
+- Do not generate specific CVE IDs, IP addresses, VLAN numbers, or finalized network topology details.
+- Do not generate active scanning commitments — all OT discovery must be passive and non-intrusive.
+- Do not assume a plant-wide production shutdown is required for OTCSS implementation; passive monitoring is non-intrusive by design.
+
+
+---
+
+
+# OT CYBERSECURITY DOMAIN KNOWLEDGE
+
+## What OT Cybersecurity Is
+
+OT Cybersecurity (delivered as an OTCSS engagement) is an integrated set of tools, services, and governance artifacts that improve the security posture of industrial Operational Technology environments — including industrial control systems (ICS), programmable logic controllers (PLCs), distributed control systems (DCS), supervisory control and data acquisition systems (SCADA), human-machine interfaces (HMI), and the OT network infrastructure that connects them.
+
+The solution occupies the security layer above existing plant automation. It provides asset visibility, threat detection, remote access governance, and cybersecurity policy documentation without modifying or interrupting any existing automation systems. All monitoring is passive and non-intrusive.
+
+OTCSS is NOT:
+- A SCADA or process control system — it does not interact with, command, or control any plant process.
+- A firewall or IPS product — network security boundary devices are explicitly Buyer scope and out of Seller scope.
+- A NAC (Network Access Control) system — network admission control is Buyer scope.
+- A SIEM or SOC platform — centralized log aggregation, security event correlation, and full security operations center buildout are excluded from the base OTCSS engagement.
+- A patch management system — OS patching, antivirus distribution, and software update management are Buyer scope.
+- An EDR/MDR solution — endpoint security agents installed on OT devices are not part of standard OTCSS supply.
+- A network redesign or segmentation service — existing network architecture is preserved as-is; network segmentation redesign is excluded.
+- A compliance certification or audit body — OTCSS does not issue compliance certificates, conduct formal third-party audits, or guarantee regulatory approval.
+- A replacement for existing automation hardware — PLC, DCS, HMI, or other OT hardware replacement is entirely out of scope.
+- An OT assessment as a standalone service — unless explicitly confirmed in the project scope, standalone OT assessment is excluded.
+
+## Core Capabilities (CORE)
+
+Every OTCSS engagement is expected to deliver all of the following:
+
+1. OT Asset Discovery & Inventory: Passive, non-intrusive identification and real-time inventory of all OT assets within the defined scope. Includes topology and protocol visualization, network connectivity mapping that reveals segregation between Purdue model levels, and continuous change detection to identify asset additions, removals, or configuration changes.
+
+2. OT Threat Intelligence & Intrusion Detection (IDS): OT-aware passive intrusion detection system using behavior-based anomaly detection (AI/ML engines) and ICS-specific threat intelligence feeds. IDS sensors are deployed at key network nodes and capture traffic via SPAN or TAP configurations without injecting any packets into the OT network. Detection covers anomalous communications, known malware indicators, unauthorized device changes, and ICS protocol violations.
+
+3. OT Vulnerability Management: Continuous vulnerability identification for all inventoried assets, mapped against publicly known CVEs, ICS-CERT advisories, and OEM security bulletins. Risk-based scoring prioritizes remediation by potential operational impact in the OT environment, not purely by CVSS score.
+
+4. Secure Remote Access (SRA) for OEMs and Vendors: Zero-trust secure remote access solution with multi-factor authentication (MFA), role-based access control (RBAC), an approval workflow for session authorization, full session recording, comprehensive audit trails, and no direct OT network exposure for external parties. Replaces uncontrolled vendor remote connections with a centrally governed and auditable mechanism.
+
+5. OT Cybersecurity Policy and SOP Development: Development of OT-specific cybersecurity policies (common policies) and plant-specific standard operating procedures (SOPs) aligned to ISA/IEC 62443 and NIST SP 800-82. Policies cover asset management, vulnerability management, incident response, patching process, change management, and access control governance.
+
+## Optional / Value-Added Capabilities (COMMON / OPTIONAL)
+
+6. OT-Specific Monitoring Dashboards (COMMON): Centralized dashboards aggregating alerts and logs from IDS, SRA, and vulnerability management tools. Provides unified OT security visibility across assets, threats, and access events. Tailored to OT operational context rather than generic IT security views.
+
+7. OT Security Training and Awareness (COMMON): Role-based training sessions for leadership, operations and engineering workforce, and OT maintenance personnel. Covers tool usage, configuration, incident handling procedures, and general OT cybersecurity awareness. Delivered at or after commissioning; agenda mutually agreed.
+
+8. Post-Deployment Audit and Maturity Assessment (COMMON): High-level security audit conducted after all tools are live to measure the achieved security maturity level and deliver a benchmark report.
+
+9. Remote Operations Support (CORE — included as value-added): Post-commissioning remote troubleshooting and issue resolution for [SUPPORT_PERIOD_REMOTE] from the date of Work Completion. Limited to the delivered solution scope; additional features and change requests require separate commercial agreement.
+
+10. Onsite Cybersecurity Engineer / SV (CORE — included as value-added): One dedicated Cybersecurity Engineer deployed onsite for [SUPPORT_PERIOD_ONSITE] from the date of Work Completion to monitor the solution console, coordinate with plant stakeholders, and support day-to-day cybersecurity operations.
+
+11. Enterprise Manager / Central Management Console (OPTIONAL): For multi-area or high-sensor-density deployments under Option 2 architecture, an enterprise management console centralizes visibility and management of distributed IDS core appliances and sensors from a single interface.
+
+12. Future Scalability to Additional Production Lines (OPTIONAL): The deployed OT cybersecurity framework can be extended to additional production units or facilities. Integration of new units is a separate commercial engagement and not part of base scope.
+
+13. Advanced AI/ML Analytics Integration (OPTIONAL): Future capability for predictive anomaly detection, process deviation forecasting, and integration with AI/ML analytics platforms. Not included in base OTCSS scope.
+
+14. MES/ERP Integration (OPTIONAL): Future capability for data exchange between OT cybersecurity tools and manufacturing execution or enterprise resource planning systems. Not in base scope.
+
+15. Cloud Integration (OPTIONAL): Future capability for hybrid or cloud-based cybersecurity monitoring and log storage. Not in base scope.
+
+16. Mobile Security Dashboard (OPTIONAL): Secure mobile application for viewing real-time cybersecurity status, alerts, and anomalies with role-based access and configurable push notifications. Not in base scope.
+
+## Business Drivers
+
+Customers implement OTCSS to:
+- Gain centralized visibility into OT assets and network behavior across previously isolated plant areas.
+- Eliminate uncontrolled vendor remote access and replace it with a governed, auditable, zero-trust mechanism.
+- Meet regulatory and corporate governance requirements aligned to ISA/IEC 62443, NIST CSF, and ISO 27001.
+- Establish a documented, defensible OT cybersecurity posture to satisfy insurers, corporate auditors, or board-level risk committees.
+- Detect and respond to cyberattacks, ransomware, supply chain compromises, and insider threats in OT environments.
+- Enable future SOC integration or managed detection and response (MDR) services by creating structured OT data feeds and event logs.
+- Build foundational asset intelligence to support risk-based patch prioritization and maintenance planning.
+
+OTCSS never guarantees: production uptime, product quality, process yield, complete prevention of all cyberattacks, or elimination of all vulnerabilities.
+
+## Operational Environment
+
+OTCSS is deployed in continuous-process or batch manufacturing and heavy industrial environments. Examples include but are not limited to: steel making, mining, oil and gas, chemicals, power generation, pharmaceuticals, food and beverage, and utilities. The environment typically contains:
+- Multiple co-located production units, each with dedicated and often isolated OT networks.
+- Heterogeneous OT assets of multiple makes and generations: PLCs, DCS, SCADA servers, HMIs, engineering workstations, historians, industrial switches, and gateways.
+- Industrial protocols traversing the OT network (Modbus, Profinet, EtherNet/IP, OPC UA/DA, DNP3, IEC 60870 — project-dependent, not assumed).
+- Partial or absent segmentation between OT and IT zones; ad-hoc or absent firewall policy between zones.
+- Legacy assets with limited or no vendor security patch support.
+- Vendor remote access conducted via unmanaged, unrecorded, and unaudited channels.
+- No centralized OT asset inventory or continuous vulnerability tracking.
+- Absence of a common OT security operations command center.
+
+## Architecture Options
+
+### Option 1 — Aggregation Switch Architecture (OBSERVED)
+One aggregation network switch is deployed per process area (or per site when traffic density permits). All existing OT subnetwork switches in the area connect to the aggregation switch. A SPAN (port mirroring) port on the aggregation switch mirrors all OT traffic to a single IDS sensor. One IDS core appliance is deployed in the DMZ, receiving telemetry from IDS sensors across all process areas over a secure channel. This option minimizes sensor count and is preferred when a single aggregation switch can capture all required traffic. Aggregation switches are typically Buyer-provided.
+
+### Option 2 — Per-Subnetwork Architecture (OBSERVED)
+IDS sensors connect directly to individual managed network switches within each OT subnetwork on the shop floor. A SPAN port on each subnetwork switch mirrors traffic to the local IDS sensor. IDS core appliances are deployed per process area or per site depending on sensor count and connectivity constraints. An Enterprise Manager (EM) in the DMZ provides centralized management and unified visibility across all IDS core appliances and sensors. This option is used when aggregation is not viable due to network ring topologies, heterogeneous switch configurations, or bandwidth constraints. In ring topologies with heterogeneous switches, individual switches may require connection to dedicated sensors, with USB-to-NIC adapters where sensor port density requires it (vendor-dependent).
+
+### SRA Deployment (Standard — applies to both options)
+A Secure Remote Access appliance and one or more access points are deployed in the DMZ. External vendors and OEM service personnel connect through an internet gateway (Buyer-managed) to the SRA appliance. The SRA enforces MFA, RBAC, session approval workflow, and session recording before allowing access to any OT host. No vendor has direct OT network exposure.
+
+### Logical Network Layer Alignment (Purdue Model)
+- Field / L0-L1: PLCs, sensors, actuators, field control devices.
+- Control / L2: DCS, SCADA servers, HMIs, engineering stations, L2 LAN switches.
+- Supervision / L3 (if present): Historians, production databases, site-level management systems.
+- DMZ (Cybersecurity Tool Layer): IDS core appliances, SRA appliance, Enterprise Manager (Option 2). Isolated from L2 by OT firewall (Buyer scope).
+- IT / L4+: Corporate IT, ERP, MES — outside OTCSS scope unless SRA connectivity is explicitly included.
+
+## Protocols (OBSERVED / OPTIONAL)
+
+Traffic monitoring is protocol-aware but entirely passive. The IDS tools must support ICS-specific protocol dissection. Observed protocols in industrial OT environments (presence is project-specific — do NOT assume any protocol):
+- Modbus TCP/RTU (common in PLC environments)
+- Profinet (Siemens OT environments)
+- EtherNet/IP (Rockwell Automation environments)
+- OPC UA / OPC DA (SCADA, historian, and supervisory integration)
+- DNP3 (utility and power distribution environments)
+- IEC 60870-5-101/104 (utility environments)
+- S7comm (Siemens S7 PLC environments)
+
+Protocol coverage is determined during Stage 1 asset discovery. Do not assume any specific protocol without project confirmation.
+
+Remote access uses encrypted tunneling through the SRA appliance. SRA vendor and tunneling protocol are project-dependent.
+
+## Data Acquisition
+
+OT cybersecurity data is acquired exclusively via passive, non-intrusive techniques:
+- Traffic monitoring: SPAN/TAP on OT switches mirrors traffic to IDS sensors without injecting any packets into the OT network.
+- Asset inventory: Derived entirely from passive traffic analysis. No active probes or scanning of OT endpoints is permitted at any time.
+- Vulnerability data: Inferred from asset fingerprinting (firmware version, model, manufacturer) identified through passive observation, then mapped against CVE databases and ICS-CERT advisories.
+- SRA session data: Captured by the SRA appliance — session start/end times, user identity, commands issued, and files transferred.
+- OT-specific event logs: IDS alerts, SRA access events, and asset change events aggregated into OT monitoring dashboards.
+
+Management of Change (MOC) approval is required for any configuration change, security control enablement, or system modification before implementation.
+
+## Data Storage
+
+- IDS alert, asset, and vulnerability data is stored on the IDS core appliance(s) and Enterprise Manager (if deployed) within the DMZ.
+- SRA session recordings and access audit logs are stored on the SRA appliance.
+- OT monitoring dashboards aggregate and visualize data from these tools.
+- Data retention, backup, and archiving policies are defined in the OT Cybersecurity Policy and SOP documentation delivered in Stage 5.
+- No centralized external data warehouse is supplied by Seller in the base scope.
+- Integration with a customer SOC or SIEM, if required in future, is handled as a separate engagement.
+
+## Integration Patterns
+
+1. IDS sensors to IDS core appliance: Encrypted, authenticated communication from deployed passive sensors to the core platform through the OT firewall (Buyer-configured rules required).
+2. IDS core to Enterprise Manager (Option 2 only): Centralized multi-core management and aggregated visibility from a single EM console.
+3. OT cybersecurity tools to OT monitoring dashboards: Log and alert data from IDS, SRA, and vulnerability management tools aggregated for unified OT-specific dashboard views.
+4. SRA appliance to external internet gateway: Buyer-managed internet/VPN link; Seller configures only the SRA appliance side.
+5. OT tools to customer SOC/SIEM (OPTIONAL — not in base scope): Log forwarding integration for external SOC consumption requires separate scope definition and commercial agreement.
+6. Vulnerability data to IT patching or ticketing workflows (OPTIONAL): Output of the vulnerability management tool can be consumed by Buyer's IT/OT maintenance teams; this integration is not in base OTCSS scope.
+
+## Technology Stack Patterns (OBSERVED)
+
+Technology choices are entirely project-dependent. The following patterns are OBSERVED from historical engagements and must not be treated as defaults:
+
+IDS, Asset Management, and Vulnerability Management: Purpose-built OT cybersecurity platforms. Observed vendors include Claroty (CTD sensor + core appliance + EMC), Tenable OT Security (configurable sensor + core platform + enterprise manager), Dragos, Armis, and Microsoft Defender for IoT. Vendor selection is based on architecture option, asset count, protocol support, and customer preference — confirmed at detailed engineering.
+
+Secure Remote Access: Dedicated OT-aware SRA platforms with purpose-built zero-trust architecture for industrial environments. Observed vendor: Claroty Secure Access. Vendor selection is project-dependent.
+
+Sensors: Hardware appliances (server-class) deployed per process area, available in small/medium/large variants sized by the asset count of the monitored subnetwork.
+
+Core Appliances: Server-class hardware deployed in the DMZ, sized by total monitored asset count and sensor quantity.
+
+Enterprise Manager: Central management appliance or VM for multi-core deployments (Option 2). Manages multiple IDS core appliances from a single console.
+
+Aggregation Network Switches: Standard managed Ethernet switches supporting SPAN configuration and sufficient free ports for sensor connections. Typically Buyer-provided; not Seller supply.
+
+Tool Licensing: Annual subscription model covering software licenses, firmware updates, and threat intelligence feeds. License tiers are asset-count based. Subscription period is [SUBSCRIPTION_PERIOD].
+
+Software specifications must never include specific version strings — write "current version at implementation start." Hardware specifications must never include specific RAM, storage, or CPU values — write "sized per asset count and deployment scope — confirmed at detailed engineering."
+
+## Cybersecurity
+
+### Responsibility Split
+Seller owns: Design, supply, installation guidance, configuration, commissioning, testing, training, documentation, and post-commissioning support for the OTCSS tools within the agreed scope.
+
+Buyer owns: All network security boundary devices (OT firewalls, IPS, NAC); SPAN and network configuration required to route OT traffic to IDS sensors; patch management and antivirus updates after tool delivery; VPN/internet link establishment and management for remote support; physical security of all installed hardware; prevention of unauthorized access to existing plant systems; application of OT cybersecurity guidelines to Buyer's own users and contractors; SOC/SIEM integration if required in future.
+
+Shared: Stakeholder coordination, site access facilitation, architecture review and approval, commissioning support, acceptance testing.
+
+### Seller Liability on Cybersecurity
+Seller strongly recommends that security updates are implemented as soon as they are available and that the latest supported versions are used. Use of unsupported software versions or failure to apply patches may increase exposure to cyber threats. Seller is not liable for any cybersecurity incidents, data breaches, unauthorized access events, or related damages arising from Buyer's failure to maintain network security controls or follow the OT cybersecurity guidelines established by the delivered solution.
+
+### Secure Defaults Delivered at Commissioning
+- MFA enforced on the SRA for all remote vendor and maintenance sessions.
+- RBAC configured on SRA and cybersecurity tool dashboards at delivery.
+- Session recording active for all SRA sessions from commissioning.
+- All remote support access by Seller requires an executed NDA between Buyer and Seller prior to commencement.
+- IDS tool access restricted to designated cybersecurity personnel.
+- Passive-only design: no active scanning of OT endpoints at any point in the project lifecycle.
+
+### Hard Prohibitions for Cybersecurity Section Content
+- Do not generate novel legal cybersecurity clauses — use repository-approved boilerplate.
+- Do not generate guarantees of threat detection completeness or specific detection rates.
+- Do not generate compliance certification commitments or specific standard achievement claims.
+- Do not generate product-level security certifications unless explicitly confirmed in project metadata.
+
+## Implementation Phases
+
+### Stage 0: Project Planning
+Key activities: identify and engage key stakeholders; create draft work plan with tasks, durations, start/end dates, and resource assignments; finalize work plan and site visit schedule; obtain access to existing documentation and network diagrams; conduct stakeholder discussions to inform the target network architecture; prepare asset discovery scope template and define the device boundary (production units, asset types).
+Deliverables: Detailed Project Plan; Asset Discovery Template.
+Buyer role: approve scope and objectives; nominate stakeholders and SMEs; provide site access and existing documentation; endorse governance and reporting cadence.
+
+### Stage 1: OT Asset Discovery and Inventory
+Key activities: obtain plant monitoring team approval for discovery activities; perform passive tool-based discovery using SPAN/TAP on identified network switches (tool is project-dependent); supplement with manual documentation where required; capture key asset attributes (model, manufacturer, device ID, IP address, protocol, criticality level, owner); validate and finalize the asset inventory with plant stakeholders.
+Deliverables: Asset Register.
+Buyer role: enable site entry and safe discovery windows; supply existing diagrams, asset lists, policies, and vendor access details; review and validate asset inventories with stakeholders.
+Critical constraint: No active scanning of OT endpoints at any time. All discovery is passive and non-intrusive. Any configuration change requires MOC approval.
+
+### Stage 2: To-Be Network Architecture
+Key activities: validate the As-Is network diagram using asset discovery data, aligned with the Purdue model; map connectivity of OT devices, switches, firewalls, controllers, IoT sensors, and workstations; design security controls for the target state, applying Zero Trust principles across IT/OT boundaries, enabling MFA and SRA, and establishing controlled OT-IT data flows; evaluate the installation and integration of cyber tools (SRA, IDS, vulnerability management, asset management); draft the To-Be architecture and validate through stakeholder workshops and technical reviews; incorporate OT-specific monitoring and detection mechanisms; define the implementation roadmap aligned with plant schedules and governance checkpoints.
+Deliverables: To-Be Network Diagram; Connectivity Assessment Report; Cyber Tools Recommendation.
+Buyer role: share existing network diagrams and documentation; approve budget and procure agreed cyber tools; review and approve the implementation timeline. Architecture approval is the most common delay point — define a turnaround expectation.
+
+### Stage 3: Tools Implementation and Dashboards
+Key activities:
+  Deploy Threat Detection Sensors (IDS) — configure sensors aligned with ICS protocols and ICS threat intelligence modules; enable behavior-based anomaly detection (AI/ML); deploy ICS-specific threat detection policies and signatures for the OT environment.
+  OT Asset and Vulnerability Management — configure the automatic asset discovery tool to collect managed and unmanaged inventory from the OT environment; integrate the OT asset inventory into the vulnerability management tool for continuous detection of security vulnerabilities, configuration anomalies, and outdated firmware across the network.
+  Secure Access Management — deploy SRA tools and enforce all vendor connections through the SRA with MFA and RBAC; configure VPN connectivity from vendor networks to the SRA appliance; no direct OT network exposure for external parties.
+  Monitoring Dashboards — configure and integrate logs from SRA, vulnerability management, asset management, and IDS tools into unified OT-specific monitoring dashboards; dashboards cover Threat, Vulnerability, and Remote Access visibility.
+Deliverables: IDS, Asset Management, Vulnerability Management, and SRA tools installed, configured, and tested; OT-specific dashboards for Threat, Vulnerability, and Remote Access.
+Buyer role: provide authorized and controlled access to OT environments; review and approve deployment plans, proposed architecture, policies, and security configurations.
+
+### Stage 5: OT Cybersecurity Policy, SOP Documents, and Training
+Key activities:
+  Policy and SOP development — define OT/ICS cybersecurity policies and governance SOPs aligned with ISA/IEC 62443, NIST SP 800-82 CSF, and ISO 27001; develop policies covering asset management, vulnerability management, incident response, patching process, change management, and access control.
+  Training and awareness — conduct a leadership awareness session (1 comprehensive session); conduct workforce sessions for engineering, maintenance, operations, and vendors (2 sessions); deliver technical training for OT maintenance teams on implemented tools, configurations, and incident handling procedures (2 technical sessions); provide manuals and documentation for all newly implemented cyber tools.
+  Post-deployment audit — conduct a high-level security assessment after all tools are deployed to identify the achieved security maturity level; deliver an assessment report.
+Deliverables: OT Cybersecurity Policy and SOP documents; training completion records; system handover documentation; final audit/assessment report.
+Buyer role: provide access for leadership, OT operators, and vendors for workshops and interviews; schedule training and awareness sessions; acknowledge and approve shared documentation; issue Work Completion Certificate.
+
+Note: Stage 4 is not a standard OTCSS phase designation. If encountered in project documentation, treat as part of Stage 3 (tools implementation) or Stage 5 (policy/training) per the actual scope of activities described.
+
+### Post-Implementation Support
+Remote Support ([SUPPORT_PERIOD_REMOTE] from Work Completion): Remote troubleshooting, system fine-tuning, data gathering, and issue resolution within the scope of supply. Change requests, new features, and additional integrations are handled as separate commercial agreements. Effective working hours: 9:00 AM to 5:00 PM IST, Monday to Friday, excluding national holidays. NDA between Buyer and Seller must be signed before remote support commences.
+
+Onsite SV Support ([SUPPORT_PERIOD_ONSITE] from Work Completion): One Cybersecurity Engineer deployed onsite to monitor the solution console, work with plant stakeholders to address identified actions, and support day-to-day OT cybersecurity operations. Effective working hours: 9:00 AM to 5:00 PM IST, Monday to Friday, excluding national holidays. Seller may rotate the assigned SV per operational availability.
+
+## Testing
+
+All assessment and monitoring activities use passive, non-intrusive techniques — zero impact on production at all times.
+
+Tool deployment verification: installation and configuration of IDS sensors, core appliances, vulnerability management tools, and SRA appliances verified against agreed deployment architecture.
+
+Traffic capture verification: SPAN/TAP configuration confirmed by validating that IDS sensors receive and process OT network traffic.
+
+IDS detection test: threat detection policies and ICS-specific signatures verified in the OT environment.
+
+Vulnerability management verification: asset ingestion and CVE mapping confirmed against the delivered asset inventory.
+
+SRA verification: vendor connection workflow, MFA enforcement, RBAC, session recording, and audit log generation confirmed end-to-end.
+
+Dashboard integration test: data from IDS, vulnerability management, and SRA tools confirmed to appear in unified OT monitoring dashboards.
+
+Post-deployment audit: high-level security maturity assessment conducted after all tools are live.
+
+No Factory Acceptance Test (FAT) in the traditional simulation sense — OTCSS acceptance follows work completion milestones based on on-site deployment verification, not factory simulation. No active scanning of OT assets during any testing phase.
+
+## Risks
+
+1. Incomplete or inaccurate asset information from Buyer: All work is based on information and evidence provided by Buyer. Withheld or misrepresented information limits delivery accuracy. Owner: Buyer.
+2. Buyer hardware procurement delays: Aggregation switches, server room infrastructure, and network accessories in Buyer scope must be provisioned and ready before Seller can deploy. Owner: Buyer.
+3. Network configuration unavailability: Required VLAN configurations, SPAN settings, and OT firewall rules must be configured by Buyer before IDS sensors and core appliances can be commissioned. Owner: Buyer.
+4. Stakeholder coordination gaps: Delayed technical query responses or stakeholder unavailability during site visits extend project timelines proportionally. Owner: Buyer.
+5. Third-party OEM availability: OEM engineers required for specific asset access or configuration support must be arranged by Buyer for the relevant site visit windows. Owner: Buyer.
+6. Scope changes from undiscovered assets or subnets: Asset discovery may reveal OT assets or network segments not anticipated in the original scope. Additional scope requires a separate commercial change order. Owner: Shared.
+7. Network infrastructure constraints: Insufficient SPAN port capacity, inadequate bandwidth, or switch configuration limitations may require architectural adjustments. Owner: Shared.
+8. Tool subscription renewal: IDS, vulnerability management, and SRA tool licenses must be renewed by Buyer before expiry to maintain continuous protection. Owner: Buyer (post-delivery).
+9. Remote support link unavailability: Buyer must establish and maintain a dedicated internet connection for Seller's remote support access. NDA must be executed before sessions begin. Owner: Buyer.
+10. Cybersecurity incident post-delivery: If Buyer fails to follow established cybersecurity guidelines or maintain network security controls, Seller is not liable for resulting incidents or damages. Owner: Buyer.
+
+## Standard Assumptions (CORE / COMMON)
+
+- All information provided by Buyer is treated as accurate; Seller works only from the evidence and data provided.
+- Physical wiring, cabling, racking, and infrastructure changes are Buyer scope; Seller provides configuration guidance and validation only.
+- No active scanning of OT endpoints at any point during the project.
+- All configuration changes and security control enablement require formal MOC approval per plant governance.
+- Asset discovery template and scope boundary are finalized before Stage 1 site activities begin.
+- Named production units constitute the complete scope; additional units require a formal change order.
+- A project coordinator (SPOC) is nominated by Buyer to serve as the daily liaison with Seller.
+- Site visit travel dates are communicated and planned at least one week in advance.
+- OPE (lodging and travel expenses) are reimbursed based on actual costs if site visits are required during post-implementation support.
+- Tool license subscriptions are quoted for [SUBSCRIPTION_PERIOD] and must be renewed by Buyer before expiry.
+- Final assessment reports are presented to Buyer leadership; the number of presentation sessions is project-dependent (OBSERVED: up to 2 sessions in sample).
+- The exact quantity and model of tools are finalized by mutual agreement between Buyer and Seller after architecture confirmation.
+
+## Standard Exclusions (CORE)
+
+- Replacement or upgrade of existing PLC, DCS, HMI, or other automation hardware.
+- Corporate IT security components (IT firewalls, corporate SOC infrastructure, IT antivirus).
+- Legacy system upgrades beyond the network-level integration required for cyber tool deployment.
+- Firewalls, IPS, NAC, SIEM platform buildout, full SOC integration, EDR/MDR deployment, and war room setup.
+- Network redesign, network segmentation, or VLAN restructuring (existing network architecture is preserved).
+- Issuance of compliance certifications or initiation of formal regulatory audits.
+- Standalone OT security assessment (unless explicitly confirmed in project scope).
+- Modifications to existing Level-1, Level-2, MES, ERP, or other automation system software or hardware.
+- Erection activities and civil engineering works.
+- Hardware and software not explicitly described in the project proposal.
+- Source code of core cybersecurity tool platforms.
+- Mechanical equipment supply or modification.
+- Troubleshooting of mechanical, operational, or process performance issues.
+- PDA software and related hardware.
+- Software patches, OS updates, antivirus updates, and software maintenance after delivery (all Buyer scope).
+- Performance guarantees on productivity, quality, yield, or process capability.
+- Supervision, management, or scheduling of Buyer personnel, contractors, or agents.
+- Interface with external devices or systems not explicitly named in the proposal.
+
+## Diagram Guidance (semantic only — no mxGraph XML)
+
+### Architecture Diagram (system_config)
+The OTCSS architecture diagram layers (top to bottom, or left to right by zone):
+- Remote Access Entry: External vendor/OEM internet connection (Buyer-managed) entering through OT firewall into DMZ.
+- DMZ / Cybersecurity Tool Layer (Seller scope): IDS core appliance(s); Enterprise Manager (Option 2 only); SRA appliance and access point. All connected to OT firewall (Buyer scope) on one side and IT network on the other.
+- OT Network Layer (per process area): OT network switches (existing, Buyer scope); IDS sensors connected via SPAN; aggregation switch (Option 1, typically Buyer-provided); OT assets: PLCs, HMIs, DCS, SCADA servers, engineering workstations.
+- Field Layer: Field devices, sensors, and actuators connected to PLCs and DCS.
+- Scope boundary: Dashed lines distinguishing Seller scope (cyber tools, sensors, core appliances, SRA) from Buyer scope (firewalls, switches, network cables, OT assets, existing automation systems).
+- Legend: Connection type key (encrypted channel, SPAN, OT traffic, remote access); scope boundary key (Seller vs Buyer); reference-only caveat on the diagram.
+No IP addresses, port numbers, VLAN IDs, or MAC addresses in any architecture diagram — finalized during detailed engineering.
+
+### Data Flow Diagram (process_flow)
+Passive monitoring data flow: OT traffic on network switches → SPAN/TAP → IDS sensor → encrypted channel → IDS core appliance in DMZ → alerts and asset data → OT monitoring dashboard.
+Remote access flow: External vendor → internet (Buyer-managed) → OT firewall → SRA appliance (MFA + RBAC + approval workflow) → approved session to OT host → session recording → audit log.
+Vulnerability flow: Asset fingerprints from passive IDS observation → CVE/ICS-CERT database mapping → risk-based scoring → prioritized vulnerability report.
+
+## Gantt Guidance (all values indicative only)
+
+### Overall Implementation Gantt
+Phases and indicative durations (OBSERVED from sample; actual durations are project-dependent and commercially agreed):
+- Stage 0 (Project Planning): indicatively 2–4 weeks.
+- Stage 1 (OT Asset Discovery and Inventory): indicatively 2–4 weeks depending on number of plants and site visit access windows.
+- Stage 2 (To-Be Network Architecture): indicatively 2–4 weeks; Buyer architecture approval is the most common delay point — delays gate Stage 3 start.
+- Stage 3 (Tools Implementation and Dashboards): indicatively 4–8 weeks depending on tool complexity, asset count, and architecture option.
+- Stage 5 (Policy, SOP Documentation, and Training): indicatively 2–4 weeks depending on stakeholder availability for workshops and training sessions.
+- Total implementation: OBSERVED range for a mid-size multi-plant deployment is approximately 8 months across multiple on-site SVs (OBSERVED sample: 100 man-days — do not treat as a default).
+
+All durations are indicative only. Buyer prerequisite delays (architecture approval, hardware provisioning, site access scheduling) cause proportional delivery delays.
+
+Milestones: M1 (Project Plan submission), M2 (Asset Discovery List completion), M3 (Cyber Tool Installation confirmation), M4 (Dashboards deployed and verified), M5 (Training Report and Assessment Report submitted).
+
+### Remote Support and Onsite Monitoring Schedule (second schedule)
+- Remote Support period: [SUPPORT_PERIOD_REMOTE] commencing from Work Completion date.
+- Onsite SV period: [SUPPORT_PERIOD_ONSITE] commencing from Work Completion date; Seller may rotate the assigned SV per operational availability.
+
+### Draw.io Gantt Format
+Week-based JSON task objects with fields: task (string label), phase (string group name), start_week (integer, week 1 = PO acceptance), duration_weeks (integer), milestone (boolean), dependencies (array of zero-based predecessor task indices). Backend converts to mxGraph XML for draw.io import.
+
+### Shutdown Gantt
+OTCSS implementation is passive and non-intrusive by design. No plant-wide production shutdown is required for deployment. Physical installation activities (sensor racking, cabling) may require brief local maintenance windows managed as permits-to-work coordinated with plant operations. If project metadata confirms a specific maintenance window requirement, generate week-based task entries for that window's activities only. Otherwise, state explicitly: "OTCSS implementation is non-intrusive and does not require a production shutdown."
+
+
+---
+
+
+# DOMAIN GLOSSARY
+
+Anomaly Detection: AI/ML-based behavioral analysis that identifies deviations from established OT communication baselines. Generates alerts when devices communicate in unexpected patterns, volumes, or protocols, indicating potential threats or misconfigurations.
+
+Asset Discovery: The process of identifying all OT devices within the defined network scope using exclusively passive, non-intrusive techniques. Produces a structured asset register with attributes including make, model, firmware version, IP address, protocol, criticality, and owner.
+
+Asset Inventory (OT): A structured, continuously maintained register of all identified OT assets within the defined scope. Used as the foundation for vulnerability management, change detection, risk assessment, and incident response planning.
+
+Asset Register: The formal output of Stage 1 asset discovery. A tabular document listing all identified OT devices with their key attributes, validated by Buyer stakeholders before Stage 2 begins.
+
+CVE (Common Vulnerabilities and Exposures): Publicly disclosed cybersecurity vulnerabilities assigned unique standardized identifiers. OT vulnerability management maps identified asset firmware and software versions against known CVEs to prioritize remediation.
+
+Change Detection: Continuous monitoring of the OT asset inventory to identify additions, removals, firmware changes, or behavioral changes in known assets since the previous scan or baseline.
+
+DCS (Distributed Control System): A process control system used in continuous manufacturing and chemical processing environments. A primary OT asset in scope for OTCSS asset discovery and vulnerability management.
+
+DMZ (Demilitarized Zone): A dedicated network segment isolated from both the OT network and the IT network, used to host OTCSS cybersecurity tools (IDS core appliances, SRA appliance, Enterprise Manager). Protected on both sides by firewalls (Buyer scope).
+
+EDR (Endpoint Detection and Response): Security technology for monitoring and responding to threats at the endpoint level. Explicitly excluded from the standard OTCSS scope and supply.
+
+Enterprise Manager (EM): A central management console for environments where multiple IDS core appliances are deployed across different process areas (Option 2 architecture). Aggregates visibility and management from a single interface.
+
+HMI (Human-Machine Interface): Operator workstation or panel providing graphical interaction with PLCs or DCS. A key OT asset in scope for OTCSS. No modification to HMI software is performed.
+
+ICS (Industrial Control System): General umbrella term encompassing SCADA, DCS, PLCs, HMIs, and supporting OT control infrastructure. The protected environment in an OTCSS engagement.
+
+ICS-CERT: Industrial Control Systems Cyber Emergency Response Team — issues security advisories for vulnerabilities affecting ICS and OT products from major automation vendors. OT vulnerability management continuously monitors ICS-CERT bulletins.
+
+IDS (Intrusion Detection System — OT context): A passive network monitoring tool deployed within the OT network that inspects traffic for known threat signatures, anomalous behavioral patterns, and ICS protocol violations, without disrupting production. Not to be confused with IT-based IDS tools that may use active probing.
+
+IEC 62443 / ISA/IEC 62443: International standard series for securing industrial automation and control systems (IACS). The primary compliance framework against which OTCSS policy and SOP development is aligned.
+
+IPS (Intrusion Prevention System): An inline network security device that actively blocks malicious traffic. Explicitly excluded from the standard OTCSS scope — OTCSS is a monitoring and detection solution, not an inline blocking solution.
+
+L1 (Level 1): Field control level in the Purdue Enterprise Reference Architecture — PLCs, sensors, actuators, and field control devices.
+
+L2 (Level 2): Supervisory level in the Purdue model — DCS, SCADA servers, HMIs, engineering stations, and L2 LAN switches.
+
+L3 (Level 3): Operations / site level in the Purdue model — historians, production databases, site-level scheduling and management systems.
+
+Management of Change (MOC): A formal plant governance process required before any OT system modification, configuration change, or security control enablement. All OTCSS configuration changes are subject to MOC approval.
+
+MFA (Multi-Factor Authentication): Authentication requiring two or more verification factors (e.g., password plus OTP or hardware token). Required for all remote access sessions through the SRA. Not optional.
+
+NAC (Network Access Control): Technology for controlling which devices are permitted to connect to a network based on defined policies. Explicitly excluded from standard OTCSS scope — network admission control is Buyer scope.
+
+NIST CSF (NIST Cybersecurity Framework): A voluntary framework providing a common language and approach for cybersecurity risk management. Referenced alongside ISA/IEC 62443 in OTCSS governance and policy development.
+
+NIST SP 800-82: NIST Guide to Industrial Control Systems Security — the primary US government guidance document for securing ICS/OT environments. A key compliance reference in OTCSS policy and SOP development.
+
+OT (Operational Technology): Hardware and software that detects or causes changes through direct monitoring and control of physical industrial equipment, assets, processes, and events. Distinguished from IT (which processes data) by its direct interaction with physical plant processes.
+
+OTCSS (Operational Technology Cybersecurity Solution): The integrated solution delivered under this TS type — comprising OT asset discovery and inventory, IDS threat detection, vulnerability management, secure remote access, and OT cybersecurity policy and SOP development.
+
+Passive Discovery: The exclusive OT-safe method for asset identification — listening to existing OT network traffic without transmitting probe packets to OT devices. Required to protect production continuity and avoid disrupting safety-critical automation systems.
+
+PLC (Programmable Logic Controller): A ruggedized industrial digital computer used to automate electromechanical processes. The most common and critical OT endpoint in scope for OTCSS.
+
+Purdue Model (PERA — Purdue Enterprise Reference Architecture): A widely adopted hierarchical reference architecture for industrial control system network design, defining security zones from field devices (L0) through enterprise IT (L4/L5). OTCSS architecture is designed in alignment with Purdue model zone boundaries.
+
+RBAC (Role-Based Access Control): An access control model granting permissions based on assigned user roles rather than individual user identities. Enforced on the SRA appliance and on cybersecurity tool dashboards.
+
+Risk-Based Scoring: A vulnerability prioritization method that weights remediation priority by operational impact, asset criticality, and exploitability in the OT context — not purely by standardized CVSS severity scores.
+
+SCADA (Supervisory Control and Data Acquisition): A system architecture for monitoring and controlling industrial processes over distributed field infrastructure. OTCSS monitors SCADA communications passively but does not modify or control any SCADA system.
+
+SIEM (Security Information and Event Management): A platform for centralized log collection, correlation, and real-time security event monitoring. Explicitly excluded from the standard OTCSS base scope.
+
+SOP (Standard Operating Procedure): A documented plant-specific procedure governing routine OT cybersecurity operations, such as incident response workflows, vendor access request processes, and patching approval chains.
+
+SPAN (Switched Port Analyzer): A port mirroring configuration on a managed network switch that duplicates traffic from specified source ports to a designated monitoring port, enabling IDS sensors to observe OT traffic without disruption.
+
+SRA (Secure Remote Access): A zero-trust remote access gateway that controls, monitors, records, and audits all remote connections to OT assets. Replaces unmanaged VPN or direct remote connections with a governed, traceable mechanism.
+
+TAP (Test Access Point): A passive hardware device inserted inline in a network link that provides a mirrored copy of all passing traffic to a monitoring device. An alternative to SPAN for IDS sensor traffic capture.
+
+Zero Trust: A cybersecurity model based on the principle of continuous verification — "never trust, always verify" — requiring authentication and authorization of every user, device, and network session regardless of network location or prior access history.
+
+
+---
+
+
+# REPOSITORY SECTION MAPPING
+
+Confirmed section keys only. Suppressed (no AI button): cover, revision_history, abbreviations.
+AI-eligible but excluded from completion count: binding_conditions, cybersecurity, disclaimer, scope_definitions.
+
+Format per entry: Role | Required inputs | Safe to infer | Must not invent | Field/structure notes
+
+---
+
+## executive_summary
+Role: Positions Seller and the OT Cybersecurity solution for a management reader. Establishes Seller's OT/IT heritage, OT cybersecurity practice credentials, and the strategic value of OTCSS for the Buyer's industrial environment. First-impression section — strategic and capability-focused, not technically detailed.
+Required: [CUSTOMER_NAME], [PRODUCTION_ZONE] or industry context, Seller name (Hitachi India), solution type (OT Cybersecurity / OTCSS).
+Infer: Standard Seller OT/IT heritage and cybersecurity practice framing; general qualification through ISA/IEC 62443, GICSP, CISSP, and OT vendor certifications (state generically, not as specific named certifications unless confirmed); vendor ecosystem breadth; OT security lifecycle capability (Advise, Validate, Implement, Operate); general OTCSS value proposition for securing critical industrial environments.
+Never invent: Specific experience year counts; named reference client organizations; commercial pricing; specific RFP or tender details not in metadata; specific detection rate guarantees; compliance certification promises.
+Structure: 2–3 short paragraphs. (1) Seller OT/IT heritage and industrial automation pedigree. (2) OT cybersecurity practice credentials, team scale, and framework coverage. (3) OTCSS value proposition tailored to [CUSTOMER_NAME]'s industrial context and [PRODUCTION_ZONE]. Executive language only. No heading text in the generated output.
+
+---
+
+## introduction
+Role: Formal opening of the TS, capturing the enquiry reference, client identification, and scope framing used throughout the document.
+Required: [TENDER_REF] (placeholder if absent), [TENDER_DATE] (placeholder if absent), [CUSTOMER_NAME], [SITE_LOCATION], [PRODUCTION_ZONE].
+Infer: Standard response-to-enquiry framing; reference to the integrated OT cybersecurity scope covered by this TS; brief Seller commitment statement.
+Never invent: Tender reference numbers, dates, or client contact details not in metadata; specific enquiry subject text not in metadata.
+Structure: Short factual paragraph referencing the enquiry, client, site, and scope. Populate tender_reference, tender_date, clientname, clientlocation from project metadata. If absent, use placeholders. Conclude with a brief Seller commitment to delivering the OTCSS solution.
+
+---
+
+## process_flow
+Role: Describes the implementation lifecycle flow and/or the operational data flow through the OT cybersecurity tools. In the OTCSS domain this serves to illustrate either the staged project delivery methodology (Stage 0 through Stage 5 through post-implementation) or the runtime monitoring data flow (OT traffic → IDS sensor → core appliance → dashboards and alerts; vendor → SRA → OT host).
+Required: [PLANT_LIST], [PRODUCTION_ZONE]; [ARCHITECTURE_OPTION] if confirmed.
+Infer: Standard passive monitoring data path — OT traffic on network switches → SPAN/TAP → IDS sensor → encrypted channel → IDS core in DMZ → alerts and asset data → OT monitoring dashboards. Remote access path — external vendor → internet → SRA appliance (MFA/RBAC/approval) → approved session on OT host → session recording and audit log. Implementation lifecycle — Stage 0 (planning) → Stage 1 (discovery) → Stage 2 (architecture) → Stage 3 (tools deployment) → Stage 5 (policy/SOP/training) → post-implementation support.
+Never invent: Specific protocol names, IP addresses, vendor product names, or network topology details not confirmed.
+Structure: Brief narrative of the implementation lifecycle or the data monitoring flow (one to two paragraphs). If architecture option is confirmed, reference the corresponding network path. End with: "The above is for reference only and is subject to finalization during detailed engineering."
+
+---
+
+## overview
+Role: Business context and problem statement — why OTCSS is needed, what the current OT security state is, and what the solution delivers.
+Required: [CUSTOMER_NAME], [SITE_NAME], [PRODUCTION_ZONE], [PLANT_LIST].
+Infer: Standard OT cybersecurity problem framing — isolated OT networks with limited visibility; uncontrolled vendor remote access; absent or incomplete OT asset inventory; partial or no standardized IT/OT segmentation; lack of continuous vulnerability tracking; absence of centralized OT security event logging or common command center. OTCSS as the solution to establish visibility, governance, detection, and documented policy. Tangible and intangible benefit lists.
+Never invent: Specific existing system details not confirmed in metadata; KPI improvement claims; enquiry reference details not confirmed.
+Structure: Mixed-field. Include: process_summary (1–2 sentences capturing the enquiry context and scope), system_objective (current OT security problem + OTCSS purpose), existing_system (from metadata; placeholders for unknowns — describe as isolated OT networks with limited visibility and uncontrolled access), integration_approach (OTCSS deployed passively on top of existing OT infrastructure — zero modification to automation systems), tangible_benefits (bullet list — e.g., centralized asset visibility, governed vendor access, continuous vulnerability awareness, real-time threat detection), intangible_benefits (bullet list — e.g., ISA/IEC 62443 alignment, reduced OT attack surface, documented cybersecurity posture, improved operational confidence). Management-level tone.
+
+---
+
+## features
+Role: Complete functional scope of the OTCSS being delivered — all tools, services, governance deliverables, and post-commissioning support included in this engagement.
+Required: [PLANT_LIST], [NUM_ASSETS], [ARCHITECTURE_OPTION], [SUPPORT_PERIOD_REMOTE], [SUPPORT_PERIOD_ONSITE], [TRAINING_PERSONS], [TRAINING_DAYS], [SUBSCRIPTION_PERIOD].
+Infer: All five CORE capabilities (OT Asset Discovery and Inventory; OT IDS and Threat Intelligence; OT Vulnerability Management; Secure Remote Access with MFA/RBAC/session recording; OT Cybersecurity Policy and SOP development). OT-specific monitoring dashboards. Training sessions. Remote support and onsite SV as value-added features. Architecture-conditional items: Enterprise Manager for Option 2; aggregation switch for Option 1 (Buyer-provided — note clearly). Compliance alignment: ISA/IEC 62443, NIST SP 800-82, ISO 27001.
+Never invent: Specific IDS or SRA brand names not confirmed; detection rate guarantees; compliance certification commitments; capabilities not in confirmed scope.
+Structure: Numbered subsections per deliverable. Each: short title, description, buyer benefit. Suggested order: (1) OT Asset Discovery and Inventory, (2) OT Threat Intelligence and IDS, (3) OT Vulnerability Management, (4) Secure Remote Access, (5) OT Cybersecurity Policy and SOP Development, (6) OT-Specific Monitoring Dashboards, (7) Remote Operations Support, (8) Onsite Cybersecurity Engineer / SV, (9) Customer Training. Mark value-added items explicitly.
+
+---
+
+## remote_support
+Role: Defines post-commissioning remote support scope, duration, and conditions.
+Required: [SUPPORT_PERIOD_REMOTE] from metadata.
+Infer: Scope is limited to troubleshooting, system fine-tuning, data gathering, and issue resolution within the supplied scope. Change requests, additional features, and new integrations are out of scope and require separate commercial agreement. Working hours are Seller office hours (9:00 AM–5:00 PM IST, Monday–Friday), excluding national holidays. NDA between Buyer and Seller must be executed before any remote support session begins. Buyer is responsible for establishing, maintaining, and managing the network/internet link for remote access.
+Never invent: SLA response times; on-site visits within the remote support period unless explicitly confirmed.
+Structure: Two short paragraphs. (1) Coverage, duration ([SUPPORT_PERIOD_REMOTE]), and scope limitations (troubleshooting and issue resolution only; extras need separate commercial agreement; effective working hours). (2) Buyer establishes and manages the internet/VPN link; NDA required before sessions; sessions coordinated with Buyer SPOC.
+
+---
+
+## documentation_control
+Role: Describes the documentation package delivered by Seller as part of the OTCSS engagement.
+Required: Solution name context; confirmed scope of deliverables.
+Infer: OTCSS documentation typically includes: OT Cybersecurity Policy documents; plant-specific SOP documents; tool installation and configuration guides; system handover documents; training materials and manuals for implemented tools; final post-deployment audit/assessment report.
+Never invent: Specific document titles not confirmed; certification documents; regulatory submission documents.
+Structure: One paragraph on documentation philosophy (documentation aligned to implemented scope and tools). One bulleted list of specific deliverables: Policy documents, SOPs, tool manuals/configuration guides, system handover, training materials, assessment report. Concise.
+
+---
+
+## customer_training
+Role: Defines training delivered during or after commissioning.
+Required: [TRAINING_PERSONS], [TRAINING_DAYS] from metadata.
+Infer: Hands-on training on operational use of the implemented OTCSS tools. Delivered at or after commissioning. Three audience types: leadership (comprehensive awareness session), operations/engineering workforce (general awareness sessions), OT maintenance team (technical hands-on sessions covering tool configuration and incident handling). Total maximum audience: [TRAINING_PERSONS] persons. Total duration: maximum [TRAINING_DAYS] days. Agenda mutually agreed before delivery.
+Never invent: Specific training topics not agreed in scope; trainee certification or assessment; training cost not in scope.
+Structure: One paragraph. State: at or during commissioning, maximum [TRAINING_PERSONS] persons, maximum [TRAINING_DAYS] days, operational and technical scope, multi-audience approach (leadership, workforce, maintenance teams), agenda mutually agreed.
+
+---
+
+## fat_condition
+Role: Defines acceptance criteria and on-site verification conditions for the OTCSS deployment. OTCSS does not follow the traditional Factory Acceptance Test model — acceptance is milestone-based following on-site commissioning verification.
+Required: References to confirmed work completion milestones.
+Infer: OTCSS acceptance is structured around five work completion milestones rather than a factory simulation test. On-site commissioning verification includes: passive sensor deployment and SPAN/TAP traffic capture confirmation; IDS threat detection policy activation and alert verification; vulnerability management tool asset ingestion confirmation; SRA MFA/RBAC enforcement and session recording verification; dashboard data integration and OT-specific view confirmation. All tests are conducted on live OT infrastructure using passive techniques only.
+Never invent: Factory test pass/fail thresholds not agreed; remote FAT commitments; third-party witness requirements not confirmed.
+Structure: Short bulleted list of commissioning verification items per tool domain (IDS, SRA, vulnerability management, dashboards). Note that OTCSS acceptance is milestone-based, not FAT-based. Final milestone completion triggers Buyer's issuance of Work Completion Certificate.
+
+---
+
+## hardware_specs
+Role: Table of all hardware items supplied by Seller as part of the OTCSS solution.
+Required: Architecture option; [NUM_SENSORS]; [NUM_IDS_CORE] if confirmed; SRA hardware items; any other hardware confirmed in project scope.
+Infer: Standard OTCSS hardware items: IDS sensor appliances (hardware server units, small/standard variant sized by monitored asset count per area); IDS core appliance (server-class hardware deployed in DMZ, sized by total asset count and sensor count); Enterprise Manager appliance or server (Option 2 only, centralized management); SRA appliance / access point hardware (deployed in DMZ, sized by concurrent session and managed device count). Aggregation network switches are Buyer-provided — exclude from Seller BOM or note clearly as Buyer scope.
+Never invent: Specific model numbers; exact RAM, storage, or CPU specifications (write "sized per asset count and deployment scope — confirmed at detailed engineering"); specific vendor product codes not confirmed.
+Fields: name (equipment name), maker ("OEM per confirmed tool selection" if not confirmed), qty (from metadata or [NUM_SENSORS] placeholder), specs_line1 through specs_line4. Use specs_line1 for: "Sized per asset count and deployment scope — confirmed at detailed engineering." Leave unused spec lines blank.
+
+---
+
+## software_specs
+Role: Table of all software components supplied as part of the OTCSS solution.
+Required: Software components from project metadata or standard OTCSS supply; [SUBSCRIPTION_PERIOD]; [NUM_ASSETS] if available for license tier.
+Infer: Standard OTCSS software supply: IDS + Asset Management + Vulnerability Management platform software (annual subscription, asset-count tiered, includes ICS threat intelligence feed updates); SRA software (annual subscription, device/session tiered, includes access point license); Enterprise Manager software (Option 2 only, annual subscription); OT cybersecurity platform firmware update entitlement.
+Never invent: Specific version strings (always write "current version at implementation start"); specific vendor product names not confirmed; license counts not derivable from metadata.
+Fields: rows.name = software component name. Version field: "current version at implementation start." License type: annual subscription for [SUBSCRIPTION_PERIOD]. Do not hardcode version strings or asset-tier details unless confirmed.
+
+---
+
+## third_party_sw
+Role: Documents third-party software or infrastructure requirements not supplied by Seller, primarily the remote support network link.
+Required: Statement that remote support requires a Buyer-provided and Buyer-managed internet/VPN connection.
+Infer: Buyer establishes, manages, and controls the remote support network link at all times. Seller has no authority over the link configuration. NDA must be executed before any remote support session begins. All other network infrastructure (OT firewall rules, SPAN configuration, server room connectivity) is also Buyer-managed.
+Never invent: Specific VPN product names; specific bandwidth requirements not confirmed.
+Fields: sw4_name = standard statement — "VPN/Broadband Remote Link — provided and managed by Buyer; NDA required before remote support sessions commence." Use sw1_name–sw3_name for any other confirmed third-party requirements; leave blank if none.
+
+---
+
+## system_config
+Role: Image-backed section. User uploads the OT cybersecurity architecture diagram. This section holds the textual companion describing the selected architecture and tool deployment topology.
+Required: [ARCHITECTURE_OPTION]; [NUM_SENSORS]; [NUM_PLANTS]; DMZ topology context.
+Infer: Standard architectural description for the confirmed option. Option 1: aggregation switch collects OT traffic from multiple subnetworks; single IDS sensor per area connects to aggregation switch via SPAN; single IDS core appliance in DMZ serves entire site. Option 2: IDS sensors connect to individual OT subnetwork switches via SPAN; IDS core appliances deployed per process area; Enterprise Manager in DMZ provides centralized management. Both options: SRA appliance in DMZ provides zero-trust remote access.
+Never invent: Component counts not from metadata; IP addresses; VLAN details; physical rack layout specifics; specific vendor product names not confirmed.
+Structure: 2–3 sentences describing the selected architecture option, how cybersecurity tools are positioned relative to the OT network layers and DMZ, and how vendors access OT assets through the SRA. Reference Purdue model alignment. State key parameters inline when confirmed. End with: "The above configuration is for reference only and is subject to finalization during detailed engineering."
+
+---
+
+## supervisors
+Role: Records the man-day allocation for Seller personnel assigned to this project across project phases.
+Required: Man-day values from project metadata or commercial agreement.
+Infer: Standard OTCSS project roles: Project Manager / Coordinator (planning, reporting, stakeholder management, milestone tracking); Cybersecurity Engineer(s) (on-site asset discovery, architecture design, tool deployment, configuration, commissioning); Onsite SV (post-commissioning monitoring — covered under post-implementation support period, which may be handled separately). Man-days are project-dependent and commercially agreed.
+Never invent: Specific man-day counts not confirmed in project metadata or commercial agreement.
+Fields: pm_days ([PM_DAYS] placeholder if not in metadata), dev_days ([DEV_DAYS] placeholder), comm_days ([COMM_DAYS] placeholder), total_man_days (sum or [TOTAL_DAYS] placeholder). If [TOTAL_MANDAYS] is in project metadata, use it.
+
+---
+
+## division_of_eng
+Role: Responsibility matrix showing who owns each project activity across phases (Basic Data, Basic Engineering, Detail Design, Supply, Erection, Commissioning).
+Required: Architecture option (affects hardware line items); confirmed production units; confirmed tool scope.
+Infer: Seller provides: OT cybersecurity assessment activities, architecture design, tool supply, IDS/SRA/VM tool configuration and commissioning, policy/SOP documentation, training delivery, onsite SV monitoring. Buyer provides: plant coordination, site access, network infrastructure (cables, switches, server room, firewall rules, SPAN configuration), existing system documentation, plant and process domain subject matter expertise, project management, all approvals and stakeholder availability. Shared (S/B): scope definition, asset discovery activities, network architecture validation, acceptance and sign-off.
+Never invent: Responsibility assignments without project basis.
+Structure: Table with columns: No., Category, Item, BD, BE, DD, SU, ER, COM. Codes: B=Buyer, S=Seller, S/B=Joint (primary S or B with support from the other). Categories: Supply (IDS hardware, SRA hardware, software licenses), Services (assessment, architecture, configuration, training, SV support), Documents (policy/SOP, project plan, asset register, reports), Infrastructure (network, power, rack — Buyer scope), Management (project coordination — primarily Buyer with Seller support).
+
+---
+
+## work_completion
+Role: Defines the work completion certificate criteria and conditions.
+Required: References to the confirmed OTCSS work completion milestones.
+Infer: Five standard OTCSS milestones: M1 — Submission of Project Plan; M2 — Submission of Asset Discovery List; M3 — Confirmation of Cyber Tool Installation; M4 — Deployment and verification of OT-specific Dashboards; M5 — Submission of Training Report and Post-Deployment Assessment Report. Upon completion of all milestones, Buyer issues Work Completion Certificate within an agreed period (OBSERVED: 7 days). If Buyer does not issue within the period, the certificate is deemed issued. Issuance of Work Completion Certificate triggers commencement of remote support and onsite SV periods.
+Never invent: Specific deadline periods not commercially agreed; milestone content not confirmed.
+Structure: Five-bullet milestone list plus deemed-issued clause. One short paragraph noting that Work Completion Certificate triggers start of post-implementation support periods.
+
+---
+
+## value_addition
+Role: Describes complimentary value-added items offered alongside the main OTCSS scope.
+Required: [POC_PLATFORM], [POC_PERIOD] from metadata (if PoC is offered); confirmation of which value-added items are included.
+Infer: Standard OTCSS value additions: complimentary remote maintenance support ([SUPPORT_PERIOD_REMOTE]); onsite Cybersecurity Engineer ([SUPPORT_PERIOD_ONSITE]); RBAC user accounts feature on delivered tools; complimentary PoC of digital transformation or analytics solutions ([POC_PLATFORM] deployed for [POC_PERIOD] on existing server infrastructure for demonstration purposes). Future possibilities that may be noted but are not commitments: scalability to additional lines, SMS alerts, AI/ML analytics, MES/ERP integration, cloud integration, mobile dashboard.
+Never invent: PoC platform capabilities not in confirmed scope; deployment commitments beyond the PoC period; costs or pricing.
+Structure: Bulleted list of confirmed value additions. For PoC: state platform ([POC_PLATFORM]), duration ([POC_PERIOD]), hosting, objectives, and explicit scope limitations (demonstration only; commercial continuation requires separate contract; Seller may withdraw if Buyer does not proceed). Scope-limiting language is mandatory.
+
+---
+
+## buyer_obligations
+Role: Lists what Buyer must provide or arrange for the project to succeed. Contractually important.
+Required: All standard OTCSS Buyer obligations; any project-specific obligations from metadata.
+Infer: All of the following are standard for OTCSS: designate a project SPOC for daily liaison; respond to technical queries in a reasonable time; arrange all Buyer-scope hardware (aggregation switches, server room, power, rack space) well ahead of schedule; provide network cables and accessories not in Seller supply; provide site access for Seller's representatives at agreed times; maintain a dedicated internet connection for remote support; execute NDA before remote support; provide existing network diagrams, asset lists, and policies; enable site entry and safe discovery windows; supply authorized and controlled access to OT environments; make third-party OEM engineers available at site during commissioning if required; coordinate with plant stakeholders (CISO, OT heads, SOC team) during site activities; review and approve deployment plans, architecture, and security configurations; approve scope and objectives; endorse governance and reporting cadence; configure OT firewall rules and SPAN settings to enable IDS sensor traffic capture; in case of health issues to Seller's representative, Buyer provides best available medical facility (expenses borne by Seller).
+Never invent: Prerequisites for systems not in metadata.
+Structure: Bulleted imperative list ("Provide...", "Arrange...", "Designate...", "Ensure...", "Enable...", "Configure..."). Each item must be specific enough to be contractually referenceable.
+
+---
+
+## exclusion_list
+Role: Explicitly documents what is NOT in scope to prevent scope disputes.
+Required: Standard OTCSS exclusions; any project-specific exclusions from metadata.
+Infer: All standard exclusions apply as listed in the Standard Exclusions section of the domain knowledge above. Additionally: interface with external devices or systems not explicitly named in the proposal; any services beyond those explicitly described.
+Never invent: Additional exclusions not grounded in standard OTCSS scope patterns.
+Structure: Bulleted list. One to two sentences per item. Specific enough to be contractually useful. Draw directly from Standard Exclusions above.
+
+---
+
+## buyer_prerequisites
+Role: Pre-conditions Buyer must satisfy before Seller can begin each project phase. Focuses on prerequisites that gate specific Seller work.
+Required: Conditions from project metadata; standard OTCSS phase prerequisites.
+Infer: Standard OTCSS phase gates: Before Stage 1 begins — site access granted; existing network diagrams, documentation, and asset lists provided; scope and objectives approved; Stage 0 project plan accepted. Before Stage 2 begins — asset discovery list reviewed and validated by Buyer stakeholders. Before Stage 3 begins — To-Be architecture design approved; Buyer-scope hardware (aggregation switches, server room infrastructure, network cables) provisioned and ready; OT firewall rules and SPAN configurations completed by Buyer; Buyer-scope tools procurement completed. Before Stage 5 begins — tools deployed and operational; workshop scheduling confirmed. Before post-implementation support begins — dedicated internet/VPN link established; NDA executed.
+Never invent: Prerequisites for unconfirmed systems.
+Structure: Bulleted list organized by phase gate. Each item states the prerequisite and the Seller activity it gates.
+
+---
+
+## poc
+Role: Describes the complimentary Proof of Concept offer for additional solutions provided alongside the main OTCSS scope.
+Required: [POC_PLATFORM], [POC_PERIOD], hosting arrangement from metadata.
+Infer: Complimentary, time-limited, hosted on existing server infrastructure (or dedicated PoC infrastructure if specified); demonstration purposes only; does not constitute a deployment commitment; IP and all rights remain with Seller; commercial continuation requires a separate contract; Seller reserves the right to withdraw the PoC if Buyer does not proceed with purchase after the demonstration period. Observed example: AutoML Platform demonstrating capabilities such as automated data preprocessing, feature engineering, model selection, hyperparameter tuning, and delivery of predictive and prescriptive analytics insights.
+Never invent: Platform capabilities not confirmed in scope; deployment timelines beyond the PoC period; performance commitments during or after the PoC.
+Structure: Short paragraph or two. State platform ([POC_PLATFORM]), hosting location, duration ([POC_PERIOD]), demonstration objectives, and mandatory scope-limiting language. Note commercial continuation requirement explicitly.
+
+---
+
+## tech_stack
+Role: Combined table of all software and hardware components in the OTCSS technology stack.
+Required: All confirmed components from project metadata or standard OTCSS supply; [ARCHITECTURE_OPTION]; [NUM_SENSORS]; [SUBSCRIPTION_PERIOD].
+Infer: Standard OT cybersecurity technology categories: IDS/Asset Management/Vulnerability Management platform (hardware sensors + core appliance + EM if Option 2 + software subscription); SRA platform (hardware appliance + software subscription); Enterprise Manager (Option 2 only, hardware + software). Software versions always "current at implementation start." Hardware sizing always "per asset count and deployment scope — confirmed at detailed engineering." Aggregation switches noted as Buyer-provided if Option 1.
+Never invent: Specific version strings; specific RAM/storage/CPU values; specific vendor product names not confirmed; IP addresses.
+Fields: sr_no, component (name), technology (description or vendor category — "OEM per confirmed tool selection" if vendor not confirmed), note (sizing or qualification note). Software version column: "current version at implementation start." Hardware sizing note: "sized per asset count and deployment scope — confirmed at detailed engineering."
+
+---
+
+## overall_gantt
+Role: Image-backed Gantt section. User uploads the schedule diagram. Section holds textual companion describing the implementation and post-implementation schedule.
+Required: Nothing specific; PO acceptance date from metadata if available.
+Infer: All canonical OTCSS implementation phases (Stage 0 through Stage 5) plus post-implementation support periods. All durations are indicative only. Milestones M1 (Project Plan), M2 (Asset Discovery List), M3 (Cyber Tool Installation), M4 (Dashboards deployed), M5 (Training Report and Assessment Report). Post-implementation: remote support for [SUPPORT_PERIOD_REMOTE], onsite SV for [SUPPORT_PERIOD_ONSITE]. Week 1 = PO acceptance date.
+Never invent: Specific calendar dates unless PO date is in metadata; committed durations; specific man-day breakdowns not confirmed.
+Structure: 2–3 sentence intro summarizing total indicative duration and key phases. Milestones M1–M5 listed. Indicative-only caveat: "All durations are for reference only. Buyer prerequisite delays in architecture approval, hardware provisioning, and site access scheduling will cause proportional delivery delays." For draw.io chart generation, output week-based GanttTask JSON (task, phase, start_week, duration_weeks, milestone, dependencies) — backend converts to mxGraph XML.
+
+---
+
+## shutdown_gantt
+Role: Image-backed schedule for maintenance windows or phased deployment activities. For OTCSS, no plant-wide production shutdown is required — passive monitoring is non-intrusive.
+Required: Whether a maintenance window is required (from metadata); if yes, specific activities and estimated duration.
+Infer: OTCSS deployment is passive and non-intrusive — no production shutdown is required. Physical sensor installation (rack mounting, cabling for IDS sensors and SRA appliances) may require brief local maintenance windows managed as permits-to-work coordinated with the plant operations team.
+Never invent: Shutdown requirement if not confirmed in metadata.
+Structure: If no shutdown/maintenance window is required: state explicitly — "OTCSS implementation is passive and non-intrusive; no production shutdown is required. Physical sensor installation may be coordinated as brief permits-to-work with plant operations." If metadata confirms a specific maintenance window requirement: generate week-based GanttTask JSON entries for that window's activities only (same format as overall_gantt). If a second schedule image is used for the remote support / onsite monitoring period, describe that timeline instead.
+
+---
+
+## scope_definitions
+Role: Defines abbreviations and party identities used in the division of engineering table.
+Required: [CUSTOMER_NAME], Buyer abbreviation ("B"), Seller identity (Hitachi India Pvt. Ltd., "S").
+Infer: Standard phase abbreviations: BD=Basic Data, BE=Basic Engineering, DD=Detail Design, SU=Supply or Service, ER=Erection, COM=Commissioning. X/Y notation convention = primary responsibility by X with support from Y. Standard parties: Buyer = [CUSTOMER_NAME] (B); Seller = Hitachi India Pvt. Ltd. (S).
+Never invent: Abbreviations not used in the TS.
+Structure: Party definitions block followed by phase abbreviation definitions. Short definitional block.
+
+---
+
+## binding_conditions
+Role: Contractual framework limiting Seller scope and establishing Seller site-exit rights.
+Required: Standard content only — no project-specific additions beyond what the signed TS confirms.
+Infer: Scope limited to TS-defined content; services outside the agreed TS are Buyer responsibility; no performance guarantees on productivity, quality, or yield; seller supervisors have the right to leave the site under defined conditions (idling beyond reasonable time, Buyer non-compliance with TS terms, force majeure events including natural calamities or acts of God, unfulfilled Buyer prerequisites, unsafe site conditions); contract effective date = PO acceptance date by Seller; Seller not responsible for failed, missing, or damaged equipment unless explicitly stated in the contract.
+Never invent: Novel legal clauses; penalty terms; indemnity provisions not in approved boilerplate.
+Structure: Bulleted list. Use repository-approved binding conditions boilerplate — do not generate novel legal language.
+
+---
+
+## cybersecurity
+Role: Formally states cybersecurity responsibilities and Seller liability limitation as a meta-statement covering the delivered OT Cybersecurity solution itself.
+Required: Standard OTCSS cybersecurity disclaimer content — no project-specific additions.
+Never invent: Novel legal clauses; cybersecurity guarantees; product-level security certifications not confirmed; specific patch timelines or detection SLAs.
+Structure: 3–4 short paragraphs: (1) Seller strongly recommends timely implementation of security updates; unsupported versions or missed patches increase cyber exposure. (2) Buyer is solely responsible for preventing unauthorized access to existing plant systems and for ensuring Buyer's users follow established cybersecurity guidelines; if guidelines are not followed by Buyer's users, Seller is not liable for any cybersecurity incidents, data breaches, unauthorized access, or related damages regardless of cause. (3) This implementation contains confidential information — Buyer is responsible for maintaining confidentiality and proper usage. (4) NDA required between Buyer and Seller before any remote support session commences. Use approved boilerplate language only.
+
+---
+
+## disclaimer
+Role: Standard legal disclaimers covering software licenses, technical improvement rights, confidentiality, and liability limitation.
+Required: Standard clauses; contract price reference for liability cap.
+Never invent: Contract price values; penalty amounts; novel legal clauses beyond approved boilerplate.
+Structure: Four subsections — Software Licenses (use limited to services provided; buyer right to use for system lifetime; no duplication/distribution; third-party software licenses buyer responsibility); Changes Due to Technical Improvements (Seller reserves right to supply systems differing in detail from this document; continuous improvement policy); Confidentiality of Information / NDA (document is company secret; reproduction or disclosure to third parties prohibited without Seller management written authorization); Limitation of Liability and Consequential Damages (Seller total liability capped at 100% of contract price; no indirect or consequential damages including loss of profit, loss of production, or business interruption; document confidentiality). Use approved template language only.
+
+
+---
+
+
+End of OT Cybersecurity context.txt

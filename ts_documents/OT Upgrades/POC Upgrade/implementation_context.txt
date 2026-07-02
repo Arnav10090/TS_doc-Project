@@ -1,0 +1,11 @@
+Implementation phases: M1 — POC Definition (~1w): defining success criteria, selecting the target subsystem, engineering the rollback plan; M2 — Hardware Procurement & Staging (~4-6w): procuring the specific POC hardware, offline configuration; M3 — FAT (~1w): basic functional testing offline; M4 — Installation & Shadow Mode (~2w): physical installation, parallel operation if possible; M5 — Live Cutover & Evaluation (~2-4w): switching active control to the POC system, monitoring performance against success criteria, final evaluation report. Total durations indicative.
+
+FAT: Brief functional demonstration of the specific POC component capabilities.
+
+Buyer obligations: Collaborate closely on defining POC success criteria; provide access to the target subsystem; provide a dedicated downtime window for the initial installation and a secondary window for rollback if required.
+
+Value addition: Detailed evaluation report comparing legacy performance vs. POC performance, with an ROI projection for a full-scale rollout.
+
+Standard exclusions: Full plant rollout (this is just the POC); unrelated system upgrades.
+
+Risks: The POC may reveal hidden dependencies in the legacy system that complicate a full rollout.

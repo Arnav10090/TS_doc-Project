@@ -1,0 +1,9 @@
+Architecture: Standard 19-inch rack deployment. Top-of-Rack (ToR) switching connecting to core IT network. High-speed storage fabric (Fibre Channel or iSCSI/Ethernet) connecting servers to SAN.
+
+Technology: Servers (HPE ProLiant DL series, Dell PowerEdge R series); Storage (HPE Nimble/Alletra, Dell PowerStore/Unity); Switches (Cisco Catalyst/Nexus, Aruba CX); Racks and PDUs (APC, Vertiv).
+
+Data acquisition: N/A.
+
+Storage: Enterprise-grade SSD/NVMe or hybrid storage arrays. Configured with RAID 6 or RAID 10 for performance and fault tolerance. Dual storage controllers for HA.
+
+Integration pattern: Connects directly to the plant IT core network. Diagram: Rack layout diagram showing server placement, PDUs, and ToR switches.

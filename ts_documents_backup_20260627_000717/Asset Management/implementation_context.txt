@@ -1,0 +1,11 @@
+Implementation phases: M1 — Architecture & Discovery Planning (~4w): defining sensor locations, identifying SPAN ports, sizing server resources; M2 — Procurement & Hardware Delivery (~8w): ordering physical appliances or allocating VM resources; M3 — Deployment & Configuration (~6w): installing sensors, connecting SPAN ports, initial platform configuration; M4 — Asset Discovery & Tuning (~4w): passive learning period, tuning active queries, grouping assets by production zone; M5 — Handover & Training (~2w): providing initial asset inventory report, API integration testing (if applicable). Total durations indicative.
+
+FAT: Generally not required for standard software appliances. Focus is on Site Acceptance Testing (SAT) after deployment.
+
+Buyer obligations: Provide network topology diagrams, configure SPAN/Mirror ports on core/distribution switches, provide necessary VM infrastructure (if virtual appliance selected), define network segments for active scanning, provide credentials for active querying (WMI/SNMP).
+
+Value addition: Baseline asset inventory report exported in Excel/CSV format; identification of top 10 unsupported OS/firmware versions found.
+
+Standard exclusions: Upgrading network switches to support SPAN/Mirror ports; resolving issues with legacy assets discovered during scanning; implementation of CMDB/ITSM solutions.
+
+Risks: Lack of available SPAN ports on older switches may limit visibility. Active scanning on fragile legacy PLCs may cause disruptions if not properly scoped.

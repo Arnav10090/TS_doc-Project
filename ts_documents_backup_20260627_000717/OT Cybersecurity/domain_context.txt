@@ -1,0 +1,7 @@
+OT Cybersecurity Solution (OTCSS) — is a holistic security framework for Operational Technology (OT) environments in industrial plants, delivering risk assessment, security architecture design, and implementation of defense-in-depth controls. Covers industrial control systems including PLCs, HMIs, SCADA, historians, and OT network infrastructure. NOT a passive monitoring tool, antivirus-only solution, or IT security replication — OT-specific standards (IEC 62443, NIST) are the foundation.
+
+Core capabilities (all OTCSS deployments): OT network segmentation design (ISA-95 zones and conduits); vulnerability assessment of existing L1/L2 control systems; security policy and procedure development (OT-specific); security event monitoring integration (SOC/SIEM OT feeds); patch management program design; remote access security (secure VPN, jump server, session recording); asset inventory and risk register; incident response plan for OT environments.
+
+Business drivers: regulatory compliance (NIST CSF, IEC 62443, IS/ISO 27001 OT extension), ransomware/APT protection for production assets, insurance requirement fulfilment, audit readiness, reduction of OT downtime risk from cyber incidents.
+
+Plant environment: operating industrial facility with legacy L1/L2 automation (often unpatched, air-gapped or semi-connected). OT and IT networks may be flat or partially segmented. Engineering workstations on-premises. Remote access to L1 systems is a primary attack vector.

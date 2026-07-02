@@ -1,0 +1,6 @@
+## binding_conditions
+Role: Contractual framework limiting Seller scope and establishing Seller site-exit rights.
+Required: Standard content only — no project-specific additions beyond what the signed TS confirms.
+Infer: Scope limited to TS-defined content; services outside the agreed TS are Buyer responsibility; no performance guarantees on productivity, quality, or yield; seller supervisors have the right to leave the site under defined conditions (idling beyond reasonable time, Buyer non-compliance with TS terms, force majeure events including natural calamities or acts of God, unfulfilled Buyer prerequisites, unsafe site conditions); contract effective date = PO acceptance date by Seller; Seller not responsible for failed, missing, or damaged equipment unless explicitly stated in the contract.
+Never invent: Novel legal clauses; penalty terms; indemnity provisions not in approved boilerplate.
+Structure: Bulleted list. Use repository-approved binding conditions boilerplate — do not generate novel legal language.

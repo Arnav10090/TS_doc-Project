@@ -1,0 +1,2 @@
+[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
+One paragraph on built-in help system. Bullet list of delivered documentation (standard docs for this product). Concise. No invented document titles.

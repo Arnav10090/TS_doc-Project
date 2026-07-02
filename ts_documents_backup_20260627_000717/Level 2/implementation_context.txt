@@ -1,0 +1,13 @@
+Implementation methodology: Phased deployment approach ensuring controlled risk and validated deliverables at each stage. Typical phases: (1) Engineering & Requirements — site survey, functional design specification, interface definition, tag mapping; (2) Development & Configuration — application setup, database schema, interface development, custom reports; (3) Factory Acceptance Testing (FAT) — comprehensive testing at vendor facility with simulated L1 data; (4) Site Installation & Commissioning — hardware deployment, network integration, live L1 connections, parallel operations; (5) Training & Handover — operator/engineer training, documentation delivery, production cutover, post-go-live support.
+
+Project timeline: Typical 6-9 month implementation from contract signing to production cutover, depending on scope complexity, number of production lines, and integration requirements. Critical path items include tag list finalization, L1 system stability, L3 interface specifications, and site readiness.
+
+Buyer/Client responsibilities: Provide accurate tag lists and L1 interface specifications; ensure L1 systems are stable and accessible; prepare network infrastructure (servers, switches, firewall rules); assign dedicated project coordinator; confirm L3 ERP integration requirements; provide site access for installation teams; conduct user acceptance testing; participate in training sessions.
+
+Standard deliverables: Functional design specification (FDS); hardware and software installation guides; interface control documents (ICD); FAT test reports; commissioning reports; operator and engineer training materials; system administration manuals; source code or configuration files (as per contract); warranty support (typically 12 months from go-live).
+
+Value-added services: Post-go-live hypercare support (typically 30-90 days); system health monitoring dashboards; remote diagnostics and troubleshooting; knowledge transfer sessions; performance optimization consulting; integration with third-party systems.
+
+Typical exclusions: L1 PLC programming or control logic modifications; L3 ERP customization or module development; civil works and electrical infrastructure; UPS and power backup systems; OT network switches and cabling; weighbridge hardware, barcode scanners, RFID readers; third-party software licenses (OS, database, reporting tools) unless explicitly included; ongoing maintenance beyond warranty period.
+
+Risk considerations: L1 system instability can delay commissioning; unclear L3 integration specifications extend development timelines; incomplete tag lists require re-engineering; site access restrictions impact installation schedules; inadequate buyer testing resources delay acceptance.

@@ -1,0 +1,6 @@
+Purpose: Lists on-site supervision and commissioning personnel SELLER will deploy to site, with working day allocations.
+Required Inputs: [PM_SITE_DAYS], [CYMS_DEV_SITE_DAYS], [SYMS_DEV_SITE_DAYS], [COMMISSIONING_SV_DAYS], [TOTAL_COMMISSIONING_DAYS]
+Safe Inferences: Standard supervisor roles for HSM CYMS/SYMS: Project Manager, CYMS Developer, SYMS Developer, Commissioning SV (QA SV); total working days inclusive of on-site training; days are working days at site excluding travel
+Must Not Invent: Specific named personnel, specific per-diem or travel rates, specific accommodation arrangements, additional supervisory roles without scope confirmation
+Suggested Structure: Introductory sentence: "The following site supervisors will be deputed to the site for commissioning, deployment and training." Bulleted role list with day counts. Final line: "Total [TOTAL_COMMISSIONING_DAYS] working days (Inclusive of on-site training)."
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

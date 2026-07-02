@@ -1,0 +1,4 @@
+Structure: One short paragraph or bullet list naming the delivered documentation set. Delivered docs: functional specification, hardware specification, software specification, screen design document, system interface document, operation manual.
+Avoid: Promising additional documents not in standard deliverable list. Do not invent document titles not established in scope.
+Tone: Matter-of-fact list. Each deliverable: name + delivery trigger. Concise.
+Level 2-specific: Standard L2 PMS deliverables include the six items above — confirm via metadata if project has additions.

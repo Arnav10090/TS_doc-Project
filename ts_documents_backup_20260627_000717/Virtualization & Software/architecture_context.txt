@@ -1,0 +1,9 @@
+Architecture: 2+ node high-availability (HA) cluster with shared SAN/NAS storage. Redundant network paths (MPIO, NIC Teaming) for management, VM traffic, and storage traffic. Dedicated management server (vCenter/SCVMM).
+
+Technology: Hypervisor: VMware vSphere (ESXi) or Microsoft Hyper-V; Management: vCenter Server or System Center VMM; Servers: 2-socket rackmount servers (Dell PowerEdge/HPE ProLiant); Storage: iSCSI/FC SAN (Dell ME4/HPE MSA) or vSAN; OS: Windows Server for VMs.
+
+Data acquisition: N/A.
+
+Storage: Shared SAN/NAS provides highly available datastores for VM disks (VMDK/VHDX). Raid 5/6/10 configurations based on IOPS requirements.
+
+Integration pattern: VMs are logically connected to OT VLANs via virtual switches. Diagram: HA Cluster topology with shared storage, host networking, and VM guest distribution.

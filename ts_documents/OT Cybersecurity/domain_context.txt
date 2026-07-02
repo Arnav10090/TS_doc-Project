@@ -1,0 +1,157 @@
+# DOMAIN CONTEXT
+
+## What OT Cybersecurity Is
+OT Cybersecurity (delivered as an OTCSS engagement) is an integrated set of tools, services, and governance artifacts that improve the security posture of industrial Operational Technology environments — including industrial control systems (ICS), programmable logic controllers (PLCs), distributed control systems (DCS), supervisory control and data acquisition systems (SCADA), human-machine interfaces (HMI), and the OT network infrastructure that connects them.
+
+The solution occupies the security layer above existing plant automation. It provides asset visibility, threat detection, remote access governance, and cybersecurity policy documentation without modifying or interrupting any existing automation systems. All monitoring is passive and non-intrusive.
+
+OTCSS is NOT:
+- A SCADA or process control system — it does not interact with, command, or control any plant process.
+- A firewall or IPS product — network security boundary devices are explicitly Buyer scope and out of Seller scope.
+- A NAC (Network Access Control) system — network admission control is Buyer scope.
+- A SIEM or SOC platform — centralized log aggregation, security event correlation, and full security operations center buildout are excluded from the base OTCSS engagement.
+- A patch management system — OS patching, antivirus distribution, and software update management are Buyer scope.
+- An EDR/MDR solution — endpoint security agents installed on OT devices are not part of standard OTCSS supply.
+- A network redesign or segmentation service — existing network architecture is preserved as-is; network segmentation redesign is excluded.
+- A compliance certification or audit body — OTCSS does not issue compliance certificates, conduct formal third-party audits, or guarantee regulatory approval.
+- A replacement for existing automation hardware — PLC, DCS, HMI, or other OT hardware replacement is entirely out of scope.
+- An OT assessment as a standalone service — unless explicitly confirmed in the project scope, standalone OT assessment is excluded.
+
+## Core Capabilities (CORE)
+Every OTCSS engagement is expected to deliver all of the following:
+
+1. OT Asset Discovery & Inventory: Passive, non-intrusive identification and real-time inventory of all OT assets within the defined scope. Includes topology and protocol visualization, network connectivity mapping that reveals segregation between Purdue model levels, and continuous change detection to identify asset additions, removals, or configuration changes.
+
+2. OT Threat Intelligence & Intrusion Detection (IDS): OT-aware passive intrusion detection system using behavior-based anomaly detection (AI/ML engines) and ICS-specific threat intelligence feeds. IDS sensors are deployed at key network nodes and capture traffic via SPAN or TAP configurations without injecting any packets into the OT network. Detection covers anomalous communications, known malware indicators, unauthorized device changes, and ICS protocol violations.
+
+3. OT Vulnerability Management: Continuous vulnerability identification for all inventoried assets, mapped against publicly known CVEs, ICS-CERT advisories, and OEM security bulletins. Risk-based scoring prioritizes remediation by potential operational impact in the OT environment, not purely by CVSS score.
+
+4. Secure Remote Access (SRA) for OEMs and Vendors: Zero-trust secure remote access solution with multi-factor authentication (MFA), role-based access control (RBAC), an approval workflow for session authorization, full session recording, comprehensive audit trails, and no direct OT network exposure for external parties. Replaces uncontrolled vendor remote connections with a centrally governed and auditable mechanism.
+
+5. OT Cybersecurity Policy and SOP Development: Development of OT-specific cybersecurity policies (common policies) and plant-specific standard operating procedures (SOPs) aligned to ISA/IEC 62443 and NIST SP 800-82. Policies cover asset management, vulnerability management, incident response, patching process, change management, and access control governance.
+
+## Optional / Value-Added Capabilities (COMMON / OPTIONAL)
+6. OT-Specific Monitoring Dashboards (COMMON): Centralized dashboards aggregating alerts and logs from IDS, SRA, and vulnerability management tools. Provides unified OT security visibility across assets, threats, and access events. Tailored to OT operational context rather than generic IT security views.
+
+7. OT Security Training and Awareness (COMMON): Role-based training sessions for leadership, operations and engineering workforce, and OT maintenance personnel. Covers tool usage, configuration, incident handling procedures, and general OT cybersecurity awareness. Delivered at or after commissioning; agenda mutually agreed.
+
+8. Post-Deployment Audit and Maturity Assessment (COMMON): High-level security audit conducted after all tools are live to measure the achieved security maturity level and deliver a benchmark report.
+
+9. Remote Operations Support (CORE — included as value-added): Post-commissioning remote troubleshooting and issue resolution for [SUPPORT_PERIOD_REMOTE] from the date of Work Completion. Limited to the delivered solution scope; additional features and change requests require separate commercial agreement.
+
+10. Onsite Cybersecurity Engineer / SV (CORE — included as value-added): One dedicated Cybersecurity Engineer deployed onsite for [SUPPORT_PERIOD_ONSITE] from the date of Work Completion to monitor the solution console, coordinate with plant stakeholders, and support day-to-day cybersecurity operations.
+
+11. Enterprise Manager / Central Management Console (OPTIONAL): For multi-area or high-sensor-density deployments under Option 2 architecture, an enterprise management console centralizes visibility and management of distributed IDS core appliances and sensors from a single interface.
+
+12. Future Scalability to Additional Production Lines (OPTIONAL): The deployed OT cybersecurity framework can be extended to additional production units or facilities. Integration of new units is a separate commercial engagement and not part of base scope.
+
+13. Advanced AI/ML Analytics Integration (OPTIONAL): Future capability for predictive anomaly detection, process deviation forecasting, and integration with AI/ML analytics platforms. Not included in base OTCSS scope.
+
+14. MES/ERP Integration (OPTIONAL): Future capability for data exchange between OT cybersecurity tools and manufacturing execution or enterprise resource planning systems. Not in base scope.
+
+15. Cloud Integration (OPTIONAL): Future capability for hybrid or cloud-based cybersecurity monitoring and log storage. Not in base scope.
+
+16. Mobile Security Dashboard (OPTIONAL): Secure mobile application for viewing real-time cybersecurity status, alerts, and anomalies with role-based access and configurable push notifications. Not in base scope.
+
+## Business Drivers
+Customers implement OTCSS to:
+- Gain centralized visibility into OT assets and network behavior across previously isolated plant areas.
+- Eliminate uncontrolled vendor remote access and replace it with a governed, auditable, zero-trust mechanism.
+- Meet regulatory and corporate governance requirements aligned to ISA/IEC 62443, NIST CSF, and ISO 27001.
+- Establish a documented, defensible OT cybersecurity posture to satisfy insurers, corporate auditors, or board-level risk committees.
+- Detect and respond to cyberattacks, ransomware, supply chain compromises, and insider threats in OT environments.
+- Enable future SOC integration or managed detection and response (MDR) services by creating structured OT data feeds and event logs.
+- Build foundational asset intelligence to support risk-based patch prioritization and maintenance planning.
+
+OTCSS never guarantees: production uptime, product quality, process yield, complete prevention of all cyberattacks, or elimination of all vulnerabilities.
+
+## Operational Environment
+OTCSS is deployed in continuous-process or batch manufacturing and heavy industrial environments. Examples include but are not limited to: steel making, mining, oil and gas, chemicals, power generation, pharmaceuticals, food and beverage, and utilities. The environment typically contains:
+- Multiple co-located production units, each with dedicated and often isolated OT networks.
+- Heterogeneous OT assets of multiple makes and generations: PLCs, DCS, SCADA servers, HMIs, engineering workstations, historians, industrial switches, and gateways.
+- Industrial protocols traversing the OT network (Modbus, Profinet, EtherNet/IP, OPC UA/DA, DNP3, IEC 60870 — project-dependent, not assumed).
+- Partial or absent segmentation between OT and IT zones; ad-hoc or absent firewall policy between zones.
+- Legacy assets with limited or no vendor security patch support.
+- Vendor remote access conducted via unmanaged, unrecorded, and unaudited channels.
+- No centralized OT asset inventory or continuous vulnerability tracking.
+- Absence of a common OT security operations command center.
+
+# DOMAIN GLOSSARY
+Anomaly Detection: AI/ML-based behavioral analysis that identifies deviations from established OT communication baselines. Generates alerts when devices communicate in unexpected patterns, volumes, or protocols, indicating potential threats or misconfigurations.
+
+Asset Discovery: The process of identifying all OT devices within the defined network scope using exclusively passive, non-intrusive techniques. Produces a structured asset register with attributes including make, model, firmware version, IP address, protocol, criticality, and owner.
+
+Asset Inventory (OT): A structured, continuously maintained register of all identified OT assets within the defined scope. Used as the foundation for vulnerability management, change detection, risk assessment, and incident response planning.
+
+Asset Register: The formal output of Stage 1 asset discovery. A tabular document listing all identified OT devices with their key attributes, validated by Buyer stakeholders before Stage 2 begins.
+
+CVE (Common Vulnerabilities and Exposures): Publicly disclosed cybersecurity vulnerabilities assigned unique standardized identifiers. OT vulnerability management maps identified asset firmware and software versions against known CVEs to prioritize remediation.
+
+Change Detection: Continuous monitoring of the OT asset inventory to identify additions, removals, firmware changes, or behavioral changes in known assets since the previous scan or baseline.
+
+DCS (Distributed Control System): A process control system used in continuous manufacturing and chemical processing environments. A primary OT asset in scope for OTCSS asset discovery and vulnerability management.
+
+DMZ (Demilitarized Zone): A dedicated network segment isolated from both the OT network and the IT network, used to host OTCSS cybersecurity tools (IDS core appliances, SRA appliance, Enterprise Manager). Protected on both sides by firewalls (Buyer scope).
+
+EDR (Endpoint Detection and Response): Security technology for monitoring and responding to threats at the endpoint level. Explicitly excluded from the standard OTCSS scope and supply.
+
+Enterprise Manager (EM): A central management console for environments where multiple IDS core appliances are deployed across different process areas (Option 2 architecture). Aggregates visibility and management from a single interface.
+
+HMI (Human-Machine Interface): Operator workstation or panel providing graphical interaction with PLCs or DCS. A key OT asset in scope for OTCSS. No modification to HMI software is performed.
+
+ICS (Industrial Control System): General umbrella term encompassing SCADA, DCS, PLCs, HMIs, and supporting OT control infrastructure. The protected environment in an OTCSS engagement.
+
+ICS-CERT: Industrial Control Systems Cyber Emergency Response Team — issues security advisories for vulnerabilities affecting ICS and OT products from major automation vendors. OT vulnerability management continuously monitors ICS-CERT bulletins.
+
+IDS (Intrusion Detection System — OT context): A passive network monitoring tool deployed within the OT network that inspects traffic for known threat signatures, anomalous behavioral patterns, and ICS protocol violations, without disrupting production. Not to be confused with IT-based IDS tools that may use active probing.
+
+IEC 62443 / ISA/IEC 62443: International standard series for securing industrial automation and control systems (IACS). The primary compliance framework against which OTCSS policy and SOP development is aligned.
+
+IPS (Intrusion Prevention System): An inline network security device that actively blocks malicious traffic. Explicitly excluded from the standard OTCSS scope — OTCSS is a monitoring and detection solution, not an inline blocking solution.
+
+L1 (Level 1): Field control level in the Purdue Enterprise Reference Architecture — PLCs, sensors, actuators, and field control devices.
+
+L2 (Level 2): Supervisory level in the Purdue model — DCS, SCADA servers, HMIs, engineering stations, and L2 LAN switches.
+
+L3 (Level 3): Operations / site level in the Purdue model — historians, production databases, site-level scheduling and management systems.
+
+Management of Change (MOC): A formal plant governance process required before any OT system modification, configuration change, or security control enablement. All OTCSS configuration changes are subject to MOC approval.
+
+MFA (Multi-Factor Authentication): Authentication requiring two or more verification factors (e.g., password plus OTP or hardware token). Required for all remote access sessions through the SRA. Not optional.
+
+NAC (Network Access Control): Technology for controlling which devices are permitted to connect to a network based on defined policies. Explicitly excluded from standard OTCSS scope — network admission control is Buyer scope.
+
+NIST CSF (NIST Cybersecurity Framework): A voluntary framework providing a common language and approach for cybersecurity risk management. Referenced alongside ISA/IEC 62443 in OTCSS governance and policy development.
+
+NIST SP 800-82: NIST Guide to Industrial Control Systems Security — the primary US government guidance document for securing ICS/OT environments. A key compliance reference in OTCSS policy and SOP development.
+
+OT (Operational Technology): Hardware and software that detects or causes changes through direct monitoring and control of physical industrial equipment, assets, processes, and events. Distinguished from IT (which processes data) by its direct interaction with physical plant processes.
+
+OTCSS (Operational Technology Cybersecurity Solution): The integrated solution delivered under this TS type — comprising OT asset discovery and inventory, IDS threat detection, vulnerability management, secure remote access, and OT cybersecurity policy and SOP development.
+
+Passive Discovery: The exclusive OT-safe method for asset identification — listening to existing OT network traffic without transmitting probe packets to OT devices. Required to protect production continuity and avoid disrupting safety-critical automation systems.
+
+PLC (Programmable Logic Controller): A ruggedized industrial digital computer used to automate electromechanical processes. The most common and critical OT endpoint in scope for OTCSS.
+
+Purdue Model (PERA — Purdue Enterprise Reference Architecture): A widely adopted hierarchical reference architecture for industrial control system network design, defining security zones from field devices (L0) through enterprise IT (L4/L5). OTCSS architecture is designed in alignment with Purdue model zone boundaries.
+
+RBAC (Role-Based Access Control): An access control model granting permissions based on assigned user roles rather than individual user identities. Enforced on the SRA appliance and on cybersecurity tool dashboards.
+
+Risk-Based Scoring: A vulnerability prioritization method that weights remediation priority by operational impact, asset criticality, and exploitability in the OT context — not purely by standardized CVSS severity scores.
+
+SCADA (Supervisory Control and Data Acquisition): A system architecture for monitoring and controlling industrial processes over distributed field infrastructure. OTCSS monitors SCADA communications passively but does not modify or control any SCADA system.
+
+SIEM (Security Information and Event Management): A platform for centralized log collection, correlation, and real-time security event monitoring. Explicitly excluded from the standard OTCSS base scope.
+
+SOP (Standard Operating Procedure): A documented plant-specific procedure governing routine OT cybersecurity operations, such as incident response workflows, vendor access request processes, and patching approval chains.
+
+SPAN (Switched Port Analyzer): A port mirroring configuration on a managed network switch that duplicates traffic from specified source ports to a designated monitoring port, enabling IDS sensors to observe OT traffic without disruption.
+
+SRA (Secure Remote Access): A zero-trust remote access gateway that controls, monitors, records, and audits all remote connections to OT assets. Replaces unmanaged VPN or direct remote connections with a governed, traceable mechanism.
+
+TAP (Test Access Point): A passive hardware device inserted inline in a network link that provides a mirrored copy of all passing traffic to a monitoring device. An alternative to SPAN for IDS sensor traffic capture.
+
+Zero Trust: A cybersecurity model based on the principle of continuous verification — "never trust, always verify" — requiring authentication and authorization of every user, device, and network session regardless of network location or prior access history.
+
+
+---

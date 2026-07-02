@@ -1,0 +1,6 @@
+## poc
+Role: Describes the complimentary Proof of Concept offer for additional solutions provided alongside the main OTCSS scope.
+Required: [POC_PLATFORM], [POC_PERIOD], hosting arrangement from metadata.
+Infer: Complimentary, time-limited, hosted on existing server infrastructure (or dedicated PoC infrastructure if specified); demonstration purposes only; does not constitute a deployment commitment; IP and all rights remain with Seller; commercial continuation requires a separate contract; Seller reserves the right to withdraw the PoC if Buyer does not proceed with purchase after the demonstration period. Observed example: AutoML Platform demonstrating capabilities such as automated data preprocessing, feature engineering, model selection, hyperparameter tuning, and delivery of predictive and prescriptive analytics insights.
+Never invent: Platform capabilities not confirmed in scope; deployment timelines beyond the PoC period; performance commitments during or after the PoC.
+Structure: Short paragraph or two. State platform ([POC_PLATFORM]), hosting location, duration ([POC_PERIOD]), demonstration objectives, and mandatory scope-limiting language. Note commercial continuation requirement explicitly.

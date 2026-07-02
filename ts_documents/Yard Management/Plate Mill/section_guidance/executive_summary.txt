@@ -1,0 +1,5 @@
+Role: Positions SELLER and the Plate Mill Yard Management Solution for a management reader. First impression section — strategic framing, not technical specification detail.
+Required: [CUSTOMER_NAME], [SITE_NAME], [SITE_LOCATION], [SOLUTION_FULL_NAME], seller identity (Hitachi India Pvt. Ltd.).
+Infer: Standard SELLER OT/IT heritage statement (105+ years OT experience, 55+ years IT experience). General value proposition: digitalization of yard operations, end-to-end traceability, improved operational visibility, foundation for AI-driven optimization. Seller's qualification via in-house team of certified professionals.
+Never invent: Specific client reference lists, named competitors, pricing, performance improvement percentages, contract terms, or experience year counts beyond what is established in standard SELLER boilerplate.
+Structure: 2–3 short paragraphs. (1) SELLER capability and OT/IT heritage introduction. (2) SELLER qualification for this engagement. (3) Solution value framing for [CUSTOMER_NAME] — yard digitalization, traceability, and digital transformation foundation. Executive language only. No technical specifications in this section.

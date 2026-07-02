@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="220" viewBox="0 0 760 220" role="img" aria-label="AI Suggestions button reference screenshot">
+  <rect width="760" height="220" fill="#f8fafc"/>
+  <rect x="48" y="42" width="664" height="136" rx="8" fill="#ffffff" stroke="#d1d5db"/>
+  <text x="76" y="88" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#111827">Executive Summary</text>
+  <text x="76" y="120" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">Section input panel toolbar</text>
+  <rect x="410" y="74" width="172" height="48" rx="6" fill="#4f46e5"/>
+  <text x="435" y="105" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#ffffff">AI Suggestions</text>
+  <rect x="598" y="74" width="80" height="48" rx="6" fill="#e60012"/>
+  <text x="622" y="105" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#ffffff">SAVE</text>
+</svg>
+

@@ -1,0 +1,894 @@
+# HSM CONTEXT.TXT — Industrial Hot Strip Mill Coil Yard & Slab Yard Management System
+# Category knowledge base for AI Suggestions runtime grounding
+# Version: 1.0
+
+
+---
+
+
+# GLOBAL PRIORITY AND SAFETY RULES
+
+Priority order (highest wins):
+1. Project metadata
+2. Current saved section content
+3. Current draft content
+4. Historical HSM TS documents
+5. This file
+6. General industry knowledge
+
+Conflict rule: project-specific data always overrides this file.
+
+Missing data rule: use placeholders defined in the registry below. Do NOT assume any specific yard size, crane count, integration scope, technology vendor, or stacking configuration unless higher-priority sources confirm it.
+
+### Placeholder Registry
+
+[CUSTOMER_NAME]
+Purpose: Buyer/customer organization name
+Expected Source: Project Metadata
+Example Value: [CUSTOMER_NAME]
+Required: Required
+
+[SITE_NAME]
+Purpose: Name of the plant or facility
+Expected Source: Project Metadata
+Example Value: [SITE_NAME]
+Required: Required
+
+[SITE_LOCATION]
+Purpose: Geographic location of the plant
+Expected Source: Project Metadata
+Example Value: [SITE_LOCATION]
+Required: Required
+
+[TENDER_REF]
+Purpose: Tender or enquiry reference number
+Expected Source: Project Metadata
+Example Value: 26/PLANTCODE/CYMS-SYMS/v0
+Required: Optional
+
+[TENDER_DATE]
+Purpose: Date of original tender or enquiry
+Expected Source: Project Metadata
+Example Value: 17th December 2025
+Required: Optional
+
+[NUM_COIL_YARD_BAYS]
+Purpose: Number of coil yard bays in scope
+Expected Source: Buyer-Supplied Yard Data
+Example Value: 4
+Required: Required
+
+[NUM_SLAB_YARD_BAYS]
+Purpose: Number of slab yard bays in scope
+Expected Source: Buyer-Supplied Yard Data
+Example Value: 2
+Required: Required
+
+[NUM_CRANES_COIL]
+Purpose: Number of cranes in coil yard scope (EOT + forklifts)
+Expected Source: Buyer-Supplied Crane Data
+Example Value: 21
+Required: Required
+
+[NUM_CRANES_SLAB]
+Purpose: Number of cranes in slab yard scope (EOT + Semi-Gantry + Transfer Cars)
+Expected Source: Buyer-Supplied Crane Data
+Example Value: 8
+Required: Required
+
+[NUM_SERVERS]
+Purpose: Number of online and backup application servers
+Expected Source: Engineering / Project Metadata
+Example Value: 4
+Required: Required
+
+[NUM_CLIENT_PCS]
+Purpose: Number of CYMS and SYMS client workstations
+Expected Source: Engineering / Project Metadata
+Example Value: 8
+Required: Required
+
+[REMOTE_SUPPORT_DURATION_MONTHS]
+Purpose: Duration of complimentary remote support in months post-project-completion
+Expected Source: Contract / Scope Agreement
+Example Value: 6
+Required: Required
+
+[TRAINING_MAX_PERSONS]
+Purpose: Maximum number of trainees for site training
+Expected Source: Scope Agreement
+Example Value: 5
+Required: Required
+
+[TRAINING_MAX_DAYS]
+Purpose: Maximum duration of on-site training in days
+Expected Source: Scope Agreement
+Example Value: 3
+Required: Required
+
+[PM_SITE_DAYS]
+Purpose: On-site working days for Project Manager
+Expected Source: Schedule / Commercial Agreement
+Example Value: 20
+Required: Required
+
+[CYMS_DEV_SITE_DAYS]
+Purpose: On-site working days for CYMS Developer
+Expected Source: Schedule / Commercial Agreement
+Example Value: 20
+Required: Required
+
+[SYMS_DEV_SITE_DAYS]
+Purpose: On-site working days for SYMS Developer
+Expected Source: Schedule / Commercial Agreement
+Example Value: 20
+Required: Required
+
+[COMMISSIONING_SV_DAYS]
+Purpose: On-site working days for Commissioning Supervisor (QA SV)
+Expected Source: Schedule / Commercial Agreement
+Example Value: 60
+Required: Required
+
+[TOTAL_COMMISSIONING_DAYS]
+Purpose: Total on-site working days for commissioning team inclusive of training
+Expected Source: Schedule / Commercial Agreement
+Example Value: 120
+Required: Required
+
+[OVERALL_PROJECT_MONTHS]
+Purpose: Overall project duration from formal order acceptance to commissioning completion
+Expected Source: Schedule
+Example Value: 16
+Required: Required
+
+[SW_DEV_MONTHS_AFTER_SDD]
+Purpose: Software development and testing months required after System Design Document approval
+Expected Source: Schedule
+Example Value: 8
+Required: Required
+
+[WCC_DAYS]
+Purpose: Number of calendar days for Buyer to formally issue Work Completion Certificate
+Expected Source: Contract
+Example Value: 7
+Required: Required
+
+[POC_DURATION_MONTHS]
+Purpose: Duration of complimentary PoC deployment for demonstration purposes
+Expected Source: Scope / Commercial Agreement
+Example Value: 2
+Required: Optional
+
+[TOTAL_COIL_CAPACITY_TON]
+Purpose: Total tonnage capacity of the coil yard
+Expected Source: Buyer-Supplied Yard Data
+Example Value: [TOTAL_COIL_CAPACITY_TON]
+Required: Optional
+
+[TOTAL_SLAB_CAPACITY_TON]
+Purpose: Total tonnage capacity of the slab yard
+Expected Source: Buyer-Supplied Yard Data
+Example Value: [TOTAL_SLAB_CAPACITY_TON]
+Required: Optional
+
+[TOTAL_COIL_POSITIONS]
+Purpose: Total number of configurable coil storage positions
+Expected Source: Buyer-Supplied Yard Data
+Example Value: [TOTAL_COIL_POSITIONS]
+Required: Optional
+
+[TOTAL_SLAB_POSITIONS]
+Purpose: Total number of slab storage positions across all piles
+Expected Source: Buyer-Supplied Yard Data
+Example Value: [TOTAL_SLAB_POSITIONS]
+Required: Optional
+
+[POSITION_SENSOR_ACCURACY_MM]
+Purpose: Required position sensor accuracy specification (Buyer scope hardware)
+Expected Source: Buyer / Engineering Discussion
+Example Value: ±100
+Required: Required (Buyer hardware; note as Buyer scope in TS)
+
+[REMOTE_SUPPORT_HOURS]
+Purpose: Working hours window for remote support
+Expected Source: Contract / Scope Agreement
+Example Value: 9:00 AM to 5:00 PM IST, Monday to Friday
+Required: Required
+
+Hard prohibitions:
+- Do not invent customer names, project IDs, IP addresses, prices, or contract terms.
+- Do not copy wording verbatim from historical documents.
+- Do not treat numbers from one historical proposal as category defaults.
+- Do not generate legal language when repository-approved boilerplate exists for that section.
+- Do not assume any specific yard size, crane count, integration scope, technology vendor, stacking layer count, or bay configuration as default.
+- Do not conflate CYMS/SYMS with Level-1 automation, Level-2 process control, MES/ERP, SCADA, or any crane control system.
+- Do not assume MES/ERP integration is in scope — explicitly Future Scope unless confirmed by project metadata.
+- Do not assign any cybersecurity responsibility to SELLER beyond recommending timely security updates.
+
+
+---
+
+
+# HSM DOMAIN KNOWLEDGE
+
+## What HSM Is
+HSM CYMS/SYMS is a web-based digital yard management solution for Hot Strip Mill (HSM) steel plants. It occupies the Manufacturing Execution / Digital Layer: above Level-1 (L1) real-time control and below MES/ERP enterprise systems. CYMS (Coil Yard Management System) tracks hot-rolled coils from production receipt through storage, inventory management, retrieval, and dispatch. SYMS (Slab Yard Management System) tracks slabs from caster/transfer receipt through storage, scheduling, retrieval, and furnace charging. The system provides real-time tracking, digital yard visualization, intelligent storage optimization, crane coordination, event logging, and operational analytics through a centralized web application fully customized per site.
+
+NOT a Level-1 (L1) real-time control system.
+NOT a Level-2 (L2) process automation or setpoint system.
+NOT a SCADA system.
+NOT a MES/ERP system.
+NOT a Crane Control System (crane hardware remains exclusively in Buyer scope).
+NOT a Weighing Management System.
+NOT responsible for production performance, yield, or quality guarantees.
+NOT a firewall or network security management system.
+
+## Core Capabilities (CORE)
+Every HSM CYMS/SYMS deployment includes:
+- Live Tracking: real-time coil and slab location tracking from crane position sensor data (X, Y, Z axis) and pick/drop events
+- Yard Visualization: digital yard map in 2D grid view (zones, rows, columns) with slot occupancy and material status
+- 3D Visualization: three-dimensional yard view for enhanced spatial situational awareness
+- Intelligent Storage and Retrieval: software-guided placement and retrieval logic in both manual and automatic (auto) crane modes
+- Event Logging: timestamped audit trail of crane movement, pick, and drop events with override history
+- Ease of Traceability: trace any coil or slab by ID to current and historical yard positions
+- Search & Retrieval: operator search by coil/slab ID, grade, heat number, or other material attributes
+- Manual Corrections: operator capability to correct yard position records where sensor data is inconsistent
+- Reports: standard and configurable operational reports on inventory, crane activity, yard utilization, and material status
+- Yard Configuration: configurable grid layout (bays, zones, rows, columns) modifiable in software without code changes
+- Instruction Generation & Management: generation and management of crane work instructions to coordinate material movement sequences
+- Screen & Dashboard Modification: configurable operator dashboards and screens adaptable to site requirements
+- Smart Inventory Management: centralized digital inventory with material status classification (e.g., Produced, Quality Hold, Ready to Dispatch, In-Dispatch) visible to operators and supervisors
+- API Support: application programming interfaces for integration with L1, L2, and future external systems
+
+## Optional/Value-Added Capabilities (COMMON / OPTIONAL)
+Must be confirmed in project scope before including in any TS section:
+
+- Software-Based Anti-Collision Alarms (COMMON): zone-based software logic generating alerts when crane movements risk collision; entirely on application side with no hardware interlock
+- Zone-Based Crane Movement Control (COMMON): software-side zone restriction and movement coordination for multiple cranes in shared airspace
+- Crane Performance KPI Dashboard (COMMON): real-time and historical KPIs — yard turnaround time, crane utilization, idle rate tracking, benchmark comparison
+- Crane Work Order Management (COMMON): optimized sequencing and assignment of crane movement instructions for energy and time savings
+- Optimized Stacking Algorithm (OPTIONAL): algorithm for optimized coil and slab stacking considering safety, weight, and retrieval efficiency
+- Email Reporting (OPTIONAL, PoC): automated scheduled dispatch of operational reports and log data to specified recipients; contents and frequency agreed during engineering
+- SMS Alerts (OPTIONAL, PoC): real-time SMS notifications to plant executives on significant yard events; event triggers agreed during engineering; SIM card is Buyer scope
+- AutoML Platform (OPTIONAL, PoC): ML automation platform for data preprocessing, feature engineering, model selection, evaluation, hyperparameter tuning, and predictive/prescriptive insights; time-limited demonstration only
+
+## Business Drivers
+- Inventory accuracy: eliminate manual tracking errors, duplicate records, and material misplacement in large multi-bay yards
+- Operational visibility: real-time digital view of yard status for managers, supervisors, and operators
+- Retrieval efficiency: reduce time and crane cycles to locate and retrieve specific coils/slabs for dispatch or furnace charging
+- Crane utilization: improve productivity by eliminating search cycles and providing optimized movement instructions
+- Material traceability: complete digital audit trail from production to dispatch for quality, order tracking, and compliance
+- Safety: reduce crane collision risk and improve zone management in congested yards with manual and automated cranes
+- Digital transformation enablement: foundational yard data infrastructure for future AI analytics, centralized plant dashboards, and MES/ERP integration
+- Reporting automation: replace manual reporting with digital automated reports for management decision-making
+
+## Operational Environment
+- Plant type: Hot Strip Mill (HSM) in a steel manufacturing facility with continuous casting (CCM) upstream
+- Yard types: Coil Yard (hot-rolled coils) and Slab Yard (continuous caster slabs)
+- Material handling: EOT (Electric Overhead Travelling) cranes, Semi-Gantry cranes, forklifts, Slab Transfer Cars — configuration is project-specific
+- Crane modes: manual operator-driven and automatic, coexisting simultaneously
+- Adjacent systems: HSM L1, L2, Mill L2/L3, Caster L1/L2, Slab Transfer Car systems, Pellet Conveyor L1/L2; scope of integration is project-specific
+- Operational tempo: 24×7 plant operations; system must handle real-time updates from multiple simultaneous crane events
+- Network: industrial plant network; connectivity between crane-mounted edge devices and server over Wi-Fi or wired network — confirmed during detailed engineering
+- Physical footprint: multi-bay yard; bay names, row/column counts, and dimensions are Buyer-supplied project data
+
+## Architecture Options
+Three functional tiers:
+
+Tier 1 — Crane Subsystem (BUYER SCOPE):
+- Position sensors (X, Y, Z axes) on each crane
+- Pick/drop detection sensors (load or magnet-based)
+- Onboard crane controller (Edge I/O + network)
+- Crane-side HMI for operator feedback
+- Wireless access points (WAPs) and networking accessories
+- Crane-side PLC modifications for CYMS/SYMS integration
+
+Tier 2 — Application Server (SELLER SCOPE):
+- Industrial-grade server hardware (online + backup)
+- Web application server (frontend, backend, database engine)
+- API layer for external system integration
+- Digital yard map engine (2D and 3D)
+- Event processing and history logging module
+- Report engine
+
+Tier 3 — Client Access Layer (SELLER SCOPE):
+- Client workstation PCs at operator and supervisor stations
+- KVM extenders for remote console access
+- Standard web browser access; no proprietary client software required on client PCs
+
+Deployment: containerized application (OBSERVED: Docker) on dedicated server hardware (online + backup).
+
+## Protocols (OBSERVED / OPTIONAL)
+All protocol selections are project-specific and confirmed during engineering. Do not assume any default:
+- Plant network transport: Wi-Fi (industrial wireless) or wired Ethernet — finalized during detailed engineering (OBSERVED)
+- Remote access: Broadband/VPN — buyer provides and manages infrastructure (OBSERVED)
+- API integration with L1/L2/third-party systems: protocol (OPC-UA, REST, MQTT, proprietary, etc.) confirmed per integration point during engineering (OBSERVED)
+- Crane integration protocol: determined by crane-side controller hardware, confirmed during engineering (OBSERVED)
+
+## Data Acquisition
+- Crane position data: continuous X, Y, Z position feed from sensors mounted on cranes, transmitted from crane controller to CYMS/SYMS server over plant network
+- Pick/drop event data: discrete event signals from load or magnet-based sensors; each event triggers inventory slot update in CYMS/SYMS
+- Manual data entry: operator-entered corrections, placement overrides, and adjustments through web UI
+- Third-party system interfaces: data exchange with HSM L1 (Coil Tracking Map), Caster L1/L2, Mill L2/L3, Slab Transfer Car, Pellet Conveyor L1/L2; integration protocols and data points confirmed during engineering
+- MES/ERP: explicitly designated Future Scope in base proposal; do not include in scope unless confirmed
+
+## Data Storage
+- Primary database: relational RDBMS; MS SQL Server is OBSERVED — final selection at SELLER discretion
+- Backup: server-level automated backup software in SELLER scope
+- Data stored: yard position records, material attributes (coil ID, slab ID, weight, grade, dimensions, status), crane event history, pick/drop logs, operator corrections, reports, instruction history
+- Historical retention period: determined during engineering
+- Antivirus: antivirus software for server and client protection in SELLER scope
+- No write-back to L1/L2 source systems; CYMS/SYMS does not modify existing automation systems
+
+## Integration Patterns
+All integration work on the third-party/external system side is BUYER scope. CYMS/SYMS software-side modification is SELLER scope.
+
+| Integration Target          | Seller Scope (CYMS/SYMS side)  | Buyer Scope (External side)          |
+|-----------------------------|-------------------------------|--------------------------------------|
+| HSM L1 (Coil Tracking Map)  | Software interface             | L1 side modification                 |
+| Mill L2                     | Software interface             | L2 side modification                 |
+| Mill L3 / MES               | Future Scope                   | Future Scope                         |
+| Caster 1 L1 & L2            | Software interface             | Caster side modification             |
+| Caster 2 L1 & L2            | Software interface             | Caster side modification             |
+| Slab Transfer Car           | Software interface             | Transfer car side modification       |
+| Pellet Conveyor L1 & L2     | Software interface             | Conveyor side modification           |
+| Cranes (EOT, Semi-Gantry)   | Software interface             | Crane PLC/sensor modifications       |
+| MES/ERP                     | Future Scope                   | Future Scope                         |
+
+Firewall configuration: exclusively BUYER responsibility.
+
+## Technology Stack Patterns (OBSERVED)
+All selections are OBSERVED from one historical proposal. Never treat as project defaults:
+
+| Component              | OBSERVED Technology                                   |
+|------------------------|------------------------------------------------------|
+| Application Frontend   | Angular Framework                                     |
+| Browser Access         | Standard web browsers (Chrome, Edge, Mozilla)         |
+| Application Backend    | Python / Django framework                             |
+| Containerization       | Docker                                                |
+| Database               | MS SQL Server 2022 Standard Edition (or equivalent)   |
+| Server OS              | Windows Server 2022 (64-bit)                          |
+| Development IDE        | Microsoft Visual Studio                               |
+| Backup Software        | Acronics or equivalent                                |
+| Antivirus              | Trend Micro or equivalent                             |
+
+SELLER reserves the right to substitute equivalent technologies at its discretion. Database selection is solely SELLER's decision.
+
+## Cybersecurity
+BUYER is solely responsible for all cybersecurity domains of the deployed system and plant:
+- Cybersecurity, Information Security, Hardware Security, Personal Data Security
+- Overall Data Security, Network Security, Equipment Security
+- Firewall configuration and maintenance
+- Preventing unauthorized access to existing plant systems
+- Maintaining confidentiality and proper usage of information in the application
+
+SELLER's obligations are limited to: recommending prompt implementation of security updates and patching for CYMS/SYMS components within SELLER scope; delivering antivirus at delivery; recommending use of supported software versions.
+
+SELLER is not liable for any direct, indirect, incidental, consequential, or special damages from cybersecurity incidents, data breaches, unauthorized access, or any security-related events.
+
+Do not generate any text assigning cybersecurity responsibility to SELLER beyond recommending updates. Do not generate SELLER liability language for security events.
+
+## Implementation Phases
+All durations are OBSERVED from one historical proposal and INDICATIVE ONLY:
+
+Phase 1 — System Design: Requirements gathering, system design document preparation (OBSERVED: months 1-3)
+Phase 2 — Hardware Engineering: Hardware specification and procurement preparation (OBSERVED: months 2-4)
+Phase 3 — Software Design: Detailed software architecture and design (OBSERVED: months 3-5)
+Phase 4 — Software Development: Programming and unit testing (OBSERVED: months 5-12)
+Phase 5 — Shop Test & QMS Testing: Factory acceptance testing at SELLER's facility (OBSERVED: months 9-13)
+Phase 6 — Hardware & Software Shipping: Delivery to site (OBSERVED: months 12-14)
+Phase 7 — System Readiness at Site: Site preparation and pre-commissioning readiness (OBSERVED: months 14-15)
+Phase 8 — Commissioning: On-site integration, testing, and commissioning (OBSERVED: months 15-16)
+
+Critical path note: After System Design Document (SDD) approval by Buyer, SELLER requires [SW_DEV_MONTHS_AFTER_SDD] months for software development and testing. Delays in SDD approval cause proportional delays in delivery.
+
+Pre-engineering activity: Study of existing systems is part of Phase 1 and is SELLER scope.
+
+## Testing
+Factory Testing (FAT / Shop Test):
+- Conducted at SELLER's facility before shipment
+- Covers software functionality, integration simulation, QMS testing
+- Signed FAT report issued; shipment conditional on FAT completion
+
+Shutdown Integration Testing (OBSERVED):
+- Performed during planned plant shutdown; OBSERVED window: approximately 8 days total
+- Before MSD (-3 to -1 days): Shutdown Preparation Check, Latest System Save Check
+- During Main Shutdown (days 1-N): Network Checking, Interface Checking, I/O Check, New Crane Connection Test, Manual/Automatic Test, Overall Test
+- After MSD: Monitoring
+
+Site Acceptance:
+- Work Completion Certificate issued by Buyer upon completion of defined criteria
+- Buyer must issue WCC within [WCC_DAYS] days of criteria fulfillment; deemed issued otherwise
+
+Documentation required: Screen Design Documents, Hardware Specifications, Software Specifications, CYMS & SYMS Operation Manual.
+
+## Risks
+SELLER risks:
+- Delays in SDD approval by Buyer delay overall delivery — explicitly documented in proposals
+- Integration data availability from third-party systems (Buyer side) may gate testing progress
+
+BUYER risks:
+- Crane hardware and sensors not ready on schedule (Buyer scope; prerequisite for commissioning)
+- Remote connection not established before support or commissioning
+- Firewall configuration delays impacting system connectivity
+- Third-party OEM system engineers unavailable at commissioning
+
+Shared risks:
+- Data quality and format from existing L1/L2 systems for integration
+- Network infrastructure adequacy for real-time crane data transmission
+
+## Standard Assumptions (CORE / COMMON)
+CORE (every project):
+- Crane position sensors (X, Y, Z) and pick/drop detection sensors are provided and installed by Buyer
+- Crane-side PLC/controller modifications for CYMS/SYMS integration are Buyer responsibility
+- Network cables and accessories between server and crane network are Buyer responsibility
+- Firewall configuration is exclusively Buyer responsibility
+- Buyer provides dedicated internet/broadband for remote support access
+- System design is fully customized per site requirements; not a fixed pre-packaged product
+- NDA is signed between BUYER and SELLER before remote support commences
+- PO acceptance date is the effective date of contract execution
+
+COMMON (most projects):
+- Yard is organized as a configurable grid (bays, zones, rows, columns); final configuration supplied as Buyer data
+- Cranes operate in both manual and automatic modes
+- Multiple crane types coexist (EOT cranes, Semi-Gantry cranes, forklifts, transfer cars) — exact count is project-specific
+
+## Standard Exclusions (CORE)
+Always excluded unless explicitly stated in the signed TS:
+- Interface with external devices/systems not listed in the TS
+- Software patches, OS security updates, antivirus updates, or any software upgrades post-delivery
+- Any warranty, guarantee, or liability for productivity, quality, or yield
+- Source code of core technology
+- Modifications to existing plant electrical and automation systems (L1, L2, MES, or others)
+- Erection activities and civil works
+- Hardware and software beyond the TS scope
+- Mechanical equipment supply or modification
+- Support for mechanical, operational, or process troubleshooting
+- L2 & PDA software and related hardware
+- Firewalls and networking components
+- Performance guarantees of any kind
+- Supervision, management, or scheduling of Buyer's personnel, agents, or contractors
+
+## Diagram Guidance (semantic only — no mxGraph XML)
+Architecture layers (top to bottom):
+- Client Access Layer: operator/supervisor workstations with browser-based access; multiple client PCs at yard and control room locations
+- Application Server Layer: CYMS and SYMS application servers (online + backup); hosts web application, API engine, database, and report engine; containerized deployment
+- Integration Layer: API/interface connections to HSM L1, Mill L2/L3, Caster L1/L2, Slab Transfer Car, Pellet Conveyor L1/L2; crane data feed
+- Crane Subsystem Layer (BUYER scope): EOT cranes and Semi-Gantry cranes with position sensors, pick/drop sensors, onboard controllers, and WAPs
+- Physical Yard Layer: Coil Yard bays and Slab Yard bays as configurable grid
+
+Diagram conventions:
+- Clearly mark BUYER-scope vs. SELLER-scope components (dashed boundary or legend)
+- Show system boundary between CYMS/SYMS application and external systems
+- Mark network connectivity (Wi-Fi or wired — TBD)
+- Show MES/ERP as "Future Scope" if depicted
+- No IP addresses, VLANs, or port numbers — finalized during engineering
+
+## Gantt Guidance (all values indicative only)
+Every Gantt output must carry: "INDICATIVE FOR REFERENCE ONLY"
+Every Shutdown Gantt must carry: "The above shutdown schedule provided is for reference only. The final shutdown schedule will be determined through discussion and mutual agreement between the BUYER & SELLER."
+
+Overall Project Gantt:
+Total OBSERVED duration: [OVERALL_PROJECT_MONTHS] months from formal order acceptance (OBSERVED: ~16 months ≈ ~69 weeks).
+Draw.io format: week-based JSON tasks — fields: task (name), phase (category), start_week (integer, week 1 = PO acceptance), duration_weeks (integer), milestone (bool), dependencies (array of predecessor task indices).
+
+OBSERVED week-scale pattern (all indicative):
+- Formal Order Acceptance: start_week 1, milestone=true
+- System Design: start_week 1, duration_weeks ~12
+- Hardware Engineering: start_week 5, duration_weeks ~12
+- Software Design: start_week 9, duration_weeks ~12
+- Software Development: start_week 17, duration_weeks ~32
+- Shop Test & QMS Testing: start_week 33, duration_weeks ~20
+- Hardware & Software Shipping: start_week 45, duration_weeks ~12
+- System Readiness at Site: start_week 53, duration_weeks ~8
+- Commissioning: start_week 57, duration_weeks ~8
+
+Required Gantt note (always include): "After Approval on System Design Document Seller will take [SW_DEV_MONTHS_AFTER_SDD] Months for Software development & Testing. In the event of a delay in System design document approvals from the Customer, it will lead to an overall delay in the delivery."
+
+Shutdown Gantt:
+Shutdown IS typically required for HSM CYMS/SYMS commissioning (crane integration requires a live test window).
+OBSERVED shutdown window: approximately 8 days total (≈1.5 weeks in draw.io week-based format).
+OBSERVED activities and day sequence (relative to MSD, day 1 = first shutdown day):
+- Shutdown Preparation Check: before MSD, days -2 to -1
+- Latest System Save Check: before MSD, day -1
+- Network Checking: MSD day 1
+- Interface Checking: MSD days 1-2
+- IO Check: MSD days 2-3
+- New Crane Connection Test: MSD days 3-4
+- Manual/Automatic Test: MSD days 4-5
+- Overall Test: MSD days 5-6
+- Monitoring: MSD day 6 through after-MSD
+
+For draw.io week-based JSON for shutdown, express days as fractional weeks (e.g., 1 day ≈ 0.15 weeks) or use day-granularity integer fields with a note that the chart represents days not weeks.
+
+
+---
+
+
+# DOMAIN GLOSSARY
+
+CYMS (Coil Yard Management System)
+Software system for real-time tracking, visualization, inventory management, and retrieval coordination of hot-rolled coils in a coil yard. One of the two primary modules of HSM CYMS/SYMS.
+Usage: Use when referring specifically to the coil yard functions; use "CYMS & SYMS" when referring to both systems collectively.
+
+SYMS (Slab Yard Management System)
+Software system for real-time tracking, visualization, inventory management, and retrieval coordination of slabs in a slab yard. The second primary module.
+Usage: Use when referring specifically to slab yard functions.
+
+HSM (Hot Strip Mill)
+Steel processing mill that rolls slabs into hot-rolled coils through roughing and finishing mill stands. The plant context within which CYMS/SYMS deploys. Identifies the TS type and upstream production process.
+
+EOT Crane (Electric Overhead Travelling Crane)
+Primary material handling equipment. Travels on elevated rails to pick and place coils or slabs. Position sensors (X, Y, Z) on EOT cranes feed real-time location data to CYMS/SYMS.
+
+Semi-Gantry Crane
+Crane with one rail at elevated level and one at ground level; typically used in slab yards. Operates alongside EOT cranes. Distinct from a full gantry crane.
+
+Coil
+Hot-rolled steel strip wound into a cylindrical roll after exiting the hot strip mill. Primary material object tracked by CYMS. Attributes: Coil ID, weight, outer diameter, inner diameter, width, strip thickness, grade, temperature (at entry), status.
+
+Slab
+Rectangular cast steel product from a continuous caster. Input material to the HSM furnace and rolling mill. Primary material object tracked by SYMS. Attributes: Slab ID, weight, length, width, thickness, grade, heat number, status.
+
+Bay
+A defined physical section of the yard, typically bounded by structural columns. Yards are organized into multiple named bays. Each bay may have its own dedicated crane(s). Bay names are Buyer-supplied project data.
+
+Slot / Position
+A defined storage location in the yard grid, identified by Bay, Zone, Row, Column, and Layer coordinates. Each slot has an occupancy state (empty or occupied with material ID and attributes).
+
+Pick/Drop Event
+A discrete operational event detected by crane-mounted load or magnet sensors. Pick = crane lifted material. Drop = crane placed material at a location. Each event triggers a CYMS/SYMS slot inventory update.
+
+Digital Yard Map
+Software-based representation of the physical yard grid showing all slot positions and current occupancy status in real time. Displayed in 2D and 3D visualization modes. Fully configurable per site layout.
+
+Pile (Slab Yard)
+A stack of slabs at a single ground-level storage location. Multiple slabs are stacked in a pile up to a defined maximum per-pile count. Piles are organized into rows within bays.
+
+HI / Layer (Coil Yard)
+Height index — the vertical stacking level for coils in a bay. Project-specific maximum HI (number of stacking layers) determined by crane capacity and yard design. Not a fixed default value.
+
+L1 (Level-1 System)
+Real-time PLC/controller-based automation layer directly controlling mill equipment and cranes. CYMS/SYMS interfaces with L1 for coil tracking data and crane position feeds. L1 modifications for integration are Buyer scope.
+
+L2 (Level-2 System)
+Process optimization and setpoint management layer above L1. CYMS/SYMS may interface with L2 for material data. L2 modifications are Buyer scope.
+
+L3 / MES (Level-3 / Manufacturing Execution System)
+Manufacturing execution and production planning layer. MES/ERP integration with CYMS/SYMS is designated Future Scope in the base proposal unless confirmed by project metadata.
+
+CCM / Caster (Continuous Casting Machine)
+Upstream equipment that solidifies liquid steel into slabs. Caster L1 and L2 systems provide slab identity and tracking data to SYMS at point of production.
+
+Slab Transfer Car
+Equipment that transfers slabs between the caster area and the slab yard or between yard sections. Interfaces with SYMS for material tracking handoff. Buyer scope for hardware and interface modifications.
+
+Forklift
+Ground-level material handling equipment used in coil yards for smaller or lower-weight coil movement. Tracked by CYMS along with EOT cranes.
+
+Anti-Collision (Software-Based)
+Software alarm and zone management feature in CYMS/SYMS detecting potential crane collision situations and alerting operators. Does not physically interrupt crane movement (no hardware interlock). Distinct from crane-side hardware safety systems.
+
+Work Order (Crane Work Order)
+Digitally generated and managed instruction set assigned to a crane, specifying source and destination positions for a material movement operation. Generated by CYMS/SYMS for optimized crane logistics and energy savings.
+
+KPI (Key Performance Indicator)
+Quantitative operational metrics on the CYMS/SYMS dashboard. Examples: yard turnaround time, crane utilization rate, idle rate, on-time shipping rate, inventory accuracy, number of unpositioned coils/slabs.
+
+FAT (Factory Acceptance Test) / Shop Test
+Pre-shipment testing of the CYMS/SYMS system conducted at SELLER's facility to verify software functionality before site deployment. Mandatory gate before shipment.
+
+MSD (Main Shutdown Day)
+Designated plant shutdown day used as the reference anchor (day 0 / day 1) for the shutdown commissioning schedule. Shutdown Gantt activities are expressed in days relative to MSD.
+
+SDD (System Design Document)
+Design document prepared by SELLER during the design phase, submitted to BUYER for review and approval. SDD approval is the gating event for commencement of software development. Delays in approval cause proportional delivery delays.
+
+WCC (Work Completion Certificate)
+Formal certificate issued by BUYER to SELLER upon satisfactory completion of the project scope. Triggers contractual completion and initiates the remote support period. Deemed issued by BUYER if not formally issued within [WCC_DAYS] days of criteria fulfillment.
+
+NDA (Non-Disclosure Agreement)
+Confidentiality agreement signed between BUYER and SELLER before commencement of remote support activities.
+
+PoC (Proof of Concept)
+Complimentary time-limited demonstration of advanced digital solutions (AutoML platform, email reporting, SMS alerts) conducted on the CYMS/SYMS server. PoC solutions are not part of the contracted supply; continued use requires a separate commercial agreement. SELLER not bound by performance guaranty or remote support for PoC solutions.
+
+AutoML Platform
+Machine learning automation platform offered as a PoC item. Capabilities: automated data preprocessing, feature engineering, model selection, model evaluation, hyperparameter tuning, predictive and prescriptive analytics. Demonstration-only deployment; no production SLA.
+
+Email Reporting (PoC)
+Automated scheduled dispatch of operational reports (shipping reports, log data, etc.) to specified recipients at predefined frequency. Contents and schedule finalized during engineering. Network configuration for email delivery is Buyer responsibility.
+
+SMS Alerts (PoC)
+Real-time SMS notifications to plant executives about significant yard events. Event triggers and content agreed during engineering. SIM card and SMS gateway are Buyer scope.
+
+CADS (Composite Automation & Digital Solutions)
+SELLER product portfolio category encompassing automation and digital transformation offerings, within which CYMS/SYMS and associated PoC solutions reside.
+
+DX (Digital Transformation)
+Broader business program within which CYMS/SYMS serves as a foundational digital enabler; includes AI analytics, centralized plant dashboards, and IT/business process maturity programs.
+
+Docker
+Containerization platform used for deployment of the CYMS/SYMS application stack. (OBSERVED technology — not a requirement.)
+
+Django
+Python-based web application framework used for the CYMS/SYMS backend. (OBSERVED technology — not a requirement.)
+
+Angular
+TypeScript-based frontend web framework for the CYMS/SYMS web application UI, accessible through standard web browsers. (OBSERVED technology — not a requirement.)
+
+KVM Extender
+Hardware device enabling remote console access to server systems over a cabled link. Allows operator/supervisor access from distributed workstations to application servers. (OBSERVED hardware — quantities per project.)
+
+BD / BE / DD / SU / ER / COM
+Scope responsibility codes: BD = Basic Data, BE = Basic Engineering, DD = Detail Design, SU = Supply or Service, ER = Erection, COM = Commissioning. X/Y notation = primary by X with support from Y.
+
+
+---
+
+
+# REPOSITORY SECTION MAPPING
+
+Confirmed section keys only. Suppressed (no AI button): cover, revision_history, abbreviations.
+AI-eligible but excluded from completion count: binding_conditions, cybersecurity, disclaimer, scope_definitions.
+
+Format per entry: Role | Required inputs | Safe to infer | Must not invent | Field/structure notes
+
+---
+
+## executive_summary
+Role: Opens the TS document; establishes SELLER's credentials, domain expertise, and solution proposition for BUYER's coil yard and slab yard management challenge. Sets the strategic framing for the detailed TS that follows.
+Required: [CUSTOMER_NAME], [SITE_NAME], [SITE_LOCATION]
+Infer: SELLER's combined OT/IT heritage applicable to industrial yard management; CYMS & SYMS solution as meeting Buyer's coil and slab tracking requirements; value framing in three categories (direct business benefit, operational efficiency, IT efficiency); future digitalization and AI roadmap positioning (centralized plant dashboard, AI-based projects)
+Never invent: Specific SELLER experience year counts, named client references, specific OT/IT heritage statistics, pricing, commercial terms, or RFP details not in project metadata
+Structure: 3-4 paragraphs. (1) SELLER capability introduction: domain expertise in industrial automation and digital solutions for the metals sector. (2) Solution proposition: SELLER is positioned to meet BUYER's coil yard and slab yard management requirements at [SITE_NAME]. (3) Value positioning: the solution brings direct operational value and sets the stage for a phased digitalization program including AI-based analytics and centralized plant dashboards. (4) Optional: three business value domains. Executive language only. No lists. No technical content.
+
+---
+
+## introduction
+Role: Formal document context — establishes what this TS is, in response to what enquiry, submitted by whom to whom. States the document's status.
+Required: [CUSTOMER_NAME], [SITE_NAME], [SITE_LOCATION], [TENDER_REF], [TENDER_DATE]
+Infer: Document is a Draft Technical Note for Design, Engineering, Supply and Commissioning of CYMS & SYMS; SELLER submits to BUYER; document is for discussion purposes and does not constitute a contract; solution addresses BUYER's coil yard and slab yard management requirements
+Never invent: Specific enquiry dates, reference numbers, specific prior correspondence details, or contact names not in project metadata
+Structure: 2-3 short paragraphs. (1) Document purpose, scope (CYMS & SYMS for HSM at [SITE_NAME], [SITE_LOCATION]), reference to [TENDER_REF] dated [TENDER_DATE]. (2) SELLER submission statement to BUYER. (3) Brief confidence statement on solution fit and value. Formal contract-appropriate tone. Include the notation that the document is for discussion purposes only.
+
+---
+
+## overview
+Role: General technical and business overview — what the CYMS & SYMS does, why BUYER needs it, and the high-level system concept. Bridges executive summary and detailed features.
+Required: [CUSTOMER_NAME], [SITE_NAME]
+Infer: System purpose: real-time coil and slab location tracking, storage management, retrieval support; system objectives (accuracy, visibility, efficiency, event logging, error elimination); advantages of data visualization in terms of direct business benefit, operational efficiency, IT efficiency; digital transformation and future AI/MES roadmap
+Never invent: Specific performance improvement claims, specific inventory accuracy percentages, specific before/after comparisons, specific cycle time savings
+Structure: 3-5 paragraphs. (1) Document scope statement (Draft Technical Note for Design, Engineering, Supply and Commissioning of CYMS & SYMS at [SITE_NAME]). (2) Solution proposition: SELLER offers a solution meeting BUYER's coil yard management requirements with significant value for plant managers. (3) System objectives: list of 5 objectives from CORE capabilities. (4) Digitalization positioning: solution sets the stage for a phased DX, IT & business process maturity program. (5) Business value categories. Management-level language; no deep technical content here.
+
+---
+
+## process_flow
+Role: Describes the operational workflow — how coils/slabs flow through the yard from production receipt to dispatch, and how CYMS/SYMS supports each step. Covers both placement and retrieval logic.
+Required: [CUSTOMER_NAME]; yard layout data (bay names, crane types) if available from project metadata
+Infer: Two primary flow sequences: (a) Placement/Storage flow: Material produced → HSM L1 sends coil identity to CYMS / Caster L1 sends slab identity to SYMS → Crane picks material → Position sensors detect X, Y, Z → Pick/Drop sensor logs event → CYMS/SYMS records slot location → Slot status updated in digital yard map; (b) Retrieval flow: Operator/system selects target material (manual or auto) → Crane moves to location → Pick sensor logs event → CYMS/SYMS updates slot status → Material dispatched, transferred, or moved
+Never invent: Specific system response times, specific sensor thresholds, specific API polling intervals, specific network latency requirements
+Structure: Describe Placement Logic and Retrieval Logic as numbered step sequences. Include integration touch-points at each relevant step. Distinguish manual vs. auto operating modes. Reference the integration layer for L1, Caster, and crane subsystem data feeds. Can describe a process flow diagram (see Diagram Guidance for layered architecture description). No mxGraph XML.
+
+---
+
+## features
+Role: Primary technical capability section. Lists and explains all CYMS/SYMS features included in the project scope. Must cover the full feature set from system objective through system architecture, features, system logic, integration, and value-added items.
+Required: Confirmed feature scope for this project (CORE + confirmed OPTIONAL/COMMON); yard layout data ([NUM_COIL_YARD_BAYS], [NUM_SLAB_YARD_BAYS]); crane data ([NUM_CRANES_COIL], [NUM_CRANES_SLAB]); coil and slab dimensional/weight data (Buyer-supplied)
+Infer: All CORE capabilities are always present and describable. Value-added items (anti-collision, zone movement, KPI dashboard, work order management, stacking optimization) are COMMON/OPTIONAL — include only if confirmed in scope. For each feature: name, description, operating mode (manual/auto), user role (operator/supervisor), integration dependency if applicable. System logic: Placement Logic (manual and auto) and Retrieval Logic steps. Integration table listing all confirmed integration targets. Crane hardware requirements: note as BUYER scope; position sensor accuracy [POSITION_SENSOR_ACCURACY_MM] (OBSERVED); network type TBD during engineering.
+Never invent: Specific stacking algorithm details or performance claims, specific KPI threshold or benchmark values, specific anti-collision detection parameters, specific report formats or field names, specific grid dimensions or capacity numbers not from Buyer data
+Structure: Subsection 3.1 Overview → System Objective (bulleted list of 5 objectives) → System Architecture (three-tier description: crane subsystem as Buyer scope; CYMS/SYMS server; yard layout configuration) → Crane Hardware Requirements (Buyer scope note, OBSERVED specifications as guidance only) → CYMS & SYMS Features (bulleted list of all CORE + confirmed features) → System Logic (3.1a Placement Logic as numbered steps; 3.1b Retrieval Logic as numbered steps) → Integration (bulleted list of all confirmed integration targets; note MES/ERP as Future Scope) → Yard and Crane Data tables (populated from Buyer-supplied data in project metadata) → Value Added Items (numbered list; COMMON/OPTIONAL items only if confirmed). Following subsections: 3.1 Remote Support, 3.1.1 Documentation Control, 3.1.2 Customer Training.
+
+---
+
+## remote_support
+Role: Defines SELLER's complimentary remote maintenance support commitment after project completion, including duration, scope, working hours, conditions, and Buyer infrastructure obligations.
+Required: [REMOTE_SUPPORT_DURATION_MONTHS], [REMOTE_SUPPORT_HOURS]
+Infer: Support is limited to scope of supply defined in the TS; Buyer must provide dedicated internet/lease line at site; NDA required before commencement of remote support; remote terminal access to be made available to SELLER as needed; support limited to SELLER's working hours excluding national holidays; access and management of remote link is always under Buyer's authority
+Never invent: Specific SLA response times, specific fault resolution time commitments, specific on-site visit provisions within remote support period, on-call provisions outside stated working hours
+Structure: 3 paragraphs. (1) Duration ([REMOTE_SUPPORT_DURATION_MONTHS] months from project completion date), scope (troubleshooting and issue resolution limited to TS supply scope), and Buyer infrastructure obligation (internet/lease line, remote terminal access). (2) Working hours ([REMOTE_SUPPORT_HOURS], excluding national holidays). (3) NDA requirement before starting remote support.
+
+---
+
+## documentation_control
+Role: Specifies the documentation deliverables SELLER will provide as part of the supply scope.
+Required: No project-specific inputs required beyond scope confirmation
+Infer: Standard documentation package: Screen Design Document, Hardware Specifications, Software Specifications, CYMS & SYMS Application Operation Manual. All four are SELLER supply scope items (BD/BE/DD/SU phases).
+Never invent: Additional documentation items beyond confirmed scope, specific document format standards, delivery timelines or version control procedures
+Structure: Single paragraph listing the documentation deliverables. Brief inline enumeration of the four standard deliverable types.
+
+---
+
+## customer_training
+Role: Defines the training SELLER will provide to BUYER's personnel at site during commissioning.
+Required: [TRAINING_MAX_PERSONS], [TRAINING_MAX_DAYS]
+Infer: Training conducted at site during commissioning; covers CYMS & SYMS web application operation; classroom training format at site; topics mutually agreed between SELLER and BUYER
+Never invent: Specific training curriculum, online training provision, post-training support commitments, specific trainer qualifications, certification or assessment programs
+Structure: Single paragraph. State: at-site delivery during commissioning, maximum [TRAINING_MAX_PERSONS] persons, maximum [TRAINING_MAX_DAYS] days, subject coverage (CYMS & SYMS web application supply topics), format (classroom training), topic agreement (mutually agreed).
+
+---
+
+## system_config
+Role: Describes the system architecture configuration — the tiers, components, and deployment configuration of the CYMS/SYMS system. Text companion to the architecture diagram.
+Required: [NUM_SERVERS], [NUM_CLIENT_PCS]; yard layout configuration data from project metadata; confirmed network approach (Wi-Fi or wired — TBD)
+Infer: Three-tier architecture (Crane Subsystem / Application Server / Client Access); containerized deployment on online + backup server hardware; browser-based client access requiring no proprietary client software; configurable grid yard layout; API support for external integration; crane hardware (position sensors, WAPs, controllers) in BUYER scope
+Never invent: Specific IP addresses, hostname schemes, network topology with port details, server redundancy configurations beyond online+backup, specific API protocol details
+Structure: 2-3 paragraph text description (image uploaded separately by user). (1) High-level three-tier architecture description. (2) Crane Subsystem configuration (Buyer scope elements: position sensors X/Y/Z, pick/drop sensors, onboard controller, HMI, WAPs/networking accessories). (3) CYMS/SYMS server and client configuration (online + backup server; client PCs; KVM extenders; browser-based access). End with: "The above configuration is for reference only and is subject to finalization during detailed engineering." Do not describe the diagram image — describe the architecture the image will show.
+
+---
+
+## fat_condition
+Role: Defines the Factory Acceptance Test (FAT) / Shop Test conditions, scope, and acceptance criteria for the CYMS/SYMS system.
+Required: No project-specific inputs required beyond scope confirmation
+Infer: FAT conducted at SELLER's facility before shipment; tests all configured software functionality against simulated crane data inputs; verifies integration interface behavior; covers QMS (Quality Management System) testing; signed FAT report issued before shipment approval; part of the overall project schedule (OBSERVED: months 9-13)
+Never invent: Specific FAT checklist items or pass/fail criteria not established in scope, specific Buyer witness obligations, specific test duration days
+Structure: 2 paragraphs or short bulleted list. Describe: FAT location (SELLER's facility), timing (per project schedule), test scope (software functionality, integration simulation, QMS testing), output artifact (signed FAT report), gate condition (shipment subject to FAT completion). Note any Buyer witness provision if applicable.
+
+---
+
+## tech_stack
+Role: Specifies the application technology stack for the CYMS/SYMS application — frontend, backend, database, and deployment technology.
+Required: Confirmed technology selections for this project (may differ from OBSERVED defaults); note that SELLER reserves final selection authority
+Infer: OBSERVED stack pattern: Angular (frontend), Python/Django (backend), MS SQL Server or suitable equivalent (database at SELLER's sole discretion), Docker (containerization/deployment). Browser compatibility: standard web browsers including Chrome, Edge, and Mozilla.
+Never invent: Specific version numbers as contractual requirements, specific framework configurations or build parameters, specific Docker image names or configurations
+Structure: Technology stack table: Component | Technology Used. Rows: Application Front-end (Angular Framework; browser-compatible with standard browsers), Application Back-end (Python Django), Database (SELLER-selected RDBMS — OBSERVED: MS SQL Server 2022 Standard Edition or suitable equivalent; selection at SELLER discretion), Deployment (Docker). Supporting text noting SELLER's right to supply systems differing in detail from description due to continuous improvement policy.
+
+---
+
+## hardware_specs
+Role: Specifies the hardware components in SELLER scope supplied as part of the CYMS/SYMS system.
+Required: [NUM_SERVERS], [NUM_CLIENT_PCS]; confirmed hardware quantities from project engineering
+Infer: Hardware categories: Online and Backup Servers (enterprise-grade), Server Consoles and Accessories (monitor, keyboard, mouse), KVM Extender Sets, Client PCs (operator/supervisor workstations), Server Rack. Network cables are BUYER scope. Crane hardware (sensors, WAPs, controllers) is BUYER scope and must not appear in this table.
+Never invent: Specific processor model numbers, specific RAM capacities, specific storage sizes as contractual defaults — these are OBSERVED from one proposal and are project engineering outcomes; specific server make/model requirements
+Structure: Hardware specification table: SR.NO | Equipment Name | Specifications | Maker | Quantity (Nos.). Maker field: use multi-vendor designation (e.g., "HPE/Dell/Lenovo"). Specification lines: describe key specs without specifying exact model numbers or sizes as defaults (note "as per project engineering" where applicable). Quantities from project metadata ([NUM_SERVERS] for server items, [NUM_CLIENT_PCS] for client PCs). Add footnote: crane hardware (position sensors, WAPs, networking accessories) is BUYER scope and is not listed here.
+
+---
+
+## software_specs
+Role: Specifies the software components in SELLER scope supplied as part of the CYMS/SYMS system.
+Required: Confirmed software list from project engineering; [NUM_SERVERS], [NUM_CLIENT_PCS] for license quantities
+Infer: Software categories: Server OS (OBSERVED: Windows Server 2022 64-bit), productivity software (OBSERVED: Microsoft Office), development IDE (OBSERVED: Visual Studio), backup software (OBSERVED: Acronics or equivalent), antivirus (OBSERVED: Trend Micro or equivalent), Python, Django Framework, Angular Framework, Docker, database engine (OBSERVED: MS SQL Server 2022 Standard Edition with CALs). BUYER responsible for maintaining valid licenses for any BUYER-scope third-party software.
+Never invent: Specific version numbers as contractual requirements, specific license types or CAL counts as defaults — quantities are project engineering outcomes
+Structure: Software specification table: SR.NO | Equipment/Software Name | Maker | Quantity (Nos.). Quantities from project metadata. Version: "current version at detailed engineering start" — do not hardcode version strings as requirements.
+
+---
+
+## third_party_sw
+Role: Documents third-party software selection authority, remote link requirements, and Buyer license obligations.
+Required: No project-specific inputs required
+Infer: Database selection is solely SELLER's decision (MS SQL Server or other suitable database at SELLER's discretion); remote broadband/VPN link required for remote support — setup and maintenance under Buyer's authority; BUYER responsible for maintaining valid third-party software licenses for BUYER-scope software in the system; essential network configurations, user authentication, and network usage management are Buyer responsibilities
+Never invent: Specific VPN software products, specific bandwidth requirements, specific database vendor mandates, specific license fee obligations
+Structure: 2-3 paragraphs. (1) Database: SELLER CYMS/SYMS system uses MS SQL Server 2022 Standard Edition or other suitable database — selection at SELLER's sole discretion. (2) Remote Link: SELLER requires a broadband/VPN connection between SELLER and BUYER's site for remote support and issue resolution; setup and maintenance always under Buyer's authority. (3) Buyer license responsibility: BUYER is responsible for maintaining valid licenses for third-party software used in the system; SELLER not liable for issues arising from third-party software.
+
+---
+
+## overall_gantt
+Role: Presents the indicative overall project schedule from formal order acceptance through commissioning. Image-backed: user uploads Gantt image; this section also holds draw.io XML generated by the AI.
+Required: [OVERALL_PROJECT_MONTHS], [SW_DEV_MONTHS_AFTER_SDD]
+Infer: All eight implementation phases in sequence per Implementation Phases section above; critical path dependency on SDD approval; final schedule by mutual agreement; all durations indicative only
+Never invent: Specific calendar milestone dates, firm delivery commitments, specific start dates tied to a calendar year
+Structure: 2-3 sentence intro text: total indicative duration ([OVERALL_PROJECT_MONTHS] months from formal order acceptance) and phase overview. Mandatory note: "After Approval on System Design Document Seller will take [SW_DEV_MONTHS_AFTER_SDD] Months for Software development & Testing. In the event of a delay in System design document approvals from the Customer, it will lead to an overall delay in the delivery. Above delivery schedule is for CYMS & SYMS application." Must carry label: "OVERALL SCHEDULE INDICATIVE FOR REFERENCE ONLY." For draw.io output: generate week-based GanttTask JSON (task, phase, start_week, duration_weeks, milestone, dependencies) using OBSERVED week-scale pattern from Gantt Guidance above — backend converts to mxGraph XML.
+
+---
+
+## shutdown_gantt
+Role: Presents the indicative shutdown commissioning schedule relative to the Main Shutdown Day (MSD). Image-backed section.
+Required: Confirmed shutdown window duration and activity sequence from project engineering; typically requires discussion with BUYER
+Infer: Shutdown IS required for HSM CYMS/SYMS commissioning (live crane integration test mandatory); OBSERVED activities and sequence as specified in Gantt Guidance above; time axis anchored to MSD; final schedule by mutual agreement
+Never invent: Specific calendar shutdown dates, confirmed shutdown duration without Buyer agreement, firm activity day counts as contractual commitments
+Structure: Intro text (1-2 sentences on shutdown purpose). Mandatory labels: "SHUTDOWN SCHEDULE INDICATIVE FOR REFERENCE ONLY" and "The above shutdown schedule provided is for reference only. The final shutdown schedule will be determined through discussion and mutual agreement between the BUYER & SELLER." For draw.io output: week-based GanttTask JSON for shutdown-window activities; express the ~8-day OBSERVED window as day-granular tasks within the week-based format (1 day ≈ 0.15 weeks) or consult backend documentation for day-scale Gantt support.
+
+---
+
+## supervisors
+Role: Lists on-site supervision and commissioning personnel SELLER will deploy to site, with working day allocations.
+Required: [PM_SITE_DAYS], [CYMS_DEV_SITE_DAYS], [SYMS_DEV_SITE_DAYS], [COMMISSIONING_SV_DAYS], [TOTAL_COMMISSIONING_DAYS]
+Infer: Standard supervisor roles for HSM CYMS/SYMS: Project Manager, CYMS Developer, SYMS Developer, Commissioning SV (QA SV); total working days inclusive of on-site training; days are working days at site excluding travel
+Never invent: Specific named personnel, specific per-diem or travel rates, specific accommodation arrangements, additional supervisory roles without scope confirmation
+Structure: Introductory sentence: "The following site supervisors will be deputed to the site for commissioning, deployment and training." Bulleted role list with day counts. Final line: "Total [TOTAL_COMMISSIONING_DAYS] working days (Inclusive of on-site training)."
+
+---
+
+## scope_definitions
+Role: Defines the terminology and party identities used in the Division of Engineering responsibility matrix.
+Required: [CUSTOMER_NAME] (for Buyer definition); SELLER = Hitachi India Pvt. Ltd. (or as identified in the project)
+Infer: Standard scope phase codes: BD = Basic Data, BE = Basic Engineering, DD = Detail Design, SU = Supply or Service, ER = Erection, COM = Commissioning; X/Y notation = Primary Work/Services provided by X with Support from Y
+Never invent: Non-standard scope codes, additional phases not present in the Division of Engineering table
+Structure: Formal definitions block. Buyer: [CUSTOMER_NAME] (B: Buyer). Seller: SELLER (S: Seller). Then each code abbreviation and definition. Then X/Y notation explanation. Short definitional format.
+
+---
+
+## division_of_eng
+Role: Formal responsibility matrix — who (BUYER / SELLER / Joint) owns each engineering, supply, erection, and commissioning activity, organized by category.
+Required: Confirmed scope split from project engineering; [CUSTOMER_NAME]
+Infer: Standard responsibility pattern from sample TS: (1) Services — Project Execution (B/S joint), Overall System Design (S lead, B/S joint), Work Test and Simulation (S); (2) System Engineering — Documentation (S); (3) Hardware — servers, consoles, KVM, server rack, client PCs (S supply; B erection); network cables (B all phases); (4) Software — all software components (S); (5) Training (S supply); (6) Pre-Engineering — Study of Existing System (S); (7) Documents — screen design, hardware spec, software spec, operation manual (S); (8) Crane System — position sensors, pick/drop sensors, WAPs, networking accessories, crane-side PLC modifications (B all); CYMS/SYMS software-side crane integration (S all); (9) Interface with 3rd Party Systems — 3rd party system-side modifications (B); CYMS/SYMS software-side modifications (S). Note: firewall configuration managed by Buyer.
+Never invent: Additional line items without confirmed scope basis; responsibility deviations from the confirmed scope split
+Structure: Responsibility matrix table: No. | Item | BD | BE | DD | SU | ER | COM. Organized in numbered category groups (1) through (9) as above. Notes section at bottom: (1) Additional requirements beyond scope require mutual discussion and separate proposal; (2) Firewall Configuration will be managed by Buyer.
+
+---
+
+## work_completion
+Role: Defines the Work Completion Certificate (WCC) process — criteria, issuance timeline, deemed-issued provision, and acknowledgment implications.
+Required: [WCC_DAYS]
+Infer: Four Work Completion Criteria: supply of hardware and software per scope; deployment of CYMS & SYMS; commissioning working man-days completed per supervisors section; submission of all documentation per documentation control section. Buyer to issue WCC within [WCC_DAYS] days of criteria completion. If not issued within that period, WCC is deemed issued by Buyer. Issuance of WCC by Buyer acknowledges SELLER has fulfilled contractual obligations. WCC receipt by SELLER is prerequisite for taking up any new or additional scope of work.
+Never invent: Specific financial milestones tied to WCC, penalty clauses for delayed WCC, performance acceptance criteria not defined in scope
+Structure: 3-4 paragraphs. (1) Work Completion Criteria as a 4-item bulleted list. (2) WCC issuance timeline ([WCC_DAYS] days) and deemed-issued provision. (3) Acknowledgment statement: WCC signifies Buyer acknowledges SELLER has fulfilled all contractual obligations; any issues will be mutually discussed with SELLER supporting Buyer to resolve. (4) WCC as prerequisite for additional scope of work.
+
+---
+
+## value_addition
+Role: Describes value-added items and complimentary PoC offerings that enhance the base CYMS/SYMS system, demonstrating SELLER's advanced capabilities and future roadmap.
+Required: Confirmed scope of value-added items for this project; [POC_DURATION_MONTHS] for PoC section
+Infer: Value-added items proposable when confirmed in scope: (1) software-based anti-collision alarms; (2) zone-based crane movement provision; (3) crane performance KPI monitoring on dashboard; (4) crane work order management for optimized movements; (5) optimized stacking algorithm for coil and slab yard. PoC items: AutoML Platform (automated ML, data preprocessing, feature engineering, model selection, evaluation, hyperparameter tuning, predictive and prescriptive insights); Email Reporting (automated scheduling of reports to specified recipients); SMS Alerts (real-time plant executive notifications on significant yard events). PoC deployed for [POC_DURATION_MONTHS] months; purchase required for continuation; SELLER reserves right to withdraw if Buyer does not proceed; no performance guaranty or remote support for PoC solutions.
+Never invent: Specific KPI benchmark values or improvement percentages, specific stacking algorithm performance claims, specific AutoML model accuracy or improvement claims, specific email delivery guarantees, specific SMS gateway providers
+Structure: Section 8 heading "FREE PROOF-OF-CONCEPTS" with introductory paragraph (PoC concept, [POC_DURATION_MONTHS]-month deployment, hosted on same server, commercial terms, withdrawal rights). Before PoC section, Value Added Items (numbered list 1-5 with brief descriptions). Then PoC subsections: 8.1 AutoML Platform (objective, capabilities list, scope limitation note); 8.2 Email Reporting (capability description, network configuration note as Buyer responsibility); 8.3 SMS Alerts (capability description, SIM card as Buyer scope). Closing note: "Hardware required for carrying out POC will be discussed during Engineering stage."
+
+---
+
+## buyer_obligations
+Role: Lists obligations Buyer must fulfill to enable SELLER to successfully execute the project scope.
+Required: No project-specific inputs required beyond scope confirmation
+Infer: Standard obligations: coordinate project execution and answer technical queries within a reasonable time; arrange all hardware in Buyer scope well ahead of the agreed schedule; provide network cables and accessories not included in the TS; provide site access to SELLER's representatives for data collection and technical discussions; provide a dedicated internet connection; in case of health issue to SELLER's representative, immediately provide best available medical facility (expenses borne by SELLER)
+Never invent: Specific response-time SLAs for Buyer queries, specific penalty clauses for Buyer delays, specific hardware procurement specifications for Buyer-scope equipment
+Structure: Introductory sentence. Bulleted list of obligations. Professional tone. Each bullet specific enough to be referenced in a scope discussion.
+
+---
+
+## exclusion_list
+Role: Explicitly documents what is excluded from SELLER's scope to prevent scope disputes.
+Required: No project-specific inputs required
+Infer: All standard CORE exclusions apply to every HSM CYMS/SYMS project — see Standard Exclusions in domain knowledge above. Do not add project-specific exclusions unless confirmed in scope.
+Never invent: Vague or non-standard exclusions; items that are actually in scope
+Structure: Opening statement: only services mentioned in the scope of this TS are included; further services require mutual discussion and change management mechanism. Specific attention notice. Bulleted list of excluded items: interface with external devices not in TS; software patches/security updates; productivity/quality/yield warranties; source code of core technology; modifications to existing HSM electrical/automation systems (L1, L2, MES, SYC, FCE L1/L2); erection/civil works; hardware/software not in TS; mechanical equipment; support for mechanical/process/operational troubleshooting; L2 and PDA software; firewalls and networking components; performance guarantees.
+
+---
+
+## buyer_prerequisites
+Role: Lists pre-conditions Buyer must satisfy before SELLER can commence on-site commissioning activities.
+Required: No project-specific inputs required
+Infer: Standard prerequisites for HSM CYMS/SYMS commissioning: readiness of the crane system including all required hardware and sensors (Buyer scope); remote connection setup established
+Never invent: Specific crane readiness acceptance criteria, specific network performance thresholds, additional prerequisites without scope basis
+Structure: Brief introductory sentence. Short bulleted list of prerequisites. Each item states the pre-condition clearly. Concise and unambiguous.
+
+---
+
+## binding_conditions
+Role: Contractual conditions governing SELLER's scope, liability, and obligation boundaries. AI-eligible but excluded from completion count.
+Required: No project-specific inputs required — standard content only
+Infer: Standard binding conditions: SELLER scope limited per signed TS to modification/creation of interface programs for BUYER use of SELLER-supplied equipment; all services outside SELLER scope under BUYER responsibility with no SELLER performance guarantee or liability; SELLER scope excludes supervision/management of BUYER's personnel/agents/contractors; SELLER supervisor site-exit rights under: extended idling beyond reasonable time, Buyer not following agreed TS terms, force majeure events, prerequisites not fulfilled, conditions beyond SELLER control; SELLER not responsible for performance guarantee or productivity/quality; SELLER not responsible for failed/damaged equipment outside contracted scope unless explicitly in contract; existing system working responsibility with Buyer; firewall cybersecurity responsibility with Buyer; contract execution date = PO acceptance date; WCC receipt prerequisite for additional scope; SELLER liability nil except for scope in signed TS
+Never invent: Novel liability clauses, specific penalty amounts, specific liquidated damages figures, specific currency or payment terms, novel legal language not in repository-approved boilerplate
+Structure: Bulleted list. Each condition is a self-contained statement. Legal/contractual tone using repository-approved language patterns. Do not generate novel legal clauses.
+
+---
+
+## disclaimer
+Role: Standard legal disclaimers covering software license terms, technical improvement rights, confidentiality, and liability limitation. AI-eligible but excluded from completion count.
+Required: Standard clauses; no project-specific inputs beyond contract price reference (do not state specific values)
+Infer: Four subsections: (1) Software Licenses — use rights limited to services provided; Buyer may use and modify for normal use for system lifetime; duplication/distribution/use in other plants prohibited; making software accessible to third parties prohibited; all software rights remain with SELLER; BUYER responsible for valid third-party software licenses in the system; SELLER not liable for third-party software issues; (2) Changes Due to Technical Improvements — SELLER policy of continuous improvement; right to supply systems differing in detail from document description; (3) Confidentiality (NDA) — document is a company secret; prohibition on reproduction or disclosure to third parties without written SELLER management authorization; (4) Limitation of Liability & Consequential Damages — total SELLER liability cap; no liability for indirect or consequential damages; document confidentiality reiteration
+Never invent: Contract price values, specific liability cap percentages as contractual terms, novel legal clauses, penalty amounts, specific indemnity provisions
+Structure: Four numbered subsections (7.1 Software Licenses, 7.2 Changes Due to Technical Improvements, 7.3 Confidentiality, 7.4 Limitation of Liability & Consequential Damages). Each subsection is one paragraph of approved boilerplate-aligned content. Do not generate novel legal language.
+
+---
+
+## cybersecurity
+Role: Formally allocates cybersecurity responsibilities and provides SELLER's cybersecurity disclaimer. AI-eligible but excluded from completion count.
+Required: Standard disclaimer content — see Cybersecurity section in domain knowledge above
+Infer: SELLER strongly recommends BUYER implement security updates promptly and use supported software versions; outdated or unpatched software increases cyber exposure; application contains confidential information — BUYER solely responsible for confidentiality and proper usage; BUYER responsible for all cybersecurity domains (Cybersecurity, Information Security, Hardware Security, Personal Data Security, Overall Data Security, Network Security, Equipment Security); BUYER responsible for preventing unauthorized access to existing plant systems; SELLER not liable for any direct, indirect, incidental, consequential, or special damages from cybersecurity incidents, data breaches, unauthorized access, or any security-related events
+Never invent: Specific security certifications SELLER claims, specific compliance standards (ISO 27001, IEC 62443, etc.) unless confirmed in scope, specific security measures SELLER will implement, novel legal security clauses
+Structure: Single paragraph per approved boilerplate pattern. Sequence: SELLER recommendation (prompt security updates, supported versions, risk statement) → application confidentiality statement (BUYER's sole responsibility) → BUYER's full cybersecurity responsibility list → SELLER liability exclusion statement. Use approved TS boilerplate — do not generate novel legal language.
+
+---
+
+## poc
+Role: Describes the complimentary Proof-of-Concept offerings alongside the main system, demonstrating SELLER's advanced digital and AI capabilities.
+Required: [POC_DURATION_MONTHS]
+Infer: PoC deployed on same CYMS/SYMS server infrastructure (no separate hardware in base scope); [POC_DURATION_MONTHS]-month demonstration period; commercial purchase required for continued use after demonstration; SELLER reserves right to withdraw PoC if BUYER does not proceed with purchase; SELLER not bound by performance guaranty or remote support for PoC solutions; hardware for PoC discussed during engineering. Three PoC items: (8.1) AutoML Platform — ML automation platform: automated data preprocessing, feature engineering, model selection, evaluation, hyperparameter tuning, predictive and prescriptive insights; (8.2) Email Reporting — automated scheduled dispatch of shipping reports and log data to specified recipients at predefined frequency; contents and frequency finalized during engineering; essential network configurations and authentication are Buyer responsibility; (8.3) SMS Alerts — real-time plant executive notifications on significant yard events; event trigger content agreed during engineering; SIM card is Buyer scope
+Never invent: Specific AutoML model accuracy claims, specific ML algorithm performance guarantees, specific email delivery SLAs, specific SMS gateway providers or latency guarantees, hardware requirements for PoC (discussed during engineering)
+Structure: Introductory paragraph: complimentary PoC to showcase SELLER's CADS and DX offerings; hosted on same server; [POC_DURATION_MONTHS]-month demonstration; purchase for continuation; withdrawal rights. Subsection 8.1 AutoML Platform: deployment objective, capabilities list, note "SELLER shall not be bound with Performance guaranty & Remote Support for PoC Solutions." Subsection 8.2 Email Reporting: benefit framing, feature description, network/authentication Buyer responsibility note. Subsection 8.3 SMS Alerts: purpose (rapid decision-making), feature description, engineering discussion note, SIM card Buyer scope. Closing: "Hardware required for carrying out POC will be discussed during Engineering stage."
+
+
+---
+
+
+End of HSM context.txt

@@ -1,0 +1,6 @@
+Purpose: Specifies the application technology stack for the CYMS/SYMS application — frontend, backend, database, and deployment technology.
+Required Inputs: Confirmed technology selections for this project (may differ from OBSERVED defaults); note that SELLER reserves final selection authority
+Safe Inferences: OBSERVED stack pattern: Angular (frontend), Python/Django (backend), MS SQL Server or suitable equivalent (database at SELLER's sole discretion), Docker (containerization/deployment). Browser compatibility: standard web browsers including Chrome, Edge, and Mozilla.
+Must Not Invent: Specific version numbers as contractual requirements, specific framework configurations or build parameters, specific Docker image names or configurations
+Suggested Structure: Technology stack table: Component | Technology Used. Rows: Application Front-end (Angular Framework; browser-compatible with standard browsers), Application Back-end (Python Django), Database (SELLER-selected RDBMS — OBSERVED: MS SQL Server 2022 Standard Edition or suitable equivalent; selection at SELLER discretion), Deployment (Docker). Supporting text noting SELLER's right to supply systems differing in detail from description due to continuous improvement policy.
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

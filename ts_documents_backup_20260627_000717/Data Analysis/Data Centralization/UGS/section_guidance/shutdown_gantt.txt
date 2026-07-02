@@ -1,0 +1,3 @@
+Structure: State UGS non-intrusive nature (no full plant shutdown required). If metadata confirms shutdown needed: generate week-based JSON with shutdown-window tasks only. If no shutdown: one explicit statement ("UGS commissioning does not require a plant shutdown; access managed as permits-to-work"). Draw.io JSON format same as overall_gantt.
+Avoid: Assuming a shutdown is required if not confirmed in metadata. Do not generate a complex gantt without metadata basis.
+Tone: Factual, conditional on project scope.

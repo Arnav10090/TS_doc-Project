@@ -1,0 +1,6 @@
+## exclusion_list
+Role: Explicitly documents what is NOT in scope to prevent scope disputes.
+Required: Standard OTCSS exclusions; any project-specific exclusions from metadata.
+Infer: All standard exclusions apply as listed in the Standard Exclusions section of the domain knowledge above. Additionally: interface with external devices or systems not explicitly named in the proposal; any services beyond those explicitly described.
+Never invent: Additional exclusions not grounded in standard OTCSS scope patterns.
+Structure: Bulleted list. One to two sentences per item. Specific enough to be contractually useful. Draw directly from Standard Exclusions above.

@@ -8,6 +8,7 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   clientName: '',
   clientLocation: '',
   sectionCompletion: {},
+  tsType: null,
 
   setProject: (project: ProjectDetail) => {
     set({
@@ -17,11 +18,16 @@ export const useProjectStore = create<ProjectStore>((set) => ({
       clientName: project.client_name,
       clientLocation: project.client_location,
       sectionCompletion: project.section_completion,
+      tsType: project.ts_type ?? null,
     })
   },
 
   setSolutionName: (name: string) => {
     set({ solutionName: name })
+  },
+
+  setTsType: (tsType: string | null) => {
+    set({ tsType })
   },
 
   setSectionComplete: (key: string, complete: boolean) => {
@@ -41,6 +47,7 @@ export const useProjectStore = create<ProjectStore>((set) => ({
       clientName: '',
       clientLocation: '',
       sectionCompletion: {},
+      tsType: null,
     })
   },
 }))

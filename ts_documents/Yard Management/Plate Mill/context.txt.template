@@ -1,0 +1,65 @@
+# **Plate Mill** CONTEXT.TXT — Industrial Plate Mill Yard Management Solution
+# Category knowledge base for Gemini AI Suggestions runtime grounding
+# Version: 1.0
+
+
+---
+
+
+# GLOBAL PRIORITY AND SAFETY RULES
+
+Priority order (highest wins):
+1. Project metadata
+2. Current saved section content
+3. Current draft content
+4. Historical **Plate Mill** TS documents
+5. This file
+6. General industry knowledge
+
+Conflict rule: project-specific data always overrides this file.
+
+Missing data rule: use placeholders defined in the registry below. Do NOT assume any specific customer, plant scale, yard layout, crane count, integration protocol, or technology version unless higher-priority sources confirm it.
+
+### Placeholder Registry
+
+| Placeholder | Purpose | Expected Source | Example Value | Required |
+|---|---|---|---|---|
+| [CUSTOMER_NAME] | Buyer organization name | Project metadata | Jindal Steel & Power Ltd. | Required |
+| [CUSTOMER_ABBREVIATION] | Short form of buyer name used in scope tables | Project metadata | JSPL | Required |
+| [SITE_NAME] | Plant or facility name | Project metadata | Plate Mill | Required |
+| [SITE_LOCATION] | Geographic location of plant | Project metadata | Angul, Odisha | Required |
+| [TENDER_REF] | Enquiry or tender reference number | Project metadata | 26/XXXX/PMYMS/v0 | Required |
+| [TENDER_DATE] | Date of buyer enquiry or tender | Project metadata | 8th Jan 2026 | Required |
+| [SOLUTION_FULL_NAME] | Full product name as used in document title | Project metadata | Plate Mill Yard Management System | Required |
+| [SOLUTION_ABBREVIATION] | Abbreviation of solution name | Project metadata | PMYMS | Required |
+| [NUM_SERVERS] | Number of PMYMS application servers (online + backup) | Project metadata | 2 (Online & Backup) | Required |
+| [NUM_CLIENT_DESKTOPS] | Number of PMYMS client workstations | Project metadata | 4 | Required |
+| [NUM_CRANE_HMIS] | Number of crane-side HMI units | Project metadata | 3 | Optional |
+| [NUM_CRANES] | Total number of cranes in scope | Project metadata | Project-specific | Required |
+| [NUM_YARD_ZONES] | Number of distinct yard zones covered | Project metadata | Project-specific | Optional |
+| [PRODUCTION_CAPACITY] | Annual plate production throughput | Project metadata | 1.2 MTPA | Optional |
+| [SUPPORT_PERIOD] | Duration of complimentary remote support post-commissioning | Project metadata / Commercial | 6 months | Required |
+| [TRAINING_DAYS] | Maximum on-site training days | Project metadata / Commercial | 3 days | Required |
+| [TRAINEE_COUNT] | Maximum number of trainees | Project metadata / Commercial | 5 persons | Required |
+| [PM_DAYS] | Project Manager on-site man-days | Project metadata / Commercial | 30 | Required |
+| [DEV_DAYS] | Developer/Engineer on-site man-days | Project metadata / Commercial | 30 | Required |
+| [COMM_DAYS] | Commissioning Supervisor on-site man-days | Project metadata / Commercial | 30 | Required |
+| [TOTAL_DAYS] | Total supervisor man-days (sum of all roles) | Project metadata / Commercial | 90 | Required |
+| [SW_DEV_DURATION] | Software development duration after design approval | Project metadata / Schedule | 4 months | Required |
+| [POC_DURATION] | PoC demonstration period | Project metadata / Commercial | 2 months | Optional |
+| [POC_PLATFORM] | Name of PoC solution offered | Project metadata | AutoML Platform | Optional |
+| [POC_DATASET_LIMIT] | Maximum dataset size accepted during PoC | Project metadata | 50 MB | Optional |
+| [NETWORK_TYPE] | Network connectivity type (Wi-Fi, wired, or both) | Detailed engineering | To be finalized | Optional |
+| [PLATE_ID_METHOD] | Method of plate identification (barcode, RFID, OCR) | Detailed engineering | To be finalized at detailed engineering | Optional |
+| [WCC_PERIOD] | Days within which buyer must issue Work Completion Certificate | Commercial agreement | 7 days | Required |
+
+Hard prohibitions:
+- Do not invent customer names, project IDs, IP addresses, prices, or contract terms.
+- Do not copy wording verbatim from historical documents.
+- Do not treat numbers from one historical proposal as category defaults.
+- Do not generate legal language when repository-approved boilerplate exists for that section.
+- Do not assume any specific crane count, yard zone count, client desktop count, server specifications, production capacity, or protocol choice as a default.
+- Do not conflate this solution with a SCADA system, a Level-1 PLC system, a Level-2 process control system, an ERP, or a standalone inventory system.
+
+
+---

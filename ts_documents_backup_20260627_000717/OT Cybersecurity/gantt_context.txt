@@ -1,0 +1,7 @@
+Phase structure: M1 Assessment (~4w) → M2 Procurement & Config (~6w) → M3 FAT (~2w) → M4 Deployment (~4w) → M5 Handover (~2w). Total indicative: ~18w from PO.
+
+Critical path: Network architecture sign-off gates M2 procurement. Availability of SPAN/mirror ports gates M4 deployment of NDR. Active Directory integration details gate remote access deployment.
+
+Shutdown Gantt: MAY BE REQUIRED. Inserting firewalls inline between existing L2 and L3 networks requires planned network downtime. Cutover window typically 4-8 hours per zone. Deployment of NDR (passive) and EDR does not require shutdown.
+
+Draw.io format: week-based GanttTask JSON — fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies[].

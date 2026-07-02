@@ -111,6 +111,32 @@ vi.mock('../../components/layout/SectionInputPanel', () => ({
       >
         SAVE
       </button>
+      <button
+        type="button"
+        onClick={() => {
+          const currentContent = mergeSectionContent(
+            props.activeSectionKey,
+            {
+              tender_reference: 'REF-001',
+              tender_date: '2026-05-20',
+            },
+            {
+              solutionName: 'Test Solution',
+              solutionFullName: 'Test Solution Full Name',
+              clientName: 'Test Client',
+              clientLocation: 'Test Location',
+            },
+          )
+
+          // Simulate AI-imported suggestion into the draft (no save)
+          props.onContentChange?.(props.activeSectionKey, {
+            ...currentContent,
+            tender_reference: 'REF-IMPORTED',
+          })
+        }}
+      >
+        Import suggestion
+      </button>
       <span data-testid="save-button-label">
         {props.saveStatus === 'saving' ? 'SAVING' : 'SAVE'}
       </span>
@@ -248,5 +274,60 @@ describe('Editor explicit save persistence', () => {
 
     expect(screen.getByTestId('preview-tender-ref')).toHaveTextContent('REF-UPDATED')
     expect(screen.getByTestId('preview-edit-metadata')).toHaveTextContent('highlighted')
+  })
+
+  it('AI-imported and saved content appears in preview identically to manual content', async () => {
+    // prepare upsert to return the AI-imported content as saved
+    mockUpsertSection.mockResolvedValueOnce({
+      content: {
+        tender_reference: 'REF-IMPORTED',
+        tender_date: '2026-05-20',
+        __editMetadata: {
+          version: 1,
+          sectionUpdatedAt: '2026-05-21T10:00:00.000Z',
+          markers: {
+            tender_reference: {
+              path: 'tender_reference',
+              updatedAt: '2026-05-21T10:00:00.000Z',
+            },
+          },
+        },
+      },
+    })
+
+    render(<EditorPage />)
+
+    await flushEditorPromises()
+
+    // initial preview shows persisted value
+    expect(screen.getByTestId('preview-tender-ref')).toHaveTextContent('REF-001')
+
+    // simulate AI import into draft
+    fireEvent.click(screen.getByRole('button', { name: 'Import suggestion' }))
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+
+    // draft import alone should not change preview nor trigger backend
+    expect(screen.getByTestId('preview-tender-ref')).toHaveTextContent('REF-001')
+    expect(mockUpsertSection).not.toHaveBeenCalled()
+
+    // save the imported draft
+    fireEvent.click(screen.getByRole('button', { name: 'SAVE' }))
+
+    await flushEditorPromises()
+
+    expect(mockUpsertSection).toHaveBeenCalledTimes(1)
+    expect(mockUpsertSection).toHaveBeenCalledWith(
+      'project-1',
+      'introduction',
+      expect.objectContaining({
+        tender_reference: 'REF-IMPORTED',
+      }),
+    )
+
+    // preview should now reflect the saved AI-imported content
+    expect(screen.getByTestId('preview-tender-ref')).toHaveTextContent('REF-IMPORTED')
   })
 })

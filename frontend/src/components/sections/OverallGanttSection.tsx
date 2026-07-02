@@ -139,6 +139,7 @@ const OverallGanttSection: React.FC<OverallGanttSectionProps> = ({ projectId }) 
           onClose={() => setIsModalOpen(false)}
           prompt={promptData.prompt}
           recommendedTools={promptData.recommended_tools}
+          downloadFilename="overall-gantt-prompt.txt"
         />
       )}
     </div>
@@ -146,3 +147,4 @@ const OverallGanttSection: React.FC<OverallGanttSectionProps> = ({ projectId }) 
 };
 
 export default OverallGanttSection;
+

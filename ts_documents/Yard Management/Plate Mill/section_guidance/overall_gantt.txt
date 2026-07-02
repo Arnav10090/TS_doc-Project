@@ -1,0 +1,5 @@
+Role: Image-backed Gantt chart section for the overall project schedule. User uploads the Gantt image; section holds text companion and draw.io JSON output.
+Required: Nothing project-specific required at TS stage; PO date from metadata if available for relative start.
+Infer: All canonical phases (see Gantt Guidance above). Key milestones: M1 = BUYER design document approval (gates software development); M2 = site readiness + crane availability (gates on-site commissioning); M3 = Work Completion Certificate. Durations are indicative only. BUYER prerequisite delays cause proportional delivery delays.
+Never invent: Committed calendar dates unless PO date is confirmed in project metadata. Durations as guarantees.
+Structure: 2–3 sentences introducing the indicative schedule and total estimated duration range. List key phases and milestones (M1, M2, M3). Mandatory indicative caveat. For draw.io Gantt: output week-based GanttTask JSON array (task, phase, start_week, duration_weeks, milestone, dependencies). Backend converts to mxGraph XML. Note that [SW_DEV_DURATION] starts only after M1 approval.

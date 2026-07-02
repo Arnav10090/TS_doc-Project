@@ -6,52 +6,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from uuid import UUID
-import re
 
 from app.database import get_db
 from app.sections import service
 from app.sections.schemas import SectionDataCreate, SectionDataResponse
+from app.sections.constants import (
+    VALID_SECTION_KEYS,
+    CUSTOM_SECTION_PATTERN,
+    CUSTOM_SUBSECTION_PATTERN,
+)
 
 router = APIRouter(prefix="/api/v1/projects", tags=["sections"])
-
-# All 31 valid predefined section keys
-VALID_SECTION_KEYS = [
-    "cover",
-    "revision_history",
-    "executive_summary",
-    "introduction",
-    "abbreviations",
-    "process_flow",
-    "overview",
-    "features",
-    "remote_support",
-    "documentation_control",
-    "customer_training",
-    "system_config",
-    "fat_condition",
-    "tech_stack",
-    "hardware_specs",
-    "software_specs",
-    "third_party_sw",
-    "overall_gantt",
-    "shutdown_gantt",
-    "supervisors",
-    "scope_definitions",
-    "division_of_eng",
-    "work_completion",
-    "buyer_obligations",
-    "exclusion_list",
-    "binding_conditions",
-    "cybersecurity",
-    "disclaimer",
-    "value_addition",
-    "buyer_prerequisites",
-    "poc",
-]
-
-# Regex patterns for custom section keys
-CUSTOM_SECTION_PATTERN = re.compile(r'^custom_section_\d+_[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$')
-CUSTOM_SUBSECTION_PATTERN = re.compile(r'^custom_subsection_\d+_[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$')
 
 
 def is_valid_section_key(section_key: str) -> bool:

@@ -1,0 +1,26 @@
+# CYBERSECURITY CONTEXT
+
+## Cybersecurity
+### Responsibility Split
+Seller owns: Design, supply, installation guidance, configuration, commissioning, testing, training, documentation, and post-commissioning support for the OTCSS tools within the agreed scope.
+
+Buyer owns: All network security boundary devices (OT firewalls, IPS, NAC); SPAN and network configuration required to route OT traffic to IDS sensors; patch management and antivirus updates after tool delivery; VPN/internet link establishment and management for remote support; physical security of all installed hardware; prevention of unauthorized access to existing plant systems; application of OT cybersecurity guidelines to Buyer's own users and contractors; SOC/SIEM integration if required in future.
+
+Shared: Stakeholder coordination, site access facilitation, architecture review and approval, commissioning support, acceptance testing.
+
+### Seller Liability on Cybersecurity
+Seller strongly recommends that security updates are implemented as soon as they are available and that the latest supported versions are used. Use of unsupported software versions or failure to apply patches may increase exposure to cyber threats. Seller is not liable for any cybersecurity incidents, data breaches, unauthorized access events, or related damages arising from Buyer's failure to maintain network security controls or follow the OT cybersecurity guidelines established by the delivered solution.
+
+### Secure Defaults Delivered at Commissioning
+- MFA enforced on the SRA for all remote vendor and maintenance sessions.
+- RBAC configured on SRA and cybersecurity tool dashboards at delivery.
+- Session recording active for all SRA sessions from commissioning.
+- All remote support access by Seller requires an executed NDA between Buyer and Seller prior to commencement.
+- IDS tool access restricted to designated cybersecurity personnel.
+- Passive-only design: no active scanning of OT endpoints at any point in the project lifecycle.
+
+### Hard Prohibitions for Cybersecurity Section Content
+- Do not generate novel legal cybersecurity clauses — use repository-approved boilerplate.
+- Do not generate guarantees of threat detection completeness or specific detection rates.
+- Do not generate compliance certification commitments or specific standard achievement claims.
+- Do not generate product-level security certifications unless explicitly confirmed in project metadata.

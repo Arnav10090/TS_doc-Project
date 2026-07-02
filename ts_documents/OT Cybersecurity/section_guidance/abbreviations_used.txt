@@ -1,0 +1,6 @@
+## abbreviations_used
+Role: Defines the standard and project-specific abbreviations used throughout the OT Cybersecurity TS.
+Required: Standard OT Cybersecurity abbreviations; any project-specific abbreviations from metadata.
+Infer: Standard abbreviations include: OTCSS (Operational Technology Cybersecurity Solution), ICS (Industrial Control System), SCADA (Supervisory Control and Data Acquisition), DCS (Distributed Control System), PLC (Programmable Logic Controller), HMI (Human-Machine Interface), IDS (Intrusion Detection System), SRA (Secure Remote Access), MFA (Multi-Factor Authentication), RBAC (Role-Based Access Control), MOC (Management of Change), CVE (Common Vulnerabilities and Exposures), DMZ (Demilitarized Zone), SOP (Standard Operating Procedure), SPAN (Switched Port Analyzer), FAT, SAT, TS, PO, PM.
+Never invent: Abbreviations that are not used in the document or not standard in the OT Cybersecurity domain.
+Structure: Two-column table (Abbreviation | Expansion). List standard OTCSS abbreviations first, then project-specific ones from metadata. Note: AI button is typically suppressed for this section; generate only if explicitly requested.

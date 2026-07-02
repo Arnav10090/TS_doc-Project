@@ -1,0 +1,4 @@
+Structure: List third-party software/connectivity items. State whether existing database will be reused (buyer-managed). State seller requires buyer-provided VPN/broadband for remote support. Confirm NDA requirement for remote access.
+Avoid: Naming specific database products, VPN products, or bandwidth requirements not confirmed. Do not promise specific remote support software versions.
+Tone: Clause-style. Contractually clear on who provides and maintains each component.
+Level 2-specific: If existing database is reused, it is buyer-managed. Remote support link is buyer-established, buyer-managed, buyer-controlled. Seller has no authority over either.

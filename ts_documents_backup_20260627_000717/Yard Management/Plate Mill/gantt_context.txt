@@ -1,0 +1,7 @@
+Phase structure: M1 Engineering (~6w) → M2 Dev & Procurement (~12-16w) → M3 FAT (~3w) → M4 Installation & Comms (~10w) → M5 Go-Live (~4w). Total indicative: ~35-39w from PO.
+
+Critical path: Wi-Fi network availability gates M4 commissioning. Hardware delivery (laser sensors) gates M4 installation. L3 MES interface readiness gates M3 FAT and M4 hot testing.
+
+Shutdown Gantt: REQUIRED. Mounting laser distance meters, absolute encoders, and PLCs on the physical cranes requires locking out the cranes (LOTO) and halting yard operations in that specific aisle. Sensor mounting typically requires a 12-24 hour shutdown window per crane. Commissioning and tuning require dedicated time with the crane without production interference.
+
+Draw.io format: week-based GanttTask JSON — fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies[].

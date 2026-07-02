@@ -1,0 +1,5 @@
+Role: Defines party identities and abbreviation codes used in the Division of Engineering table.
+Required: [CUSTOMER_NAME], [CUSTOMER_ABBREVIATION], seller identity (Hitachi India Pvt. Ltd.).
+Infer: Standard abbreviation definitions: BD = Basic Data, BE = Basic Engineering, DD = Detail Design, SU = Supply or Service, ER = Erection, COM = Commissioning. X/Y notation = primary work/services provided by X with support from Y.
+Never invent: Abbreviations not used in the Division of Engineering table.
+Structure: Party definition block (BUYER = [CUSTOMER_NAME] with abbreviation [CUSTOMER_ABBREVIATION]; SELLER = Hitachi India Pvt. Ltd.) followed by phase code definitions and the X/Y notation explanation.

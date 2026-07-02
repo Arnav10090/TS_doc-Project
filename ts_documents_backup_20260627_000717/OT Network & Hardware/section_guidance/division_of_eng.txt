@@ -1,0 +1,6 @@
+[DRAFT — ADAPT FOR OT NETWORK & HARDWARE]
+Structure: Responsibility matrix table. Columns: Activity | BD | BE | DD | SU | ER | COM. Group rows by category: Design, Supply, Installation/Erection, Commissioning, Interface. Use B (Buyer), S (Seller), B-S (joint) codes per cell. Interface items must appear twice (buyer row + seller row) showing dual-entry pattern.
+Avoid: Leaving ambiguous cells empty — use explicit B, S, or B-S. Do not invent activities not in UGS standard scope.
+Tone: Matrix/table format. Terse row descriptions, consistent with scope_definitions abbreviations.
+--- Template structure reminder ---
+Responsibility matrix: No., Category, Item, BD, BE, DD, SU, ER, COM. Codes: B=Buyer, S=Seller, B/S=Joint. Categories: Services, System Engineering, Hardware, Software, Interface, Training, Construction, Pre-Engineering, Documents. Each interface appears twice: source side (B) and product side (S).

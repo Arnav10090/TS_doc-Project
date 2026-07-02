@@ -1,0 +1,7 @@
+Security responsibility: Hitachi India designs and deploys the network with physical security considerations and secure configurations (e.g., port security, disabled unused ports, VLAN segregation). Buyer is responsible for ongoing physical access control to network cabinets and credential management for network devices.
+
+Patch management: Hitachi India installs latest stable firmware on network devices during commissioning. Ongoing firmware updates and vulnerability management are the buyer's responsibility unless an AMC is active.
+
+Liability: Hitachi India's liability is limited to the physical hardware and its initial configuration. Hitachi India is not liable for network outages caused by buyer misconfiguration, environmental damage beyond hardware specs, or cyber attacks.
+
+Remote access: Any remote management capabilities configured on the network devices will require secure, buyer-approved VPN access.

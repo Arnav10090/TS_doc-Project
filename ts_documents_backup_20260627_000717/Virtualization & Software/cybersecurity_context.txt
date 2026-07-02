@@ -1,0 +1,7 @@
+Security responsibility: Hitachi India secures the hypervisor layer (ESXi/Hyper-V) and management plane (vCenter). Buyer is responsible for securing the guest operating systems (VMs) and implementing endpoint protection within the VMs.
+
+Patch management: Hitachi India installs latest stable hypervisor patches during commissioning. Ongoing hypervisor patching requires cluster maintenance mode scheduling and is the buyer's responsibility. Guest OS patching remains buyer responsibility.
+
+Liability: Hitachi India's liability is limited to the hypervisor and cluster availability. No liability for guest OS instability, legacy software compatibility post-virtualization, or VM infection by malware.
+
+Remote access: Secure VPN required for remote management of the hypervisor cluster. Direct RDP/VNC access to guest VMs should be brokered through a secure jump server.

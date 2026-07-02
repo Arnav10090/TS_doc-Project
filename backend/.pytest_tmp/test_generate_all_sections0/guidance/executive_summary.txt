@@ -1,0 +1,2 @@
+[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
+Structure: 2-3 paragraphs. (1) Seller capability intro. (2) Qualification for this engagement. (3) Solution value framing for [CUSTOMER_NAME]. Tone: strategic, management-level. No technical jargon. No heading in output.

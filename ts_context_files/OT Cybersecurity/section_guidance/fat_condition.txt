@@ -1,0 +1,6 @@
+## fat_condition
+Role: Defines acceptance criteria and on-site verification conditions for the OTCSS deployment. OTCSS does not follow the traditional Factory Acceptance Test model — acceptance is milestone-based following on-site commissioning verification.
+Required: References to confirmed work completion milestones.
+Infer: OTCSS acceptance is structured around five work completion milestones rather than a factory simulation test. On-site commissioning verification includes: passive sensor deployment and SPAN/TAP traffic capture confirmation; IDS threat detection policy activation and alert verification; vulnerability management tool asset ingestion confirmation; SRA MFA/RBAC enforcement and session recording verification; dashboard data integration and OT-specific view confirmation. All tests are conducted on live OT infrastructure using passive techniques only.
+Never invent: Factory test pass/fail thresholds not agreed; remote FAT commitments; third-party witness requirements not confirmed.
+Structure: Short bulleted list of commissioning verification items per tool domain (IDS, SRA, vulnerability management, dashboards). Note that OTCSS acceptance is milestone-based, not FAT-based. Final milestone completion triggers Buyer's issuance of Work Completion Certificate.

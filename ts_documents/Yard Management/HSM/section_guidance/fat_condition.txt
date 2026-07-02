@@ -1,0 +1,6 @@
+Purpose: Defines the Factory Acceptance Test (FAT) / Shop Test conditions, scope, and acceptance criteria for the CYMS/SYMS system.
+Required Inputs: No project-specific inputs required beyond scope confirmation
+Safe Inferences: FAT conducted at SELLER's facility before shipment; tests all configured software functionality against simulated crane data inputs; verifies integration interface behavior; covers QMS (Quality Management System) testing; signed FAT report issued before shipment approval; part of the overall project schedule (OBSERVED: months 9-13)
+Must Not Invent: Specific FAT checklist items or pass/fail criteria not established in scope, specific Buyer witness obligations, specific test duration days
+Suggested Structure: 2 paragraphs or short bulleted list. Describe: FAT location (SELLER's facility), timing (per project schedule), test scope (software functionality, integration simulation, QMS testing), output artifact (signed FAT report), gate condition (shipment subject to FAT completion). Note any Buyer witness provision if applicable.
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

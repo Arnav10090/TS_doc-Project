@@ -1,0 +1,11 @@
+Implementation phases: M1 — Network Design & BOM Finalization (~4w): defining IP schemas, VLAN planning, redundancy testing plan; M2 — Hardware Delivery (~12-16w): long-lead time for active components; M3 — Staging & FAT (~3w): offline configuration of all switches, testing ring failover times; M4 — Installation & Cutover (~6w): mounting switches in panels, fiber patching, phased cutover of L1/L2 devices; M5 — Commissioning & Handover (~2w): NMS tuning, performance validation, training. Total durations indicative.
+
+FAT: Staging of key core and edge switches to demonstrate VLAN routing, RSTP/MRP failover convergence times, and NMS visibility.
+
+Buyer obligations: Provide existing network topology and IP address scheme; provide clean power at all switch locations; ensure fiber/copper passive cabling is tested and certified before M4; provide downtime windows for cutover of existing production networks.
+
+Value addition: Post-cutover network performance baseline report; identification of misconfigured legacy devices causing broadcast traffic.
+
+Standard exclusions: Passive cabling (pulling fiber/copper, termination, trenching); modifications to legacy PLC IP addresses unless specified; UPS provision.
+
+Risks: Global supply chain issues can significantly impact delivery times for industrial networking equipment. Uncertified legacy fiber optic cables may cause high error rates on new Gigabit/10G interfaces.

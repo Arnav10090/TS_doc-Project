@@ -1,0 +1,4 @@
+Structure: Bullet criteria list + deemed-issued clause. Criteria: (1) hardware/software supplied per scope; (2) data interface from L1 (and L3 if present) operational; (3) commissioning man-days completed; (4) documentation submitted. Deemed-issued clause: if buyer does not raise objection within agreed period, certificate deemed issued.
+Avoid: Adding criteria not in standard L2 PMS acceptance list. Do not omit the deemed-issued clause. Do not specify deadline periods not commercially agreed.
+Tone: Contractual-clause style. Each criterion numbered and unambiguous.
+Level 2-specific: Work completion triggers start of remote support period and warranty period.

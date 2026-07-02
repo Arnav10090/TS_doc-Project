@@ -16,7 +16,8 @@ the completion percentage should be calculated using the actual section count:
 Expected to FAIL on unfixed code (line 80 has completion_percentage = int((completed_count / 27) * 100))
 """
 import pytest
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, settings, strategies as st, HealthCheck
+from app.projects.router import _compute_total_sections
 
 from app.generation.completion import calculate_section_completion
 
@@ -76,22 +77,20 @@ def test_completion_percentage_calculation_logic():
     actual_total_sections = len(sections_dict) - 4  # 24 - 4 = 20 completable sections
     expected_completion_percentage = int((completed_count / actual_total_sections) * 100) if actual_total_sections > 0 else 0
     
-    # Bug behavior: uses hardcoded 27
-    buggy_completion_percentage = int((completed_count / 27) * 100)
-    
+    # Calculate using backend rule
+    total_sections = _compute_total_sections(sections_dict)
+    actual_completion_percentage = int((completed_count / total_sections) * 100) if total_sections > 0 else 0
+
     print(f"Sections in dict: {len(sections_dict)}")
     print(f"Completed count: {completed_count}")
-    print(f"Actual total completable: {actual_total_sections}")
+    print(f"Total sections used: {total_sections}")
     print(f"Expected percentage (using actual count): {expected_completion_percentage}%")
-    print(f"Buggy percentage (using hardcoded 27): {buggy_completion_percentage}%")
-    
-    # This assertion should FAIL on unfixed code because the backend uses hardcoded 27
-    # The test simulates what the backend SHOULD do vs what it actually does
-    assert buggy_completion_percentage == expected_completion_percentage, (
-        f"Bug condition detected! With {len(sections_dict)} sections and {completed_count} completed, "
-        f"hardcoded calculation gives {buggy_completion_percentage}% instead of {expected_completion_percentage}%. "
-        f"Expected calculation: ({completed_count} / {actual_total_sections}) * 100 = {expected_completion_percentage}%, "
-        f"Bug calculation: ({completed_count} / 27) * 100 = {buggy_completion_percentage}%"
+    print(f"Backend percentage (using rule): {actual_completion_percentage}%")
+
+    # After the fix, backend should follow the rule implemented in `_compute_total_sections`
+    assert actual_completion_percentage == expected_completion_percentage, (
+        f"Calculation mismatch! With {len(sections_dict)} sections and {completed_count} completed, "
+        f"backend calculated {actual_completion_percentage}% using total {total_sections} instead of expected {expected_completion_percentage}%"
     )
 
 
@@ -162,21 +161,20 @@ def test_concrete_bug_example_24_sections():
     actual_total_completable = len(sections_dict) - 4
     expected_percentage = int((completed_count / actual_total_completable) * 100)
     
-    # Bug: uses hardcoded 27
-    buggy_percentage = int((completed_count / 27) * 100)
-    
+    # Use backend rule for total sections
+    total_sections = _compute_total_sections(sections_dict)
+    backend_percentage = int((completed_count / total_sections) * 100) if total_sections > 0 else 0
+
     print(f"\nConcrete bug example:")
     print(f"Total sections: {len(sections_dict)}")
     print(f"Completable sections: {actual_total_completable}")
     print(f"Completed sections: {completed_count}")
     print(f"Expected percentage: ({completed_count} / {actual_total_completable}) * 100 = {expected_percentage}%")
-    print(f"Buggy percentage: ({completed_count} / 27) * 100 = {buggy_percentage}%")
-    
-    # This should fail on unfixed code, demonstrating the bug
-    assert buggy_percentage == expected_percentage, (
-        f"Concrete bug example: With {len(sections_dict)} sections and {completed_count} completed, "
-        f"hardcoded calculation gives {buggy_percentage}% instead of {expected_percentage}%. "
-        f"This demonstrates the bug where backend uses hardcoded 27 instead of actual section count."
+    print(f"Backend percentage (using rule): ({completed_count} / {total_sections}) * 100 = {backend_percentage}%")
+
+    # Verify backend rule produces expected percentage
+    assert backend_percentage == expected_percentage, (
+        f"Concrete example mismatch: backend {backend_percentage}% vs expected {expected_percentage}%"
     )
 
 
@@ -184,7 +182,7 @@ def test_concrete_bug_example_24_sections():
     total_sections=st.integers(min_value=20, max_value=26),  # Simulate deletions
     completed_ratio=st.floats(min_value=0.3, max_value=0.8)  # 30-80% completion
 )
-@settings(max_examples=10, deadline=5000)
+@settings(max_examples=10, deadline=5000, suppress_health_check=[HealthCheck.function_scoped_fixture])
 def test_completion_percentage_bug_property(total_sections, completed_ratio):
     """
     Property-based test for completion percentage bug condition.
@@ -259,13 +257,10 @@ def test_completion_percentage_bug_property(total_sections, completed_ratio):
     actual_total_completable = len(sections_dict) - 4
     expected_percentage = int((actual_completed_count / actual_total_completable) * 100) if actual_total_completable > 0 else 0
     
-    # Bug behavior: uses hardcoded 27
-    buggy_percentage = int((actual_completed_count / 27) * 100)
-    
-    # This should fail on unfixed code when total_sections < 27
-    assert buggy_percentage == expected_percentage, (
-        f"Property test bug condition: With {len(sections_dict)} sections and {actual_completed_count} completed, "
-        f"hardcoded calculation gives {buggy_percentage}% instead of {expected_percentage}%. "
-        f"Expected: ({actual_completed_count} / {actual_total_completable}) * 100 = {expected_percentage}%, "
-        f"Bug: ({actual_completed_count} / 27) * 100 = {buggy_percentage}%"
+    # Verify backend rule produces expected percentage
+    total_sections = _compute_total_sections(sections_dict)
+    backend_percentage = int((actual_completed_count / total_sections) * 100) if total_sections > 0 else 0
+
+    assert backend_percentage == expected_percentage, (
+        f"Property example mismatch: backend {backend_percentage}% vs expected {expected_percentage}%"
     )

@@ -1,0 +1,7 @@
+Security responsibility: Hitachi India ensures the analytics platform is deployed securely, with HTTPS for web dashboards and encrypted data ingestion channels. Buyer is responsible for securing the source databases and providing necessary firewall traversal rules for data extraction.
+
+Patch management: Hitachi India provides the initial software stack on a patched OS. Post-commissioning OS and software patching (e.g., Python library updates) are the buyer's responsibility unless an AMC covering software maintenance is purchased.
+
+Liability: Hitachi India's liability is limited to the correct execution of the developed ML models and dashboard visualization. The system provides advisory recommendations only. Hitachi India is not liable for production losses, quality defects, or equipment damage resulting from operators acting upon the system's predictions.
+
+Remote access: Secure VPN access is required for data discovery, model tuning, and post-go-live support.

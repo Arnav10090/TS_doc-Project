@@ -1,0 +1,11 @@
+Implementation phases: M1 — Engineering & FDS (~6w): detailed system architecture, crane sensor mounting details, L3/L2 interface definitions, plate stacking logic rules; M2 — Development & Hardware Procurement (~12-16w): YMS software customization for plate mill rules, procurement of servers, sensors, and rugged tablets; M3 — FAT (~3w): system testing using a crane simulator and mock L3 interfaces; M4 — Installation & Commissioning (~10w): sensor mounting on cranes, Wi-Fi deployment, server installation, cold testing, hot testing with live plates; M5 — Handover & Go-Live (~4w): parallel run with existing manual system, operator training, final sign-off. Total durations indicative.
+
+FAT: Conducted with a crane simulator to verify the 3D visualization updates correctly based on simulated encoder inputs, and that plate tracking logic handles complex stacking (e.g., LIFO) and sorting scenarios.
+
+Buyer obligations: Provide mechanical assistance for mounting sensors on cranes; provide reliable power to Wi-Fi access points and cranes; ensure L3 MES interfaces are ready for integration; provide initial yard inventory data for the "go-live" baseline.
+
+Value addition: Post-implementation optimization tuning of yard layout logic to maximize crane efficiency and minimize plate restacking.
+
+Standard exclusions: Crane electrical/mechanical refurbishments; primary power supply; civil works for Wi-Fi masts.
+
+Risks: Wi-Fi signal propagation issues in a metallic yard can cause crane connection drops. Complex plate sorting rules may require extensive tuning during commissioning.

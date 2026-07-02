@@ -1,0 +1,419 @@
+# UGS CONTEXT.TXT — Unified Gateway Solution
+# Category knowledge base for Gemini AI Suggestions runtime grounding
+# Version: 3.0
+
+
+---
+
+
+# GLOBAL PRIORITY AND SAFETY RULES
+
+Priority order (highest wins):
+1. Project metadata
+2. Current saved section content
+3. Current draft content
+4. Historical UGS TS documents
+5. This file
+6. General industry knowledge
+
+Conflict rule: project-specific data always overrides this file.
+
+Missing data rule: use placeholders [CUSTOMER_NAME] [PLANT_TYPE] [NUM_TAGS] [RETENTION_PERIOD] [PROTOCOL] [PRODUCTION_UNIT] [VENDOR] [MODEL] [VERSION] [POLL_FREQ]. Do NOT assume steel industry, IBA PDA, OPC UA, or any specific hardware/software unless higher-priority sources confirm it.
+
+Hard prohibitions:
+- Do not invent customer names, project IDs, IP addresses, prices, or contract terms.
+- Do not copy wording verbatim from historical documents.
+- Do not treat numbers from one historical proposal as category defaults.
+- Do not generate legal language when repository-approved boilerplate exists for that section.
+
+
+---
+
+
+# UGS DOMAIN KNOWLEDGE
+
+## What UGS Is
+Industrial data integration middleware: collects process data from multiple heterogeneous plant automation systems, normalizes it, stores it centrally, and redistributes it to higher-level consumers. Sits at the OT/IT boundary. NOT a SCADA, visualization tool, or process controller.
+
+## Core Capabilities (all UGS deployments)
+- Centralized data acquisition from multiple production units via configurable polling
+- Multi-protocol: OPC UA (primary when confirmed), Modbus, OPC DA, TCP/IP, UDP, MQTT, DBlink/SQL
+- Browser-based web configuration UI — no custom programming for standard setup
+- On-premises SQL database with configurable FIFO retention and automated housekeeping
+- OPC UA server role exposing acquired data to downstream consumers
+- Role-based user accounts, full user action audit trail
+- Email alerting/reporting (value-added, project-dependent)
+- Remote support post-commissioning (value-added, duration project-dependent)
+- On-site training at commissioning (duration and count project-dependent)
+
+## Optional: HX Edge Controller
+Installed at each production unit. Provides local buffering, preprocessing, protocol bridging. Prevents data loss during network disruptions. Use only when direct central polling is insufficient.
+
+## Business Drivers
+Customers implement UGS to: eliminate siloed data per unit, replace point-to-point integrations, enable plant-wide KPI visibility, create digitalization foundation (MES, analytics, AI/ML, cloud), reduce manual reporting, apply consistent data governance.
+UGS never guarantees production performance, product quality, or yield.
+
+## Plant Environment
+Continuous-process manufacturing, multiple production units with existing PLCs, HMIs, and data acquisition servers (make and presence are project-dependent — do not assume). OT network (L1 LAN, L2 LAN) separated from IT. OT firewalls always buyer scope.
+UGS integration is strictly read-only. It cannot configure existing L1/L2 systems — buyer or buyer's OEM must do that.
+
+## Architecture Options
+Option A (Direct): UGS server polls each unit's data acquisition server centrally. No edge hardware. Use when network reliability is high.
+Option B (HX per unit): HX edge controller at each unit → central UGS server. Use when network reliability cannot be guaranteed.
+Layers (both): Field → L1 (PLCs, PDA servers, L1 LAN) → L2 (supervisory, L2 LAN) → OT Boundary (firewalls, buyer scope) → IT (UGS server, managed switch, downstream consumers) → Remote Access (buyer-controlled VPN).
+
+## Protocols
+Primary: OPC UA. Also: OPC DA, Modbus RTU/TCP, TCP/IP raw, UDP, MQTT, DBlink/SQL.
+Protocol selection is project-dependent. Outbound: UGS OPC UA server for live subscriptions; SQL for batch (heavy queries degrade acquisition performance — discourage).
+
+## Data Acquisition
+Configurable polling tiers (all values project-dependent — observed examples only, not defaults):
+- Real-time: frequent polling of critical tags
+- Supervisory: less frequent, L2 databases or aggregation servers
+- High-frequency (optional): sub-second for AI/ML or diagnostics
+Tag capacity architecturally scalable. [NUM_TAGS] from project metadata. Do not assume a number.
+
+## Data Storage
+Centralized on-premises SQL database. Retention: configurable FIFO ([RETENTION_PERIOD] from metadata — do not assume 1 year). Automated housekeeping prevents manual DBA effort. No write-back to source systems.
+
+## Integration Patterns
+1. OPC UA Client → data acquisition server (IBA PDA or equivalent if confirmed): buyer configures OPC UA server side; seller configures UGS client side.
+2. OPC UA or Modbus → PLC direct: buyer provides PLC details and addressing.
+3. DBlink/SQL → L2 database: buyer provides schema, read-only credentials, network route.
+4. UGS OPC UA server → downstream consumers (analytics, FTDM, MES): buyer configures downstream client.
+All interface parameters finalized during detailed engineering — not at TS stage.
+
+## Technology Stack Patterns (observed, not defaults)
+Software: browser-based frontend, C#/.NET Core backend, SQL Server, Windows Server, enterprise antivirus. All versions: "current at detailed engineering start."
+Hardware: enterprise tower/rack server (sizing determined by tag count, polling frequency, retention period — never state specific RAM/storage values), FHD monitor, HIL-approved managed switch, network cabling (length per site), HX controller + junction box (if Option B).
+Buyer provides: server room, power, firewall, SMS gateway (if needed), erection materials.
+
+## Cybersecurity
+Buyer owns: all cybersecurity, information security, hardware/network/data security, patch management post-delivery, VPN/remote access link management.
+Seller does: delivers secure-by-default configuration, antivirus at delivery, recommends prompt patching.
+Key TS statements: seller not liable for security incidents; NDA required before remote sessions; buyer controls VPN.
+Secure defaults: RBAC active at deployment, default credentials changed at commissioning, all actions audit-logged, SQL access read-only for external consumers.
+Do not generate novel legal security clauses — use approved TS boilerplate.
+
+## Implementation Phases
+Initiation → Pre-Engineering (buyer provides tag lists/docs, M1 gate) → Basic Engineering (system design + buyer approval, M2 gate) → Detailed Design (config, tag mapping, HX if Option B) → FAT (seller facility, M3 gate) → Shipping → Site Preparation/buyer parallel (M4 gate) → Commissioning (install, integrate, test, train, snag, handover) → Handover (docs, work completion cert, remote support starts).
+Critical path: M1 (tag list delivery) and M2 (design approval) are the most common delays. Both are buyer-gated.
+On-site man-days: project-dependent, agreed commercially. Travel excluded.
+
+## Testing
+FAT (seller): all configured flows against simulated sources, security config review, FAT report → gates shipment.
+SAT/Commissioning (site): live acquisition per unit, OPC UA server test with real consumer, email via buyer SMTP, user accounts, documentation check.
+UGS is read-only — removing it has no impact on plant L1/L2 operations.
+Acceptance artifacts: FAT report, commissioning checklist, work completion cert, system operation doc, hardware spec, interface doc.
+
+## Risks
+1. Buyer tag list delay — most critical; define as formal prerequisite with deadline; owner: Buyer
+2. Design approval delay — define turnaround in TS; owner: Buyer
+3. Incompatible/undocumented source system — mitigate via pre-engineering survey; owner: Shared
+4. Network not ready at commissioning — pre-visit checklist; owner: Buyer
+5. OT firewall blocking traffic — document required ports in interface doc; owner: Buyer
+6. Third-party OEM unavailable — state as buyer obligation; owner: Buyer
+7. Scope creep from undiscovered units — define by named units; extras = change order; owner: Shared
+8. Remote access link not established — buyer obligation, NDA required; owner: Buyer
+9. Heavy SQL queries degrading concentrator — recommend OPC UA for real-time consumers; owner: Buyer
+10. Security incident — covered by disclaimer; buyer owns network security; owner: Buyer
+
+## Standard Assumptions
+- Source systems can expose required interface; upgrades for that are buyer scope
+- Tag list, data format, communication parameters finalized in detailed engineering
+- Buyer network provides adequate bandwidth and routing
+- Named units = complete scope; additional units = change order
+- IP addresses and domain details provided by buyer during engineering
+
+## Standard Exclusions
+- Interfaces with systems not named in TS
+- OS patches, antivirus updates, software maintenance after delivery
+- Source code of core UGS platform
+- Modifications to existing L1, L2, MES, ERP, automation systems
+- Erection and civil works
+- Firewalls and networking infrastructure
+- PDA software and PDA hardware
+- Mechanical equipment
+- Performance guarantees on productivity, quality, yield, or process capability
+- Supervision of buyer personnel, contractors, agents
+
+## Diagram Guidance (semantic only — no mxGraph XML)
+Architecture layers (top to bottom): Remote Support (buyer-controlled VPN) → IT Layer (UGS server, managed switch, FTDM/analytics clients) → OT/IT Boundary (OT firewalls, buyer scope) → L2 Layer (L2 servers per unit) → L1 Layer (PDA servers, PLCs per unit) → [HX Layer, Option B only] → Field.
+Connection labels: source→HX or source→switch=[PROTOCOL]; HX→switch=Ethernet; UGS→FTDM=OPC UA; UGS→analytics=OPC UA/SQL; remote link=VPN/Broadband.
+Scope boundaries: dashed = seller scope, alternate dashed = buyer scope. Legend: connection type key, scope boundary key, reference-only caveat.
+Data flow: source systems → [HX] → switch → UGS concentrator → OPC UA server → downstream. Annotate arrows with protocol and frequency tier.
+Network topology: two zones (OT: L1+L2 LAN; IT: L3 + UGS server). OT firewalls at boundary. No IP addresses, port numbers, or VLANs — finalized in engineering.
+
+## Gantt Guidance (all values indicative only)
+Phases: Initiation → Pre-Engineering (M1: buyer tag list) → Basic Engineering (M2: buyer design approval) → Detailed Design → FAT (M3: FAT sign-off) → Shipping → Site Preparation (M4: site ready) → Commissioning → Handover (M5: work completion cert).
+Scale examples (observed, not commitments): small project (few units, no HX) ≈10–14 weeks; medium (several units, HX) ≈14–20 weeks; large (many units, complex) ≈18–26 weeks.
+Draw.io format: week-based JSON tasks with fields: task name, phase, start_week (integer, week 1 = PO acceptance), duration_weeks (integer), milestone (bool), dependencies (array of predecessor indices). Backend converts to mxGraph XML.
+Shutdown Gantt: UGS commissioning is typically non-intrusive — no full shutdown required. Brief panel/cable access managed as permits-to-work. If metadata confirms a shutdown, generate week-based tasks for shutdown-window activities only.
+
+
+---
+
+
+# REPOSITORY SECTION MAPPING
+
+Confirmed section keys only. Suppressed (no AI button): cover, revision_history, abbreviations.
+AI-eligible but excluded from completion count: binding_conditions, cybersecurity, disclaimer, scope_definitions.
+
+Format per entry: Role | Required inputs | Safe to infer | Must not invent | Field/structure notes
+
+---
+
+## executive_summary
+Role: Positions Hitachi India and the UGS solution for a management reader. First impression section; strategic, not technical.
+Required: [CUSTOMER_NAME], [PLANT_TYPE] or industry, seller name (Hitachi India), solution type (UGS).
+Infer: Standard Hitachi India OT/IT heritage statement; general UGS value proposition for plant data integration.
+Never invent: Specific experience year counts; named client references; pricing; RFP details not in metadata.
+Structure: 2–3 short paragraphs. (1) Hitachi India capability intro. (2) Qualification for this engagement. (3) UGS value framing for [CUSTOMER_NAME]. Executive language only. No heading text in output.
+
+---
+
+## introduction
+Role: Formal opening of the TS document, capturing the enquiry reference and client identification used throughout.
+Required: tender_reference ([TENDER_REF] if absent), tender_date ([TENDER_DATE] if absent), clientname ([CUSTOMER_NAME]), clientlocation ([SITE_LOCATION]).
+Infer: Standard response-to-enquiry framing; reference to the scope being covered by this TS.
+Never invent: Tender reference numbers, dates, or client contact details not in metadata.
+Structure: Short factual paragraph referencing the enquiry, client, and scope. Populate tender_reference, tender_date, clientname, clientlocation fields from project metadata. If absent, use placeholders.
+
+---
+
+## process_flow
+Role: Describes or illustrates data flow from plant units through UGS to downstream consumers.
+Required: Production unit names ([PRODUCTION_UNIT N] if absent), data flow direction.
+Infer: Standard path — L1 source → [HX if Option B] → UGS concentrator → OPC UA server → downstream consumers.
+Never invent: Specific protocol choices or downstream system names not in metadata.
+Structure: Brief narrative of the flow path (one paragraph). If diagram not yet uploaded, describe in text. Annotate with [PROTOCOL] and tier labels where applicable.
+
+---
+
+## overview
+Role: Business context and problem statement — why UGS is needed for this client.
+Required: [CUSTOMER_NAME], [SITE_NAME], production unit list.
+Infer: Problem framing (fragmented data, no unified layer, KPI visibility need); UGS as digitalization foundation.
+Never invent: Existing system details not in metadata; KPI improvement claims; enquiry reference numbers not confirmed.
+Structure: Mixed-field. Include: process_summary (1–2 sentences, context and enquiry), system_objective (problem + UGS purpose), existing_system (from metadata; placeholders for unknowns), integration_approach (UGS on top of L1/L2), tangible_benefits (bullet list), intangible_benefits (bullet list). Management-level tone.
+
+---
+
+## features
+Role: Complete functional feature set of the UGS being delivered. Primary technical section.
+Required: [NUM_TAGS], [RETENTION_PERIOD], [POLL_FREQ], HX option confirmation (all placeholder if absent).
+Infer: All standard UGS features present in every project: centralized data acquisition, web-based 3-step configuration (protocol → tag mapping → flow registration), real-time log monitoring, user operation tracking/audit trail, multi-protocol support, automated housekeeping, user accounts/RBAC, documentation control, email alerting (value-added), remote support (value-added), customer training (value-added).
+Never invent: Exact polling frequencies; HX controller inclusion if not confirmed; capabilities not in standard platform.
+Structure: Numbered subsections per feature. Each: short title, description, buyer benefit. Feature order: Data Acquisition → Web Config → HX Edge (conditional) → Log Monitoring → User Tracking → Multi-Protocol → Housekeeping → Email Alerting → Remote Support → User Accounts → Documentation Control → Training. Mark value-added items explicitly.
+
+---
+
+## remote_support
+Role: Defines post-commissioning remote support scope and conditions.
+Required: [SUPPORT_PERIOD] from metadata (do not default to any specific duration).
+Infer: Scope = troubleshooting, fine-tuning, data gathering, issue resolution only. Extras need separate commercial agreement. Working hours = seller office hours, no national holidays. NDA required before sessions.
+Never invent: SLA response times; on-site visits unless in scope.
+Structure: Two short paragraphs. (1) What is covered and duration. (2) Buyer establishes/manages VPN link; NDA required; scope exclusions.
+
+---
+
+## documentation_control
+Role: Describes UGS built-in help system and seller-delivered documentation package.
+Required: Nothing project-specific.
+Infer: Built-in documentation and search-based help in UGS. Delivered docs: system operation document, hardware specification, system interface document.
+Never invent: Document titles not established in scope.
+Structure: One paragraph on built-in help. One paragraph or bullet list on delivered documentation. Concise.
+
+---
+
+## customer_training
+Role: Defines training delivered during commissioning.
+Required: [TRAINING_DAYS], [TRAINEE_COUNT] from metadata (no defaults).
+Infer: Hands-on, on-site during commissioning, covers operational use, agenda mutually agreed before delivery.
+Never invent: Specific topics not agreed; certification or assessment commitments.
+Structure: One paragraph. State: on-site during commissioning, [TRAINEE_COUNT] persons, [TRAINING_DAYS] days, operational scope, agenda mutually agreed.
+
+---
+
+## fat_condition
+Role: Defines FAT scope, criteria, and acceptance requirements.
+Required: FAT location (seller's facility).
+Infer: FAT tests all configured acquisition flows against simulated sources; verifies performance at configured tag count/frequency; security config review; signed FAT report issued before shipment.
+Never invent: Pass/fail thresholds not agreed; buyer witness requirements not confirmed.
+Structure: Short bulleted list of FAT test items. FAT report = mandatory output. Shipment conditional on FAT sign-off.
+
+---
+
+## hardware_specs
+Role: Table of all hardware items being supplied.
+Required: Hardware items from project metadata or standard UGS BOM. HX controller quantity from architecture option.
+Infer: Standard BOM items: UGS server, monitor, managed switch, ethernet cabling, HX controller+junction box (if Option B). Generic vendor description acceptable ("HP/Dell/Lenovo or equivalent").
+Never invent: Specific model numbers, exact RAM/storage (use "sized per detailed engineering"), exact cable lengths not confirmed.
+Fields (repository row structure): name (equipment name), maker (vendor/make), qty (quantity), specs_line1 through specs_line4 (specification lines). Use specs_line fields to describe key specs; leave unused spec lines blank. Do not state specific RAM/storage values — write "Sized per tag count and retention period — confirmed at detailed engineering" in specs_line1.
+
+---
+
+## software_specs
+Role: Table of all software components being supplied.
+Required: Software components from project metadata or standard UGS stack.
+Infer: Standard stack: browser-based frontend, .NET Core/C# backend, SQL Server, Windows Server, enterprise antivirus.
+Never invent: Specific version strings (use "current version at detailed engineering start"); license counts not derivable from metadata.
+Fields (repository row structure): rows.name = software component name. Each row represents one software component. Version field: always "current version at detailed engineering start." Do not hardcode version strings.
+
+---
+
+## third_party_sw
+Role: Documents third-party software requirements, primarily the remote support network link.
+Required: Statement that seller requires buyer-provided VPN/broadband for remote support.
+Infer: Buyer establishes, manages, and controls this link. Seller has no authority over it.
+Never invent: Specific VPN products, bandwidth requirements not confirmed.
+Fields: sw4_name = remote support link requirement (standard: "VPN/Broadband Remote Link — provided and managed by Buyer"). Use sw1_name, sw2_name, sw3_name for any other confirmed third-party software items; leave blank if none.
+
+---
+
+## system_config
+Role: Image-backed section. User uploads the system configuration diagram. This section holds the text companion describing the configuration.
+Required: Architecture option (A or B); [NUM_TAGS], [POLL_FREQ], [RETENTION_PERIOD] from metadata.
+Infer: Standard architecture description for confirmed option. Reference-only caveat.
+Never invent: Component counts not from metadata; IP addresses; physical layout specifics.
+Structure: 2–3 sentence intro text describing selected option and how units connect to the UGS concentrator. State key parameters inline. End with: "The above configuration is for reference only and is subject to finalization during detailed engineering." Output is text companion only — not a diagram.
+
+---
+
+## supervisors
+Role: Records the man-day allocation for seller personnel assigned to this project across project phases.
+Required: Man-day values from project metadata or commercial agreement.
+Infer: Standard roles and phase allocation (project management, development/engineering, commissioning).
+Never invent: Specific man-day counts not confirmed in metadata or project agreement.
+Fields (repository structure): pm_days (project management man-days), dev_days (development/engineering man-days), comm_days (commissioning man-days), total_man_days (sum). Populate from project metadata. If absent, use [PM_DAYS], [DEV_DAYS], [COMM_DAYS], [TOTAL_DAYS] placeholders.
+
+---
+
+## division_of_eng
+Role: Responsibility matrix showing who (buyer/seller/joint) owns each activity across project phases.
+Required: Architecture option (affects HX line items); confirmed production units (affects interface line items).
+Infer: Seller: supplies and commissions hardware/software in seller scope. Buyer: erection, firewall, server room, existing system configuration. Interfaces: source-system side = buyer, UGS side = seller.
+Never invent: Responsibility assignments without project basis.
+Structure: Table with columns: No., Category, Item, BD, BE, DD, SU, ER, COM. Codes: B=Buyer, S=Seller, B/S=Joint. Categories: Services, System Engineering, Hardware, Software, Interface with External Systems, Training, Construction and Engineering, Pre-Engineering Activities, Documents. Every interface appears twice: source side (B) and UGS side (S).
+
+---
+
+## work_completion
+Role: Defines work completion certificate criteria and conditions.
+Required: References to scope sections covering hardware/software supply, commissioning, documentation.
+Infer: Three criteria: hardware/software supplied per scope; commissioning man-days completed; documentation submitted. Deemed-issued clause if buyer does not issue within agreed period.
+Never invent: Specific deadline periods not commercially agreed.
+Structure: Three-bullet criteria list + deemed-issued clause. One short paragraph.
+
+---
+
+## value_addition
+Role: Describes complimentary value-added or PoC items offered alongside the main scope.
+Required: PoC platform name and type (from metadata); demonstration period.
+Infer: Time-limited on UGS server infrastructure; commercial continuation requires separate contract; seller may withdraw if buyer does not proceed; IP remains with seller.
+Never invent: PoC capabilities not listed in scope; deployment commitments.
+Structure: Brief. State platform, duration, hosting, and limitations. Explicit scope-limiting language. Not a commitment to full deployment; provided as-is without SLAs.
+
+---
+
+## buyer_obligations
+Role: Lists what buyer must provide or arrange for the project to succeed. Contractually binding.
+Required: All standard UGS prerequisites plus any project-specific ones from metadata.
+Infer: All of the following are standard: provide complete tag lists before design starts; configure L1 data acquisition servers for required protocol interface (buyer side); provide site access; arrange buyer-scope hardware ahead of schedule; provide network connectivity and firewall rules; provide SMTP details if email alerting in scope; maintain VPN/internet for remote support; make 3rd-party OEM engineers available at commissioning if required; respond to technical queries promptly.
+Never invent: Prerequisites for systems not in metadata.
+Structure: Bulleted imperative list ("Provide…", "Arrange…", "Ensure…", "Configure…"). Each item specific enough to be referenced in a dispute.
+
+---
+
+## exclusion_list
+Role: Explicitly documents what is NOT in scope to prevent scope disputes.
+Required: Standard UGS exclusions (see Standard Exclusions in domain knowledge above) plus any project-specific exclusions from metadata.
+Infer: All standard exclusions apply to every UGS project.
+Never invent: Additional exclusions not grounded in standard UGS scope patterns.
+Structure: Bulleted list. One to two sentences per item, specific enough to be contractually useful. Draw from Standard Exclusions above.
+
+---
+
+## buyer_prerequisites
+Role: Pre-conditions buyer must satisfy before seller begins each project phase. Often overlaps with buyer_obligations but focuses on prerequisites that gate seller work.
+Required: Conditions from project metadata; standard UGS prerequisites.
+Infer: Tag list delivery before design; design approval before software config; site readiness before commissioning; firewall rules before integration; OEM availability at commissioning.
+Never invent: Prerequisites for unconfirmed systems.
+Structure: Bulleted list organized by phase gate. Each item states the prerequisite and which seller activity it gates.
+
+---
+
+## poc
+Role: Describes the free proof-of-concept offer for additional solutions (analytics, AutoML, etc.).
+Required: Platform name, demonstration period, hosting arrangement (from metadata; typically on UGS server).
+Infer: Complimentary, time-limited, hosted on UGS server infrastructure, does not constitute deployment commitment, IP remains with seller.
+Never invent: Platform capabilities not in scope; deployment timelines.
+Structure: Short. State platform, where it runs, duration, and limitations. Scope-limiting language required.
+
+---
+
+## tech_stack
+Role: Combined table of all software and hardware in the technology stack.
+Required: All components from project metadata or standard UGS BOM/stack. HX controller quantity from architecture option.
+Infer: Standard software and hardware patterns (see Technology Stack Patterns in domain knowledge above).
+Never invent: Specific version strings; specific RAM/storage values; IP addresses.
+Fields (repository row structure): sr_no, component (name), technology (description or make), note (sizing note or qualification). Single unified table. Version column: "current version at detailed engineering start." Hardware sizing: "sized per tag count and retention period — confirmed at detailed engineering."
+
+---
+
+## overall_gantt
+Role: Image-backed Gantt chart section. User uploads the Gantt image. Section holds text companion describing the schedule.
+Required: Nothing specific; use PO date from metadata if available.
+Infer: All canonical UGS phases (see Gantt Guidance above). Milestones M1–M5. All durations indicative only.
+Never invent: Specific calendar dates unless PO date is in metadata; committed durations.
+Structure: 2–3 sentence intro summarizing total indicative duration and key phases. Milestones listed (M1–M5). Note: indicative only; buyer prerequisite delays cause proportional delivery delays. For draw.io Gantt, output week-based GanttTask JSON (task, phase, start_week, duration_weeks, milestone, dependencies) — backend converts to mxGraph XML.
+
+---
+
+## shutdown_gantt
+Role: Image-backed shutdown activity schedule. Applicable only when commissioning requires a production shutdown window.
+UGS note: Full shutdown usually not required — UGS is read-only and non-intrusive. Brief panel/cable access handled as permits-to-work.
+Required: Whether shutdown is required (from metadata); if yes, which units and duration.
+Infer: If no shutdown required, state explicitly.
+Never invent: Shutdown requirement if not in metadata.
+Structure: If no shutdown required: one-sentence statement. If required: week-based GanttTask JSON for shutdown-window activities only (same format as overall_gantt).
+
+---
+
+## scope_definitions
+Role: Defines abbreviations and party identities used in the division of engineering table.
+Required: [CUSTOMER_NAME], [CUSTOMER_ABBREVIATION], seller identity (Hitachi India Pvt. Ltd.).
+Infer: Standard abbreviations: BD=Basic Data, BE=Basic Engineering, DD=Detail Design, SU=Supply or Service, ER=Erection, COM=Commissioning. X/Y notation = primary by X with support from Y.
+Never invent: Abbreviations not used in the TS.
+Structure: Party definitions then abbreviation definitions. Short definitional block.
+
+---
+
+## binding_conditions
+Role: Contractual framework limiting seller scope and establishing seller site-exit rights.
+Required: Nothing project-specific — standard content only.
+Infer: Scope limited to TS-defined content; services outside = buyer responsibility; no performance guarantees; conditions for site exit; contract effective date = PO acceptance date.
+Never invent: Novel legal clauses; penalty or indemnity terms.
+Structure: Bulleted list. Use repository-approved binding conditions boilerplate — do not generate novel legal language.
+
+---
+
+## cybersecurity
+Role: Formally states cybersecurity responsibilities and seller liability limitation.
+Required: Standard disclaimer content — see Cybersecurity section in domain knowledge above.
+Never invent: Novel legal clauses; cybersecurity guarantees; product-level certifications.
+Structure: 2–4 short paragraphs: patch recommendation; buyer's full security responsibility; seller's liability limitation; NDA requirement. Use approved boilerplate — do not generate novel legal language.
+
+---
+
+## disclaimer
+Role: Standard legal disclaimers: software license, technical improvements, confidentiality, liability limitation.
+Required: Standard clauses; contract price reference for liability cap.
+Never invent: Contract price values; penalty amounts; novel legal clauses.
+Structure: Four subsections: Software Licenses, Changes Due to Technical Improvements, Confidentiality, Limitation of Liability. Use approved template language only.
+
+
+---
+
+
+End of UGS context.txt

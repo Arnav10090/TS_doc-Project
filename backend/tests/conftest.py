@@ -10,18 +10,19 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from httpx import AsyncClient
 
 # Set test environment variables before importing app modules
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://ts_user:ts_password@db:5432/ts_generator_test"
-os.environ["SYNC_DATABASE_URL"] = "postgresql://ts_user:ts_password@db:5432/ts_generator_test"
-os.environ["UPLOAD_DIR"] = "/tmp/test_uploads"
-os.environ["TEMPLATE_PATH"] = "/tmp/test_template.docx"
+# Allow overriding these from the environment (useful for local runs against localhost)
+os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://ts_user:ts_password@db:5432/ts_generator_test")
+os.environ.setdefault("SYNC_DATABASE_URL", "postgresql://ts_user:ts_password@db:5432/ts_generator_test")
+os.environ.setdefault("UPLOAD_DIR", "/tmp/test_uploads")
+os.environ.setdefault("TEMPLATE_PATH", "/tmp/test_template.docx")
 
 from app.database import Base, get_db
 from app.main import app
 from app.projects.models import Project
 from app.sections.models import SectionData
 
-# Test database URL
-TEST_DATABASE_URL = "postgresql+asyncpg://ts_user:ts_password@db:5432/ts_generator_test"
+# Test database URL - read from environment (allows overriding to localhost when Docker maps 5432)
+TEST_DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql+asyncpg://ts_user:ts_password@db:5432/ts_generator_test")
 
 # Create test engine
 test_engine = create_async_engine(
@@ -87,6 +88,8 @@ async def create_test_project(db_session: AsyncSession):
             "solution_full_name": "Test Solution Full Name",
             "client_name": "Test Client",
             "client_location": "Test Location",
+            # Provide a default TS type to satisfy AI suggestion checks in integration tests
+            "ts_type": kwargs.get("ts_type", "Level 2"),
             **kwargs
         }
         project = Project(**project_data)
@@ -199,3 +202,23 @@ async def create_complete_project(db_session: AsyncSession, create_test_project)
         return project
     
     return _create_complete
+
+
+# --- Test helper: mock Groq API calls for AI suggestions ---
+@pytest.fixture
+def mock_call_groq(monkeypatch):
+    """
+    Provide a reusable fixture to mock `call_groq` in tests.
+
+    Usage:
+        def test_x(mock_call_groq):
+            mock_call_groq.return_value = "..."
+
+    By default the mocked coroutine returns a simple placeholder string.
+    """
+    async def _fake(prompt, timeout=None, **kwargs):
+        return "MOCKED_GROQ_RESPONSE"
+
+    # Patch the service function used by the application
+    monkeypatch.setattr("app.ai_suggestions.service.call_groq", _fake)
+    return _fake

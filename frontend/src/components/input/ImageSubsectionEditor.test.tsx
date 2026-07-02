@@ -39,11 +39,13 @@ describe('ImageSubsectionEditor', () => {
             base64: 'data:image/png;base64,first',
             filename: 'diagram-1.png',
             mimeType: 'image/png',
+            caption: 'diagram 1',
           },
           {
             base64: 'data:image/jpeg;base64,second',
             filename: 'diagram-2.jpg',
             mimeType: 'image/jpeg',
+            caption: 'diagram 2',
           },
         ],
       });

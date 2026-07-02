@@ -1,0 +1,7 @@
+Security responsibility: Hitachi India configures the backup infrastructure with security best practices, including dedicated backup administrative accounts, encrypted backups (if requested), and immutable storage configurations (where hardware supports it). Buyer is responsible for physical security of backup appliances and safeguarding encryption keys/passwords.
+
+Patch management: Hitachi India provides the initial installation with the latest stable software version. Ongoing updates of the backup software and underlying OS are the buyer's responsibility.
+
+Liability: Hitachi India's liability is limited to the successful configuration of backup jobs according to the defined schedules. Hitachi India is not liable for data loss due to hardware failure of the backup repository, lost encryption keys by the buyer, or unmonitored backup job failures after handover.
+
+Remote access: Secure VPN access is required for remote configuration and troubleshooting of backup jobs.

@@ -1,11 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { isCustomSectionKey } from '../../utils/customSectionUtils';
 import CustomSectionInput from '../input/CustomSectionInput';
 import PredefinedSectionEditor from '../input/PredefinedSectionEditor';
 import type { CustomSectionContent } from '../../types/customSections';
 import type { AutoSaveStatus } from '../../types';
-import { PREDEFINED_SECTION_TITLES } from '../sections/predefinedSectionContent';
+import { PREDEFINED_SECTION_TITLES, getDefaultSectionContent } from '../sections/predefinedSectionContent';
 import { stripEditMetadata } from '../../utils/editMetadata';
+import { useProjectStore } from '../../store/project.store'
+import AISuggestionsButton from '../shared/AISuggestionsButton'
+import SuggestionPanel from '../shared/SuggestionPanel'
+import toast from 'react-hot-toast'
+import importSuggestion from '../../utils/aiSuggestionImport'
+import { generateAISuggestion, generateDrawioSuggestion, getAISuggestionsStatus } from '../../api/aiSuggestions'
+import type { SuggestionResponse } from '../../api/aiSuggestions'
 
 interface SectionInputPanelProps {
   projectId: string;
@@ -80,7 +87,47 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
 
   const sectionName = getSectionName();
   const isSaving = saveStatus === 'saving';
+  const tsType = useProjectStore((s) => s.tsType)
+  const [groqConfigured, setGroqConfigured] = useState<boolean | null>(null)
+  const [suggestion, setSuggestion] = useState<SuggestionResponse | null>(null)
+  const [isRegenerating, setIsRegenerating] = useState(false)
+  const activeDraftContent = sectionContents[activeSectionKey]
+  const suppressedSections = new Set(['cover', 'revision_history', 'abbreviations'])
+  const isSuppressedSection = suppressedSections.has(activeSectionKey)
+  const hasSavedCustomSection = Boolean(customSectionContent)
+  const showAISuggestions = !isSuppressedSection && (!isCustomSection || hasSavedCustomSection)
+  const aiSuggestionsDisabled = !tsType || groqConfigured !== true
+  const aiSuggestionsDisabledTooltip = !tsType
+    ? 'Select a TS type for this project to enable AI suggestions'
+    : groqConfigured === false
+      ? 'AI provider is not configured'
+      : groqConfigured === null
+        ? 'Checking AI provider configuration...'
+        : undefined
 
+  useEffect(() => {
+    let cancelled = false
+
+    const loadAISuggestionsStatus = async () => {
+      try {
+        const status = await getAISuggestionsStatus()
+        if (!cancelled) {
+          setGroqConfigured(status.groq_configured)
+        }
+      } catch (error) {
+        console.error('AI suggestions status error', error)
+        if (!cancelled) {
+          setGroqConfigured(false)
+        }
+      }
+    }
+
+    void loadAISuggestionsStatus()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
   // Create a callback that includes the section key
   const handleContentChange = (content: Record<string, any>) => {
     if (onContentChange) {
@@ -188,6 +235,17 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
           {sectionName}
         </h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+          {/* AI Suggestions button - visible for applicable sections */}
+          {showAISuggestions ? (
+            <AISuggestionsButton
+              projectId={projectId}
+              sectionKey={activeSectionKey}
+              draftContent={activeDraftContent}
+              disabled={aiSuggestionsDisabled}
+              disabledTooltip={aiSuggestionsDisabledTooltip}
+              onSuggestionReceived={(nextSuggestion) => setSuggestion(nextSuggestion)}
+            />
+          ) : null}
           {saveStatus === 'saved' && (
             <span style={{ color: '#10B981', fontSize: '13px', fontWeight: 500 }}>
               Saved
@@ -227,6 +285,71 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
         style={{
           flex: 1,
           overflowY: 'auto',
+          minHeight: 0,
+        }}
+      >
+      {suggestion ? (
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid #E5E7EB', backgroundColor: '#FBFBFC' }}>
+          <SuggestionPanel
+            sectionKey={activeSectionKey}
+            sectionTitle={sectionName}
+            suggestion={suggestion}
+            isRegenerating={isRegenerating}
+            onDismiss={() => setSuggestion(null)}
+            onImport={async () => {
+              try {
+                // Merge section defaults into draft so import targets the correct fields
+                // (e.g. para1 for executive_summary instead of creating a spurious 'paragraph' key)
+                const existingDraft = sectionContents[activeSectionKey] || {}
+                const baseDraft = isCustomSection
+                  ? existingDraft
+                  : { ...getDefaultSectionContent(activeSectionKey), ...existingDraft }
+                const updated = await importSuggestion(projectId, activeSectionKey, suggestion, baseDraft)
+                if (updated) {
+                  // update in-memory draft and notify parent
+                  handleContentChange(updated as Record<string, any>)
+                  toast.success('Imported suggestion into draft')
+                } else {
+                  toast.error('No structured content available to import')
+                }
+              } catch (err) {
+                console.error('Import error', err)
+                toast.error('Import failed')
+              }
+            }}
+            onRegenerate={async () => {
+              setIsRegenerating(true)
+              try {
+                const nextSuggestion = await generateAISuggestion(projectId, activeSectionKey, activeDraftContent)
+                setSuggestion(nextSuggestion)
+                toast.success('Suggestion regenerated')
+              } catch (err) {
+                console.error('Regenerate error', err)
+              } finally {
+                setIsRegenerating(false)
+              }
+            }}
+            onGenerateDrawio={async () => {
+              try {
+                const drawioSuggestion = await generateDrawioSuggestion(projectId, activeSectionKey, activeDraftContent)
+                toast.success(
+                  activeSectionKey === 'system_config'
+                    ? 'Draw.io code generated'
+                    : 'Draw.io chart generated',
+                )
+                return drawioSuggestion
+              } catch (err) {
+                console.error('Draw.io generation error', err)
+                toast.error('Draw.io generation failed')
+                throw err
+              }
+            }}
+          />
+        </div>
+      ) : null}
+
+      <div
+        style={{
           padding: '16px',
         }}
       >
@@ -259,6 +382,7 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
             onContentChange={handleContentChange}
           />
         )}
+      </div>
       </div>
     </aside>
   );

@@ -1,0 +1,33 @@
+{
+  "_comment": "Example context routing override file",
+  "_location": "Place this file at: ts_documents/{ts_type}/context_routing_override.json",
+  "_format": "Section keys map to arrays of context filenames",
+  "_behavior": "Custom mappings replace default mappings per section (shallow merge)",
+  
+  "hardware_specs": [
+    "domain_context.txt",
+    "architecture_context.txt",
+    "custom_hardware_sizing_context.txt"
+  ],
+  
+  "software_specs": [
+    "architecture_context.txt",
+    "custom_software_stack_context.txt"
+  ],
+  
+  "features": [
+    "domain_context.txt",
+    "custom_features_context.txt"
+  ],
+  
+  "cybersecurity": [
+    "cybersecurity_context.txt",
+    "custom_compliance_context.txt",
+    "implementation_context.txt"
+  ],
+  
+  "executive_summary": [
+    "domain_context.txt",
+    "custom_executive_context.txt"
+  ]
+}

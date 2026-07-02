@@ -1,0 +1,3 @@
+Structure: Group prerequisites by phase gate. M1 gate (System Design): recipe/look-up table and algorithm delivery before setup-function design. Pre-interface design: L1/L3 schema and sample data delivery. M2 gate (Development): design approval before software development. Pre-commissioning: site/network readiness. At commissioning: OEM engineer availability. Map each prerequisite to what seller activity it gates.
+Avoid: Duplicating all buyer_obligations content — focus on phase-gate → gated activity dependency mapping. Do not invent prerequisites for unconfirmed systems.
+Tone: Phase-gate dependency style. "Before [activity] can commence, buyer must complete [prerequisite]."

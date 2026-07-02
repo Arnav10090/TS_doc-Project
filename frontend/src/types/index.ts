@@ -12,6 +12,7 @@ export interface Project {
   doc_version?: string
   created_at: string
   updated_at: string
+  ts_type?: string | null
 }
 
 export interface CompletionSummary {
@@ -33,6 +34,7 @@ export interface ProjectSummary {
   created_at: string
   completion_percentage: number
   total_sections: number
+  ts_type?: string | null
 }
 
 // Section Data Types
@@ -253,11 +255,19 @@ export interface ProjectStore {
   clientName: string
   clientLocation: string
   sectionCompletion: Record<string, boolean>
+  tsType: string | null
   
   setProject: (project: ProjectDetail) => void
   setSolutionName: (name: string) => void
   setSectionComplete: (key: string, complete: boolean) => void
+  setTsType: (tsType: string | null) => void
   clearProject: () => void
+}
+
+// TS Type option returned by backend
+export interface TSTypeOption {
+  value: string
+  label: string
 }
 
 export interface UiStore {

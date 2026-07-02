@@ -1,0 +1,4 @@
+Structure: Two-column table (Component | Details). Group rows: Software components, Hardware components, Third-party connectivity. Include version note: "versions current at detailed engineering start."
+Avoid: Stating specific version numbers — always use the "current at detailed engineering start" qualifier. No specific RAM/storage values. No IP addresses.
+Tone: Technical-specification table. Terse, structured.
+Level 2-specific: Standard software: web-based frontend, Python/Django or equivalent backend, containerized deployment, RDBMS, Windows Server, antivirus. Hardware sizing based on number of production lines and data volume from metadata.

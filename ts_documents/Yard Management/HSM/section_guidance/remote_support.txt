@@ -1,0 +1,6 @@
+Purpose: Defines SELLER's complimentary remote maintenance support commitment after project completion, including duration, scope, working hours, conditions, and Buyer infrastructure obligations.
+Required Inputs: [REMOTE_SUPPORT_DURATION_MONTHS], [REMOTE_SUPPORT_HOURS]
+Safe Inferences: Support is limited to scope of supply defined in the TS; Buyer must provide dedicated internet/lease line at site; NDA required before commencement of remote support; remote terminal access to be made available to SELLER as needed; support limited to SELLER's working hours excluding national holidays; access and management of remote link is always under Buyer's authority
+Must Not Invent: Specific SLA response times, specific fault resolution time commitments, specific on-site visit provisions within remote support period, on-call provisions outside stated working hours
+Suggested Structure: 3 paragraphs. (1) Duration ([REMOTE_SUPPORT_DURATION_MONTHS] months from project completion date), scope (troubleshooting and issue resolution limited to TS supply scope), and Buyer infrastructure obligation (internet/lease line, remote terminal access). (2) Working hours ([REMOTE_SUPPORT_HOURS], excluding national holidays). (3) NDA requirement before starting remote support.
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

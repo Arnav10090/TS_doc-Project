@@ -1,0 +1,6 @@
+## scope_definitions
+Role: Defines abbreviations and party identities used in the division of engineering table.
+Required: [CUSTOMER_NAME], Buyer abbreviation ("B"), Seller identity (Hitachi India Pvt. Ltd., "S").
+Infer: Standard phase abbreviations: BD=Basic Data, BE=Basic Engineering, DD=Detail Design, SU=Supply or Service, ER=Erection, COM=Commissioning. X/Y notation convention = primary responsibility by X with support from Y. Standard parties: Buyer = [CUSTOMER_NAME] (B); Seller = Hitachi India Pvt. Ltd. (S).
+Never invent: Abbreviations not used in the TS.
+Structure: Party definitions block followed by phase abbreviation definitions. Short definitional block.

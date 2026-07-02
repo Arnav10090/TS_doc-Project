@@ -1,0 +1,4 @@
+Structure: Describe complimentary/PoC offer scope (what is provided free, time-limited), time limitation clause, IP retention statement (IP remains with HICAD), scope limitation (PoC ≠ production deployment commitment), commercial continuation path.
+Avoid: Implying PoC deliverables carry production SLAs. Do not commit to PoC duration unless from metadata.
+Tone: Offer-qualification language. Frame as goodwill gesture with clear boundaries.
+UGS-specific: PoC runs on UGS server infrastructure already in scope. No separate hardware for PoC unless metadata states otherwise.

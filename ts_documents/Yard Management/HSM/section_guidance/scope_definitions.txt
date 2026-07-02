@@ -1,0 +1,6 @@
+Purpose: Defines the terminology and party identities used in the Division of Engineering responsibility matrix.
+Required Inputs: [CUSTOMER_NAME] (for Buyer definition); SELLER = Hitachi India Pvt. Ltd. (or as identified in the project)
+Safe Inferences: Standard scope phase codes: BD = Basic Data, BE = Basic Engineering, DD = Detail Design, SU = Supply or Service, ER = Erection, COM = Commissioning; X/Y notation = Primary Work/Services provided by X with Support from Y
+Must Not Invent: Non-standard scope codes, additional phases not present in the Division of Engineering table
+Suggested Structure: Formal definitions block. Buyer: [CUSTOMER_NAME] (B: Buyer). Seller: SELLER (S: Seller). Then each code abbreviation and definition. Then X/Y notation explanation. Short definitional format.
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

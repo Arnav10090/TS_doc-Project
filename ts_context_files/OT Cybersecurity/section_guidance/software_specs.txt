@@ -1,0 +1,6 @@
+## software_specs
+Role: Table of all software components supplied as part of the OTCSS solution.
+Required: Software components from project metadata or standard OTCSS supply; [SUBSCRIPTION_PERIOD]; [NUM_ASSETS] if available for license tier.
+Infer: Standard OTCSS software supply: IDS + Asset Management + Vulnerability Management platform software (annual subscription, asset-count tiered, includes ICS threat intelligence feed updates); SRA software (annual subscription, device/session tiered, includes access point license); Enterprise Manager software (Option 2 only, annual subscription); OT cybersecurity platform firmware update entitlement.
+Never invent: Specific version strings (always write "current version at implementation start"); specific vendor product names not confirmed; license counts not derivable from metadata.
+Fields: rows.name = software component name. Version field: "current version at implementation start." License type: annual subscription for [SUBSCRIPTION_PERIOD]. Do not hardcode version strings or asset-tier details unless confirmed.

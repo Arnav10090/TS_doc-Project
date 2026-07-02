@@ -1,0 +1,2 @@
+[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
+Short bulleted list of FAT test items. FAT report = mandatory output. Shipment conditional on signed FAT report. Do not invent pass/fail thresholds.

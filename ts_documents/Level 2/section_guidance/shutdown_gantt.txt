@@ -1,0 +1,3 @@
+Structure: State whether shutdown is required (from metadata). If required: generate day-based JSON with Before-MSD (preparation, deployment) / Main Shutdown (communication tests with L1 and L3, reporting/alert setup, backup) / After-MSD (go-live, overall test, monitoring, commissioning report) with day offsets relative to shutdown start. If no shutdown: one explicit statement. Draw.io JSON format same as overall_gantt.
+Avoid: Assuming a shutdown is required if not confirmed in metadata. Do not generate complex gantt without metadata basis.
+Tone: Factual, conditional on project scope.

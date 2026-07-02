@@ -1,0 +1,6 @@
+Purpose: Presents the indicative shutdown commissioning schedule relative to the Main Shutdown Day (MSD). Image-backed section.
+Required Inputs: Confirmed shutdown window duration and activity sequence from project engineering; typically requires discussion with BUYER
+Safe Inferences: Shutdown IS required for HSM CYMS/SYMS commissioning (live crane integration test mandatory); OBSERVED activities and sequence as specified in Gantt Guidance above; time axis anchored to MSD; final schedule by mutual agreement
+Must Not Invent: Specific calendar shutdown dates, confirmed shutdown duration without Buyer agreement, firm activity day counts as contractual commitments
+Suggested Structure: Intro text (1-2 sentences on shutdown purpose). Mandatory labels: "SHUTDOWN SCHEDULE INDICATIVE FOR REFERENCE ONLY" and "The above shutdown schedule provided is for reference only. The final shutdown schedule will be determined through discussion and mutual agreement between the BUYER & SELLER." For draw.io output: week-based GanttTask JSON for shutdown-window activities; express the ~8-day OBSERVED window as day-granular tasks within the week-based format (1 day ≈ 0.15 weeks) or consult backend documentation for day-scale Gantt support.
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

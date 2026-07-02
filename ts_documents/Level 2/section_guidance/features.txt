@@ -1,0 +1,4 @@
+Structure: Numbered subsections per capability. Each: short title, description, buyer benefit. Feature order: PDI → Setup/Schedule Function → Adaptive Function (conditional) → PDO/Delivery File Control → Equipment Management → Downtime Management → Reporting Function → Data Link with L1 → Data Link with L3 (conditional). Value-added items (mobile app, alerts) listed separately under value_addition.
+Avoid: Listing features not confirmed in scope. Do not include adaptive function scope beyond what metadata confirms. Do not conflate with data-acquisition middleware features.
+Tone: Product-feature list style. Each bullet: capability name + one-line buyer benefit.
+Level 2-specific: Always include PDI, setup/schedule, PDO, equipment management, downtime management, reporting, L1 data link as core. Adaptive function conditional on process suitability.

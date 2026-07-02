@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, cleanup } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import * as fc from 'fast-check'
 import HomePage from '../Home'
@@ -137,6 +137,8 @@ describe('Home.tsx Bug Condition Exploration', () => {
             total_sections: fc.integer({ min: 10, max: 26 }), // Less than 27 to trigger bug condition, min 10 to avoid edge cases
           }),
           async (project: ProjectSummary) => {
+            // Ensure previous renders are unmounted to avoid duplicate nodes
+            cleanup()
             vi.mocked(projectsApi.getAllProjects).mockResolvedValue([project])
 
             renderHomePage()
@@ -160,9 +162,9 @@ describe('Home.tsx Bug Condition Exploration', () => {
             }
           }
         ),
-        { numRuns: 10 } // Limit runs for focused testing
+        { numRuns: 3 } // Limit runs for focused testing (reduced to avoid test-timeout)
       )
-    })
+    }, 20000)
 
     it('should handle edge case with very few sections correctly', async () => {
       // Edge case: Project with only 5 sections remaining

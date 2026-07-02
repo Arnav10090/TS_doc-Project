@@ -1,0 +1,7 @@
+[DRAFT — ADAPT FOR DATA ANALYSIS/DATA MONITORING]
+Structure: Two-column table (Component | Details). Group rows: Software components, Hardware components, Third-party software. Include version note: "versions current at detailed engineering start."
+Avoid: Stating specific version numbers (e.g., SQL Server 2022) — always use the "current at detailed engineering start" qualifier.
+Tone: Technical-specification table. Terse, structured.
+UGS-specific: Standard software: browser-based frontend, C#/.NET Core backend, SQL Server, Windows Server, enterprise antivirus. Hardware sizing based on tag count from metadata.
+--- Template structure reminder ---
+Single unified table: sr_no, component, technology/make, note. Version: 'current version at detailed engineering start.' Hardware sizing: 'sized per [parameter] — confirmed at detailed engineering.'

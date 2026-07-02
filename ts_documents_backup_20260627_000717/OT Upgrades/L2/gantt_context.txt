@@ -1,0 +1,7 @@
+Phase structure: M1 Engineering (~8w) → M2 Development (~12w) → M3 FAT (~4w) → M4 Commissioning (~6w) → M5 Handover (~2w). Total indicative: ~32w from PO.
+
+Critical path: Finalized tag list and L1 interface spec gates M2 start. L1 systems must be commissioned and stable before M4 commissioning start. L3 ERP interface confirmation gates M2 development of ERP integration module.
+
+Shutdown Gantt: NOT required for standard L2 deployment. L2 installation is non-intrusive to L1 production — can be deployed in parallel. If buyer requires a dedicated commissioning window for L1 cutover, a shutdown Gantt may apply (confirm at detailed engineering).
+
+Draw.io format: week-based GanttTask JSON — fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies[].

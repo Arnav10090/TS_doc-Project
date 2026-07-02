@@ -1,0 +1,13 @@
+## Cybersecurity
+
+Responsibility split:
+- BUYER is responsible for: all cybersecurity, information security, hardware security, personal data security, network security, equipment security, and overall data security at the plant. This includes firewall configuration, network segmentation, patch management after delivery, and control of remote access links.
+- SELLER delivers: the application with secure-by-default role-based access control (RBAC), antivirus software installed at delivery, and recommendations for prompt security patching. SELLER recommends that security updates be applied as soon as available and that the latest supported versions be maintained.
+
+SELLER is not liable for any direct, indirect, incidental, consequential, or special damages arising from cybersecurity incidents, data breaches, unauthorized access, or other security-related events.
+
+NDA must be signed by both parties before any remote support session begins.
+
+Use of unsupported software versions or failure to apply security updates may increase exposure to cyber threats; this is acknowledged to be outside SELLER control.
+
+Do not generate novel legal cybersecurity clauses — use approved TS boilerplate for the cybersecurity section.

@@ -1,0 +1,4 @@
+Structure: Short descriptive paragraph explaining data flow path (field → L1 → L2 → OT boundary → IT/UGS → consumers), followed by annotation notes for the accompanying diagram.
+Avoid: Generating actual draw.io XML here. Do not list protocol names unless confirmed in metadata.
+Tone: Technical-descriptive. Diagram-text must align — describe what the diagram shows.
+UGS-specific: Identify each named production unit. State read-only nature of UGS integration explicitly.

@@ -1,0 +1,5 @@
+Role: Formally states cybersecurity responsibilities and SELLER liability limitations. Standard boilerplate content.
+Required: Standard disclaimer content only — see Cybersecurity section in domain knowledge above.
+Infer: Four-part content: (1) SELLER recommendation to apply security updates promptly and use supported versions. (2) BUYER's full and sole responsibility for all cybersecurity, information security, hardware security, data security, network security, and equipment security. BUYER responsible for preventing unauthorized access to plant systems. (3) SELLER's liability limitation — not liable for any direct, indirect, incidental, consequential, or special damages from security incidents, data breaches, or unauthorized access. (4) NDA required before any remote support session.
+Never invent: Novel legal security clauses, product-level cybersecurity certifications, or commitments to specific security architectures.
+Structure: 2–4 short paragraphs using approved cybersecurity disclaimer boilerplate. Do not generate novel legal language.

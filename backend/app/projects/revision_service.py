@@ -262,8 +262,10 @@ async def append_revision_entry(
     # Calculate next revision number
     next_rev_no = calculate_next_revision_number(existing_rows)
     
-    # Generate ordinal text (1-based for display: "First", "Second", etc.)
-    ordinal_text = generate_ordinal_text(next_rev_no)
+    # Generate ordinal text shifted for human-readable numbering.
+    # The stored rev_no values are 0-based for the initial entry, so display
+    # ordinals should be offset by +1 (rev_no 1 -> "Second issue").
+    ordinal_text = generate_ordinal_text(next_rev_no + 1)
     
     # Format current date
     current_date = format_date_dd_mm_yyyy()

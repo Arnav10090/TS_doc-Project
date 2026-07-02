@@ -1,0 +1,44 @@
+# GANTT & DIAGRAM CONTEXT
+
+## Diagram Guidance (semantic only — no mxGraph XML)
+### Architecture Diagram (system_config)
+The OTCSS architecture diagram layers (top to bottom, or left to right by zone):
+- Remote Access Entry: External vendor/OEM internet connection (Buyer-managed) entering through OT firewall into DMZ.
+- DMZ / Cybersecurity Tool Layer (Seller scope): IDS core appliance(s); Enterprise Manager (Option 2 only); SRA appliance and access point. All connected to OT firewall (Buyer scope) on one side and IT network on the other.
+- OT Network Layer (per process area): OT network switches (existing, Buyer scope); IDS sensors connected via SPAN; aggregation switch (Option 1, typically Buyer-provided); OT assets: PLCs, HMIs, DCS, SCADA servers, engineering workstations.
+- Field Layer: Field devices, sensors, and actuators connected to PLCs and DCS.
+- Scope boundary: Dashed lines distinguishing Seller scope (cyber tools, sensors, core appliances, SRA) from Buyer scope (firewalls, switches, network cables, OT assets, existing automation systems).
+- Legend: Connection type key (encrypted channel, SPAN, OT traffic, remote access); scope boundary key (Seller vs Buyer); reference-only caveat on the diagram.
+No IP addresses, port numbers, VLAN IDs, or MAC addresses in any architecture diagram — finalized during detailed engineering.
+
+### Data Flow Diagram (process_flow)
+Passive monitoring data flow: OT traffic on network switches → SPAN/TAP → IDS sensor → encrypted channel → IDS core appliance in DMZ → alerts and asset data → OT monitoring dashboard.
+Remote access flow: External vendor → internet (Buyer-managed) → OT firewall → SRA appliance (MFA + RBAC + approval workflow) → approved session to OT host → session recording → audit log.
+Vulnerability flow: Asset fingerprints from passive IDS observation → CVE/ICS-CERT database mapping → risk-based scoring → prioritized vulnerability report.
+
+## Gantt Guidance (all values indicative only)
+### Overall Implementation Gantt
+Phases and indicative durations (OBSERVED from sample; actual durations are project-dependent and commercially agreed):
+- Stage 0 (Project Planning): indicatively 2–4 weeks.
+- Stage 1 (OT Asset Discovery and Inventory): indicatively 2–4 weeks depending on number of plants and site visit access windows.
+- Stage 2 (To-Be Network Architecture): indicatively 2–4 weeks; Buyer architecture approval is the most common delay point — delays gate Stage 3 start.
+- Stage 3 (Tools Implementation and Dashboards): indicatively 4–8 weeks depending on tool complexity, asset count, and architecture option.
+- Stage 5 (Policy, SOP Documentation, and Training): indicatively 2–4 weeks depending on stakeholder availability for workshops and training sessions.
+- Total implementation: OBSERVED range for a mid-size multi-plant deployment is approximately 8 months across multiple on-site SVs (OBSERVED sample: 100 man-days — do not treat as a default).
+
+All durations are indicative only. Buyer prerequisite delays (architecture approval, hardware provisioning, site access scheduling) cause proportional delivery delays.
+
+Milestones: M1 (Project Plan submission), M2 (Asset Discovery List completion), M3 (Cyber Tool Installation confirmation), M4 (Dashboards deployed and verified), M5 (Training Report and Assessment Report submitted).
+
+### Remote Support and Onsite Monitoring Schedule (second schedule)
+- Remote Support period: [SUPPORT_PERIOD_REMOTE] commencing from Work Completion date.
+- Onsite SV period: [SUPPORT_PERIOD_ONSITE] commencing from Work Completion date; Seller may rotate the assigned SV per operational availability.
+
+### Draw.io Gantt Format
+Week-based JSON task objects with fields: task (string label), phase (string group name), start_week (integer, week 1 = PO acceptance), duration_weeks (integer), milestone (boolean), dependencies (array of zero-based predecessor task indices). Backend converts to mxGraph XML for draw.io import.
+
+### Shutdown Gantt
+OTCSS implementation is passive and non-intrusive by design. No plant-wide production shutdown is required for deployment. Physical installation activities (sensor racking, cabling) may require brief local maintenance windows managed as permits-to-work coordinated with plant operations. If project metadata confirms a specific maintenance window requirement, generate week-based task entries for that window's activities only. Otherwise, state explicitly: "OTCSS implementation is non-intrusive and does not require a production shutdown."
+
+
+---

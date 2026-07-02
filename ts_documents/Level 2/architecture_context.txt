@@ -1,0 +1,22 @@
+Architecture Options:
+Three-tier topology: L1 (PLC/HMI per production line) → L2 (PMS application server(s), client workstations) → L3 (ERP/business systems), connected via managed switch and buyer-controlled firewall.
+High-availability option: online/primary server plus backup/standby server with heartbeat connection; client workstations connect to whichever server is active. Use only when project metadata confirms HA is in scope.
+Remote support access via buyer-provisioned internet line/VPN to seller remote-support location; never assume default connectivity exists.
+
+Protocols: L1↔L2: project-dependent ([PROTOCOL] — examples observed: vendor-proprietary PLC link, TCP/IP). L2↔L3: project-dependent (examples observed: DB-LINK, TCP/IP). If L3 absent, L2↔L3 interface does not apply. Do not assume OPC UA, Modbus, or any specific protocol unless project metadata confirms it — L2 PMS protocol needs differ from data-acquisition-middleware protocol needs.
+
+Data Acquisition: L2 PMS receives PDI from L3 (or manual entry) and process data from L1 in real time during production. It is not a bulk multi-protocol tag-polling platform; tag/point counts when stated ([NUM_TAGS]) describe data passed through an adjoining data-acquisition layer, not the L2 PMS application itself — do not conflate the two.
+
+Data Storage: On-premises database (existing plant database may be reused, or new instance provisioned — [DB_PLATFORM] from metadata, do not assume a specific RDBMS). Retention of production-unit history is configurable and project-dependent ([RETENTION_PERIOD]).
+
+Integration Patterns:
+1. L3 → L2 (PDI inbound): buyer provides the production-order/specification data feed; seller configures the L2-side ingestion.
+2. L2 → L1 (setpoints/setup outbound): seller configures L2-side; buyer's L1 must accept the interface.
+3. L1 → L2 (process data/results inbound): buyer ensures L1 exposes required signals; seller configures L2-side.
+4. L2 → L3 (PDO outbound): seller configures L2-side; buyer's L3 must receive the interface.
+5. L2 ↔ adjoining data-acquisition/historian layer (if present): seller may reuse a separate concentrator/gateway for bulk L1 tag collection feeding L2 dashboards; architecturally distinct from PDI/PDO production-order exchange.
+All interface parameters finalized during detailed engineering — not at TS stage.
+
+Technology Stack Patterns (observed, not defaults): Software: web-based frontend framework, Python/Django or equivalent backend framework, containerized deployment, existing or new RDBMS, Windows Server OS, enterprise antivirus. Versions: "current at detailed engineering start." Hardware: enterprise tower/rack server (sizing by number of lines, tag volume, retention — never state specific RAM/storage), FHD client console monitors, client desktop PCs, managed/unmanaged network switches, media converters for fiber-to-Ethernet where applicable, GSM modem for SMS alerting (if in scope). Buyer provides: server room, power, network cabling beyond core scope, firewall, SIM for GSM modem, access to existing recipe/look-up tables.
+
+Diagram layers (top to bottom): L3 Layer (ERP/business systems, firewall — buyer scope) → L2 Layer (online server + optional backup server with heartbeat, client workstations) → L1 Layer (PLC/HMI per production line) → Field. Where a separate data-acquisition/historian layer feeds dashboards, show as adjoining, not nested — architecturally distinct from PDI/PDO exchange. No IP addresses or VLANs — finalized in engineering.

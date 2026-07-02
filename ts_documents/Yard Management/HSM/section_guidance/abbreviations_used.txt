@@ -1,0 +1,6 @@
+Purpose: Lists standard abbreviations and their expansions used throughout the CYMS/SYMS TS document.
+Required Inputs: No project-specific inputs required.
+Safe Inferences: Standard set of HSM abbreviations from the domain glossary: CYMS, SYMS, HSM, EOT, L1, L2, L3, MES, CCM, KPI, FAT, MSD, SDD, WCC, NDA, PoC, CADS, DX.
+Must Not Invent: Novel abbreviations not used in the document or standard terminology.
+Suggested Structure: Two-column table (Abbreviation | Expansion). List standard HSM/CYMS/SYMS abbreviations first, followed by any project-specific ones from metadata.
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

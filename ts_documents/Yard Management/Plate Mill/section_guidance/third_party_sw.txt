@@ -1,0 +1,5 @@
+Role: Documents third-party software requirements, specifically the remote support network link requirement.
+Required: Confirmation of remote support mechanism; database selection (MS SQL Server or alternative per SELLER decision).
+Infer: Database selection is solely at SELLER discretion — MS SQL Server or other suitable database. Remote link: SELLER requires a network connection (broadband/VPN) between SELLER and BUYER's site to provide remote support. Establishment and maintenance of this link is always under BUYER's authority.
+Never invent: Specific VPN product names, bandwidth requirements, or third-party software items not confirmed in scope.
+Fields: Primary entry: remote support network link (established and managed by BUYER). Secondary entry: database platform (at SELLER's discretion). Additional entries for any other confirmed third-party software requirements.

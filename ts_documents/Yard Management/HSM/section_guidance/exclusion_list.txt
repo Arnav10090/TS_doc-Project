@@ -1,0 +1,6 @@
+Purpose: Explicitly documents what is excluded from SELLER's scope to prevent scope disputes.
+Required Inputs: No project-specific inputs required
+Safe Inferences: All standard CORE exclusions apply to every HSM CYMS/SYMS project — see Standard Exclusions in domain knowledge above. Do not add project-specific exclusions unless confirmed in scope.
+Must Not Invent: Vague or non-standard exclusions; items that are actually in scope
+Suggested Structure: Opening statement: only services mentioned in the scope of this TS are included; further services require mutual discussion and change management mechanism. Specific attention notice. Bulleted list of excluded items: interface with external devices not in TS; software patches/security updates; productivity/quality/yield warranties; source code of core technology; modifications to existing HSM electrical/automation systems (L1, L2, MES, SYC, FCE L1/L2); erection/civil works; hardware/software not in TS; mechanical equipment; support for mechanical/process/operational troubleshooting; L2 and PDA software; firewalls and networking components; performance guarantees.
+AI Generation Rules: Do NOT duplicate shared knowledge from the context files.

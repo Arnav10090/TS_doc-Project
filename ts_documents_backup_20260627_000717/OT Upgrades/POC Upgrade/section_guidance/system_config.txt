@@ -1,0 +1,7 @@
+[DRAFT — ADAPT FOR OT UPGRADES/POC UPGRADE]
+Structure: State selected architecture option (Option A or B, from metadata), brief justification, reference-only caveat sentence, finalization note (exact config finalized at detailed engineering).
+Avoid: Stating IP addresses, VLANs, or specific hardware specs here — those belong in hardware_specs section.
+Tone: Technical-reference. Must include "for reference only — subject to change at detailed engineering."
+UGS-specific: If HX is not in scope, clearly state Option A (direct polling). If HX is in scope, state Option B with per-unit HX placement.
+--- Template structure reminder ---
+2-3 sentences describing the selected configuration option and how units connect. State key parameters inline. End with reference-only caveat: 'The above configuration is for reference only and is subject to finalization during detailed engineering.'

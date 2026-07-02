@@ -1,0 +1,30 @@
+# Context Template For AI Suggestions
+
+Copy this file to a selectable category folder as `context.txt` only after replacing every placeholder with reviewed category-specific content.
+
+## Category Summary
+Describe the TS category, typical customer problem, target plant or process area, and the usual business outcome.
+
+## Standard Scope Patterns
+List common in-scope activities, deliverables, engineering tasks, commissioning tasks, and support boundaries.
+
+## Key Components And Integrations
+List expected systems, hardware, software, interfaces, protocols, data sources, data consumers, and third-party dependencies.
+
+## Technical Architecture Notes
+Summarize common architecture patterns, deployment topology, network zones, server/client roles, data flow, and redundancy expectations.
+
+## Assumptions And Dependencies
+List customer prerequisites, site readiness dependencies, input data assumptions, infrastructure expectations, access requirements, and approval dependencies.
+
+## Delivery And Gantt Guidance
+Describe typical project phases, sequence, durations in weeks, milestones, and dependencies that should guide Gantt suggestions.
+
+## Section-Specific Guidance
+Add concise guidance for TS sections that need category-specific wording, such as executive summary, overview, scope, exclusions, cybersecurity, training, FAT, and support.
+
+## Preferred Terminology
+List preferred names, abbreviations, product names, and phrasing conventions. Include terms that should stay consistent across suggestions.
+
+## Avoid Or Verify
+List claims the AI should not assume, customer-specific items that must be verified, risky commitments, and details that require SME confirmation.

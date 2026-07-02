@@ -1,0 +1,25 @@
+## Cybersecurity
+Buyer owns: all cybersecurity, information security, hardware/network/data security, patch management post-delivery, VPN/remote access link management.
+Seller does: delivers secure-by-default configuration, antivirus at delivery, recommends prompt patching.
+Key TS statements: seller not liable for security incidents; NDA required before remote sessions; buyer controls VPN.
+Secure defaults: RBAC active at deployment, default credentials changed at commissioning, all actions audit-logged, SQL access read-only for external consumers.
+Do not generate novel legal security clauses — use approved TS boilerplate.
+
+## binding_conditions
+Role: Contractual framework limiting seller scope and establishing seller site-exit rights.
+Required: Nothing project-specific — standard content only.
+Infer: Scope limited to TS-defined content; services outside = buyer responsibility; no performance guarantees; conditions for site exit; contract effective date = PO acceptance date.
+Never invent: Novel legal clauses; penalty or indemnity terms.
+Structure: Bulleted list. Use repository-approved binding conditions boilerplate — do not generate novel legal language.
+
+## cybersecurity
+Role: Formally states cybersecurity responsibilities and seller liability limitation.
+Required: Standard disclaimer content — see Cybersecurity section in domain knowledge above.
+Never invent: Novel legal clauses; cybersecurity guarantees; product-level certifications.
+Structure: 2–4 short paragraphs: patch recommendation; buyer's full security responsibility; seller's liability limitation; NDA requirement. Use approved boilerplate — do not generate novel legal language.
+
+## disclaimer
+Role: Standard legal disclaimers: software license, technical improvements, confidentiality, liability limitation.
+Required: Standard clauses; contract price reference for liability cap.
+Never invent: Contract price values; penalty amounts; novel legal clauses.
+Structure: Four subsections: Software Licenses, Changes Due to Technical Improvements, Confidentiality, Limitation of Liability. Use approved template language only.

@@ -1,0 +1,7 @@
+Security responsibility: Hitachi India provides new HMI hardware with a modern, supported OS (e.g., Windows 10 IoT) and activates standard OS firewalls. Buyer is responsible for integrating the new HMIs into their existing Active Directory domain (if applicable) and deploying their standard antivirus/EDR agents.
+
+Patch management: Hitachi India installs the latest OS updates and HMI software patches available at the time of FAT. Post-handover, OS and application patching is the buyer's responsibility.
+
+Liability: Hitachi India's liability is limited to the successful 1-to-1 functional migration of the HMI application. Hitachi India is not liable for underlying PLC logic errors that become visible on the new HMI, or for security breaches originating from unpatched OS post-handover.
+
+Remote access: Remote support, if required during the warranty period, requires buyer-provisioned secure VPN access.

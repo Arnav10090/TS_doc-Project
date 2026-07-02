@@ -12,6 +12,7 @@ from app.projects.models import Project
 from app.projects.schemas import ProjectCreate, ProjectUpdate
 from app.generation.completion import calculate_section_completion
 from app.sections.models import SectionData
+from app.sections.constants import VALID_SECTION_KEYS
 from app.projects import revision_service
 
 
@@ -85,7 +86,13 @@ def build_abbreviations_content(project_data: ProjectCreate) -> dict:
 
 async def create_project(db: AsyncSession, project_data: ProjectCreate) -> Project:
     """
-    Create a new project with pre-populated Cover and Abbreviations sections.
+    Create a new project with the full TS template hierarchy.
+    
+    Initializes all 31 predefined sections:
+    - cover: pre-populated from form data
+    - abbreviations: pre-populated with default rows + form data
+    - revision_history: initialized via revision_service
+    - remaining 28 sections: created with empty content {}
     
     All operations occur within a single transaction to ensure atomicity.
     If section creation fails, the entire project creation is rolled back.
@@ -118,6 +125,17 @@ async def create_project(db: AsyncSession, project_data: ProjectCreate) -> Proje
         
         # Create initial revision history entry
         await revision_service.create_initial_revision_entry(db, project.id)
+        
+        # Create all remaining template sections with empty content
+        already_created = {'cover', 'abbreviations', 'revision_history'}
+        for key in VALID_SECTION_KEYS:
+            if key not in already_created:
+                section = SectionData(
+                    project_id=project.id,
+                    section_key=key,
+                    content={}
+                )
+                db.add(section)
         
         # Commit transaction only after all operations succeed
         await db.commit()
@@ -152,17 +170,20 @@ async def update_project(
     db: AsyncSession, project_id: UUID, project_data: ProjectUpdate
 ) -> Optional[Project]:
     """Update a project's fields."""
+    # Load the project (with sections) in this async context
     project = await get_project_by_id(db, project_id)
     if not project:
         return None
-    
+
     update_data = project_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(project, field, value)
-    
+
     await db.commit()
-    await db.refresh(project)
-    return project
+
+    # Re-query the project with sections preloaded to avoid lazy-loading outside greenlet
+    refreshed = await get_project_by_id(db, project_id)
+    return refreshed
 
 
 async def delete_project(db: AsyncSession, project_id: UUID) -> bool:

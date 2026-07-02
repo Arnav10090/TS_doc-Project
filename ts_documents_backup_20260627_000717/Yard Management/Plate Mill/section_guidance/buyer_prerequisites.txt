@@ -1,0 +1,6 @@
+[DRAFT — ADAPT FOR YARD MANAGEMENT/PLATE MILL]
+Structure: Group prerequisites by phase gate. M1 gate (Pre-Engineering): tag list delivery, PDA server access, protocol confirmation. M2 gate (Basic Engineering): design review response, buyer hardware PO placed. M4 gate (Site Preparation): server room ready, network connectivity live, buyer hardware installed. Map each prerequisite to what activity it gates.
+Avoid: Duplicating all buyer_obligations content — focus on the phase-gate → activity dependency mapping, not the full obligations list.
+Tone: Phase-gate dependency style. "Before [activity] can commence, buyer must complete [prerequisite]."
+--- Template structure reminder ---
+Phase-gate organized list. Each: prerequisite → which seller activity it gates. Standard gates: design start, config start, commissioning start. Do not add prerequisites for unconfirmed systems.

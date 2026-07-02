@@ -1,0 +1,200 @@
+Priority order (highest wins):
+1. Project metadata
+2. Current saved section content
+3. Current draft content
+4. Historical HSM TS documents
+5. This file
+6. General industry knowledge
+
+Conflict rule: project-specific data always overrides this file.
+
+Missing data rule: use placeholders defined in the registry below. Do NOT assume any specific yard size, crane count, integration scope, technology vendor, or stacking configuration unless higher-priority sources confirm it.
+
+### Placeholder Registry
+
+[CUSTOMER_NAME]
+Purpose: Buyer/customer organization name
+Expected Source: Project Metadata
+Example Value: [CUSTOMER_NAME]
+Required: Required
+
+[SITE_NAME]
+Purpose: Name of the plant or facility
+Expected Source: Project Metadata
+Example Value: [SITE_NAME]
+Required: Required
+
+[SITE_LOCATION]
+Purpose: Geographic location of the plant
+Expected Source: Project Metadata
+Example Value: [SITE_LOCATION]
+Required: Required
+
+[TENDER_REF]
+Purpose: Tender or enquiry reference number
+Expected Source: Project Metadata
+Example Value: 26/PLANTCODE/CYMS-SYMS/v0
+Required: Optional
+
+[TENDER_DATE]
+Purpose: Date of original tender or enquiry
+Expected Source: Project Metadata
+Example Value: 17th December 2025
+Required: Optional
+
+[NUM_COIL_YARD_BAYS]
+Purpose: Number of coil yard bays in scope
+Expected Source: Buyer-Supplied Yard Data
+Example Value: 4
+Required: Required
+
+[NUM_SLAB_YARD_BAYS]
+Purpose: Number of slab yard bays in scope
+Expected Source: Buyer-Supplied Yard Data
+Example Value: 2
+Required: Required
+
+[NUM_CRANES_COIL]
+Purpose: Number of cranes in coil yard scope (EOT + forklifts)
+Expected Source: Buyer-Supplied Crane Data
+Example Value: 21
+Required: Required
+
+[NUM_CRANES_SLAB]
+Purpose: Number of cranes in slab yard scope (EOT + Semi-Gantry + Transfer Cars)
+Expected Source: Buyer-Supplied Crane Data
+Example Value: 8
+Required: Required
+
+[NUM_SERVERS]
+Purpose: Number of online and backup application servers
+Expected Source: Engineering / Project Metadata
+Example Value: 4
+Required: Required
+
+[NUM_CLIENT_PCS]
+Purpose: Number of CYMS and SYMS client workstations
+Expected Source: Engineering / Project Metadata
+Example Value: 8
+Required: Required
+
+[REMOTE_SUPPORT_DURATION_MONTHS]
+Purpose: Duration of complimentary remote support in months post-project-completion
+Expected Source: Contract / Scope Agreement
+Example Value: 6
+Required: Required
+
+[TRAINING_MAX_PERSONS]
+Purpose: Maximum number of trainees for site training
+Expected Source: Scope Agreement
+Example Value: 5
+Required: Required
+
+[TRAINING_MAX_DAYS]
+Purpose: Maximum duration of on-site training in days
+Expected Source: Scope Agreement
+Example Value: 3
+Required: Required
+
+[PM_SITE_DAYS]
+Purpose: On-site working days for Project Manager
+Expected Source: Schedule / Commercial Agreement
+Example Value: 20
+Required: Required
+
+[CYMS_DEV_SITE_DAYS]
+Purpose: On-site working days for CYMS Developer
+Expected Source: Schedule / Commercial Agreement
+Example Value: 20
+Required: Required
+
+[SYMS_DEV_SITE_DAYS]
+Purpose: On-site working days for SYMS Developer
+Expected Source: Schedule / Commercial Agreement
+Example Value: 20
+Required: Required
+
+[COMMISSIONING_SV_DAYS]
+Purpose: On-site working days for Commissioning Supervisor (QA SV)
+Expected Source: Schedule / Commercial Agreement
+Example Value: 60
+Required: Required
+
+[TOTAL_COMMISSIONING_DAYS]
+Purpose: Total on-site working days for commissioning team inclusive of training
+Expected Source: Schedule / Commercial Agreement
+Example Value: 120
+Required: Required
+
+[OVERALL_PROJECT_MONTHS]
+Purpose: Overall project duration from formal order acceptance to commissioning completion
+Expected Source: Schedule
+Example Value: 16
+Required: Required
+
+[SW_DEV_MONTHS_AFTER_SDD]
+Purpose: Software development and testing months required after System Design Document approval
+Expected Source: Schedule
+Example Value: 8
+Required: Required
+
+[WCC_DAYS]
+Purpose: Number of calendar days for Buyer to formally issue Work Completion Certificate
+Expected Source: Contract
+Example Value: 7
+Required: Required
+
+[POC_DURATION_MONTHS]
+Purpose: Duration of complimentary PoC deployment for demonstration purposes
+Expected Source: Scope / Commercial Agreement
+Example Value: 2
+Required: Optional
+
+[TOTAL_COIL_CAPACITY_TON]
+Purpose: Total tonnage capacity of the coil yard
+Expected Source: Buyer-Supplied Yard Data
+Example Value: [TOTAL_COIL_CAPACITY_TON]
+Required: Optional
+
+[TOTAL_SLAB_CAPACITY_TON]
+Purpose: Total tonnage capacity of the slab yard
+Expected Source: Buyer-Supplied Yard Data
+Example Value: [TOTAL_SLAB_CAPACITY_TON]
+Required: Optional
+
+[TOTAL_COIL_POSITIONS]
+Purpose: Total number of configurable coil storage positions
+Expected Source: Buyer-Supplied Yard Data
+Example Value: [TOTAL_COIL_POSITIONS]
+Required: Optional
+
+[TOTAL_SLAB_POSITIONS]
+Purpose: Total number of slab storage positions across all piles
+Expected Source: Buyer-Supplied Yard Data
+Example Value: [TOTAL_SLAB_POSITIONS]
+Required: Optional
+
+[POSITION_SENSOR_ACCURACY_MM]
+Purpose: Required position sensor accuracy specification (Buyer scope hardware)
+Expected Source: Buyer / Engineering Discussion
+Example Value: ±100
+Required: Required (Buyer hardware; note as Buyer scope in TS)
+
+[REMOTE_SUPPORT_HOURS]
+Purpose: Working hours window for remote support
+Expected Source: Contract / Scope Agreement
+Example Value: 9:00 AM to 5:00 PM IST, Monday to Friday
+Required: Required
+
+Hard prohibitions:
+- Do not invent customer names, project IDs, IP addresses, prices, or contract terms.
+- Do not copy wording verbatim from historical documents.
+- Do not treat numbers from one historical proposal as category defaults.
+- Do not generate legal language when repository-approved boilerplate exists for that section.
+- Do not assume any specific yard size, crane count, integration scope, technology vendor, stacking layer count, or bay configuration as default.
+- Do not conflate CYMS/SYMS with Level-1 automation, Level-2 process control, MES/ERP, SCADA, or any crane control system.
+- Do not assume MES/ERP integration is in scope — explicitly Future Scope unless confirmed by project metadata.
+- Do not assign any cybersecurity responsibility to SELLER beyond recommending timely security updates.
+
+
+---

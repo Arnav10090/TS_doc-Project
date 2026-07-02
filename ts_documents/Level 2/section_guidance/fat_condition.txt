@@ -1,0 +1,4 @@
+Structure: FAT/shop test scope (what is tested — configured PDI/PDO flows, setup/adaptive logic if in scope, reporting against simulated data), test criteria, deliverable (signed test result/report), shipment gate statement.
+Avoid: Committing to FAT duration; use metadata or "agreed commercially." No pass/fail thresholds not agreed. No buyer witness requirements not confirmed.
+Tone: Contractually clear. Sign-off report must be issued before shipment — state explicitly.
+Level 2-specific: FAT/shop test conducted at seller facility. Sign-off (M3 gate) triggers software shipping authorization.

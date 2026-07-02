@@ -1,0 +1,7 @@
+[DRAFT — ADAPT FOR OT UPGRADES/L2]
+Structure: Two parts — (1) built-in system help (inline, context-sensitive); (2) list of delivered documentation (system operation manual, hardware spec doc, interface doc, FAT report, commissioning checklist, work completion cert).
+Avoid: Promising additional training materials or docs not in standard deliverable list.
+Tone: Matter-of-fact list. Each deliverable: name + delivery trigger (e.g., "at FAT sign-off").
+UGS-specific: Standard UGS deliverables always include the six items above — confirm via metadata if project has additions.
+--- Template structure reminder ---
+One paragraph on built-in help system. Bullet list of delivered documentation (standard docs for this product). Concise. No invented document titles.

@@ -1,0 +1,7 @@
+Hot Strip Mill (HSM) Yard Management Solution — automates the tracking, scheduling, and movement of steel slabs and coils within the HSM yard. Provides real-time 3D visualization of the yard inventory, crane scheduling, and integration with the production pacing systems. Replaces manual tracking (chalk/paper) and non-integrated siloed systems.
+
+Core capabilities: 3D Yard Visualization (Slab Yard and Coil Yard); automated crane tracking using laser sensors/encoders; optimized slab selection logic based on rolling schedules; real-time coil cooling tracking and dispatching; mobile tablets for ground operators; integration with Level 3 MES/ERP and Level 2 process control systems.
+
+Business drivers: Eliminate "lost" slabs/coils, reduce crane idle time, optimize hot charging (direct rolling) to save energy, prevent rolling incorrect slabs (quality defects), increase yard throughput and storage density.
+
+Plant environment: Extremely harsh environment. High temperatures (hot slabs/coils), heavy dust, vibrations. High-bay cranes operating continuously. Wireless network coverage required across large, metallic environments (RF challenging).

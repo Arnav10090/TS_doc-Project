@@ -1,0 +1,11 @@
+Implementation phases: M1 — Sizing & Design (~4w): capacity planning (CPU/RAM/Storage), network topology mapping, license procurement; M2 — Hardware Delivery (~10-14w): server, storage, and networking hardware arrival; M3 — Staging & FAT (~3w): hypervisor installation, cluster configuration, dummy VM failover tests; M4 — Installation & P2V (~6w): physical racking, storage provisioning, Physical-to-Virtual (P2V) migrations or fresh VM deployments; M5 — Handover (~2w): failover testing sign-off, backup verification, training. Total durations indicative.
+
+FAT: Staging of servers and SAN; verification of cluster HA failover by simulating host failure; storage path redundancy testing.
+
+Buyer obligations: Provide existing physical machine details for P2V migration (OS, disk size, IP); provide domain accounts; ensure network drops and clean power in server room; schedule downtime windows for P2V cutovers.
+
+Value addition: HA failover drill with plant operators; consolidation ratio report.
+
+Standard exclusions: Upgrading legacy software incompatible with virtualization (e.g., software requiring physical dongles or ISA cards); fixing pre-existing OS corruption on migrated P2V machines; enterprise IT integration.
+
+Risks: P2V migration of very old OS (Windows XP/NT) may encounter driver issues. Hardware dongles require specific USB-over-IP network adapters.

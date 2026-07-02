@@ -1,0 +1,7 @@
+IT Hardware Solution — provides enterprise-grade servers, storage, and networking hardware typically deployed in a climate-controlled data center environment. Used to support Level 3 enterprise applications, ERP systems, domain controllers, and central management tools. NOT ruggedized for plant floor deployment.
+
+Core capabilities (all deployments): Rack-mount enterprise servers; enterprise storage arrays (SAN/NAS); core IT switches and routers; Uninterruptible Power Supplies (UPS); hardware redundancy features (dual power supplies, RAID controllers, ECC memory).
+
+Business drivers: provide high-performance compute and storage for enterprise applications, standardize IT infrastructure, enable enterprise virtualization, support disaster recovery architectures.
+
+Plant environment: Dedicated IT server room or data center with controlled HVAC, raised floors, clean power, and physical access control. Sits strictly at Level 3 or higher in the Purdue model.

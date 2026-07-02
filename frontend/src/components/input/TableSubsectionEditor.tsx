@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { TableData, TableItem, getTableItems } from '../../types/customSections';
+import ExpandableTableFrame from '../shared/ExpandableTableFrame';
 
 interface TableSubsectionEditorProps {
   data: TableData;
@@ -285,7 +286,10 @@ const TableSubsectionEditor: React.FC<TableSubsectionEditorProps> = ({ data, onC
             <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>
               Table Data
             </div>
-            <table style={tableStyle}>
+            <ExpandableTableFrame
+              title={table.caption || `Table ${tableIndex + 1}`}
+              renderTable={() => (
+                <table style={tableStyle}>
               <thead>
                 <tr>
                   {table.columns.map((col, index) => (
@@ -327,13 +331,15 @@ const TableSubsectionEditor: React.FC<TableSubsectionEditorProps> = ({ data, onC
                         disabled={table.rows.length <= 1}
                         title="Delete row"
                       >
-                        ✕
+                        X
                       </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+                </table>
+              )}
+            />
             <button
               type="button"
               style={{ ...buttonStyle, marginTop: '12px' }}
@@ -349,3 +355,4 @@ const TableSubsectionEditor: React.FC<TableSubsectionEditorProps> = ({ data, onC
 };
 
 export default TableSubsectionEditor;
+

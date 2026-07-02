@@ -1,0 +1,4 @@
+Structure: One short subsection per confirmed value-added feature. Features: mobile/HHT application, SMS alert, email alert/reporting, data visualization dashboards. Each subsection: brief description, content/format finalized during engineering, network/connectivity configuration is buyer responsibility.
+Avoid: Including features not confirmed in metadata. Do not invent specific dashboard content/layout. Do not conflate with PoC offerings (see poc section).
+Tone: Offer-qualification language. Clear boundaries on what each feature covers.
+Level 2-specific: Value-added features are distinct from core L2 PMS features (PDI, setup, PDO etc.) and from free PoC demonstrations.

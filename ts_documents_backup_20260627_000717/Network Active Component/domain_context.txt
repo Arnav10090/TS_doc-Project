@@ -1,0 +1,7 @@
+Network Active Component Solution — encompasses the core, distribution, and edge switching/routing infrastructure required for a modern plant network. Focuses on the "active" intelligent components (switches, routers, firewalls, wireless LAN controllers) rather than passive cabling. Essential for creating a reliable, segmented, and high-performance communication backbone for industrial automation and Level 2 systems. NOT an enterprise/office IT network solution.
+
+Core capabilities (all deployments): Layer 2/Layer 3 switching with high port density; industrial protocol support (PROFINET, EtherNet/IP); network redundancy protocols (RSTP, MSTP, MRP, VRRP/HSRP); VLAN segmentation (logical separation of L1, L2, and IT traffic); Quality of Service (QoS) for prioritizing critical control traffic; network access control (802.1X, MAC filtering); centralized network management and monitoring.
+
+Business drivers: upgrade obsolete unmanaged switches that cause broadcast storms, establish a secure foundation for Industry 4.0 initiatives, improve network troubleshooting visibility, ensure high availability for continuous production processes, separate IT and OT traffic to improve security posture.
+
+Plant environment: harsh industrial settings requiring DIN-rail mounted, fanless, wide-temperature-range switches at the edge, and rack-mounted high-throughput switches at the core/distribution layers. High noise environments may necessitate fiber optic uplinks.

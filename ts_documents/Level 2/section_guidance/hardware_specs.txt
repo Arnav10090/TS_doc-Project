@@ -1,0 +1,4 @@
+Structure: BOM-style table (Item | Qty | Specification | Supplier). Include: L2 server (and backup server if HA), server console/monitor, client desktop PCs and consoles, managed/unmanaged network switches, media converter (if fiber), GSM modem (if SMS alerting in scope). Generic vendor description acceptable ("HP/Dell/Lenovo or equivalent").
+Avoid: Specific brands or model numbers. No specific RAM/storage values — "sized per number of production lines and data volume." No exact cable lengths not confirmed.
+Tone: Procurement-specification. Vendor-neutral unless metadata specifies otherwise.
+Level 2-specific: Server sizing driven by number of lines, data volume, and retention. Quantities depend on number of production lines and HA option. Buyer provides: server room, power, firewall, cabling beyond core scope.

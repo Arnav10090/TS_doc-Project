@@ -1,0 +1,4 @@
+Structure: List of software components with version qualifier. Include: server OS, application backend framework, web frontend framework, RDBMS (existing or new), antivirus, office productivity suite for client. License count derived from metadata.
+Avoid: Committing to specific version numbers — always "current at detailed engineering start." Do not hardcode version strings. Do not include open-source libraries unless customer-visible.
+Tone: Software-specification list. Each entry: software name + purpose + license basis.
+Level 2-specific: Buyer responsible for OS/antivirus license renewal post-delivery.

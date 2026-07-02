@@ -503,7 +503,11 @@ const mergeDefaults = (defaults: any, current: any): any => {
   }
 
   if (Array.isArray(defaults)) {
-    return Array.isArray(current) && current.length > 0 ? clone(current) : clone(defaults);
+    // Preserve explicitly provided arrays (including empty arrays).
+    // Previously empty arrays were replaced by defaults; that caused
+    // empty-but-present sections to render with default content instead
+    // of showing placeholders. Honor the caller's empty array as "intentionally empty".
+    return Array.isArray(current) ? clone(current) : clone(defaults);
   }
 
   if (isPlainRecord(defaults)) {

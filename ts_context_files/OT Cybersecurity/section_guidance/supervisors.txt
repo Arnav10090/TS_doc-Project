@@ -1,0 +1,6 @@
+## supervisors
+Role: Records the man-day allocation for Seller personnel assigned to this project across project phases.
+Required: Man-day values from project metadata or commercial agreement.
+Infer: Standard OTCSS project roles: Project Manager / Coordinator (planning, reporting, stakeholder management, milestone tracking); Cybersecurity Engineer(s) (on-site asset discovery, architecture design, tool deployment, configuration, commissioning); Onsite SV (post-commissioning monitoring — covered under post-implementation support period, which may be handled separately). Man-days are project-dependent and commercially agreed.
+Never invent: Specific man-day counts not confirmed in project metadata or commercial agreement.
+Fields: pm_days ([PM_DAYS] placeholder if not in metadata), dev_days ([DEV_DAYS] placeholder), comm_days ([COMM_DAYS] placeholder), total_man_days (sum or [TOTAL_DAYS] placeholder). If [TOTAL_MANDAYS] is in project metadata, use it.
