@@ -85,6 +85,7 @@ pgdata/
 # Environment variables (keep .env template, ignore local overrides)
 .env.local
 .env.*.local
+.env
 
 # IDE and editors
 .vscode/
