@@ -467,6 +467,14 @@ def _format_output_instructions(section_key: str) -> str:
     Returns:
         Formatted output instruction string
     """
+    # Special case: division_of_eng renders "Table 7: Responsibility Matrix", a
+    # fixed 8-column matrix (No, ITEM, BD, BE, DD, SU, ER, COM), not a free-form
+    # row table. The generic Family B branch below cannot describe this fixed
+    # shape (its row_fields-driven guidance is too weak), so it is handled
+    # explicitly here instead.
+    if section_key == "division_of_eng":
+        return _format_division_of_eng_output_instructions()
+    
     family = get_section_family(section_key)
     
     if not family:
@@ -495,6 +503,89 @@ Do NOT include markdown code fences.
 {field_guidance}
 
 Output ONLY the requested format. Do NOT include explanatory text or markdown code fences.
+"""
+
+
+def _format_division_of_eng_output_instructions() -> str:
+    """
+    Family B override for `division_of_eng` (Table 7: Responsibility Matrix).
+    
+    The generic Family B instruction gives the LLM no field names to use when
+    `row_fields` is empty, so it invents its own schema (observed in production:
+    "Service"/"Responsibility"/"Description" keys). That shape cannot be imported
+    by `extractMatrixRow()` in frontend/src/utils/aiSuggestionImport.ts, which only
+    recognizes the keys "No", "ITEM", "BD", "BE", "DD", "SU", "ER", "COM" (see
+    MATRIX_ROLE_KEY_CANDIDATES in that file). This function gives the LLM the
+    exact column keys, the responsibility-code vocabulary, and the canonical item
+    list from Table 7 so it has no room to invent an alternate shape.
+    """
+    return """## 8. Output Format (never truncated)
+Output a JSON array of row objects. No markdown code fences.
+
+This section renders "Table 7: Responsibility Matrix", a FIXED 8-column table. Each row object you return MUST use exactly these 8 keys, spelled exactly as shown (case-sensitive), and no other keys:
+"No", "ITEM", "BD", "BE", "DD", "SU", "ER", "COM"
+
+Do NOT invent alternate key names such as "Service", "Responsibility", or "Description" - those do not match this table and will be silently discarded by the document editor.
+
+RESPONSIBILITY CODES: the value for BD/BE/DD/SU/ER/COM on each row MUST be one of the following literal strings:
+- "S"   = SELLER (Hitachi) is responsible
+- "B"   = BUYER (client) is responsible
+- "S/B" = SELLER primary, BUYER joint/supporting
+- "B/S" = BUYER primary, SELLER joint/supporting
+- "-"   = not applicable for this item
+- ""    = leave blank only if genuinely unknown
+
+Only return ITEM-level rows (rows whose "No" starts with "-", e.g. "-1", "-2"). Do NOT return section header rows (e.g. "(1)", "(2)", "(3)"), and do NOT return blank spacer rows.
+
+The "ITEM" value for each row MUST match one of the canonical item names below verbatim, including any "{{Placeholder}}" tokens - copy the text exactly, do not resolve placeholders, rename items, or reword them, because the document editor matches your rows back to the template by exact ITEM text:
+
+(1) Services
+  -1 Project Execution
+  -2 Overall system design
+  -3 Work Test and Simulation
+(2) SYSTEM Engineering
+  -1 Documentation
+(3) HARDWARE
+  -1 {{SolutionName}} Server
+  -2 {{SolutionName}} Client PC
+  -3 Application Servers Console and Accessories
+  -4 GSM Modem
+  -5 HX Controller (For Unified Gateway)
+  -6 Network Cables
+  -7 Android Mobile/HHT Devices
+(4) SOFTWARE
+  -1 Windows Server 2022 (64 bit) (5 CAL)
+  -2 {{SW3_Name}}
+  -3 Microsoft Windows 11 Pro
+  -4 Backup software
+  -5 Python
+  -6 Django
+  -7 Angular Framework
+  -8 {{TS4_Component}}
+  -9 {{TS2_Technology}}
+  -10 Trend Micro Antivirus
+(5) TRAINING
+  -1 {{SolutionName}} Training (Max {{TrainingDays}} days) {{TrainingPersons}} persons
+(6) Pre-Engineering Activities
+  -1 Study of Existing system
+(7) Documents to be submitted for Reference & Records
+  -1 Screen Design Documents
+  -2 Hardware Specifications
+  -3 Software Specifications
+  -4 {{SolutionName}} Operation Manual
+(9) Interface with Other System
+  (no fixed item rows exist yet under this heading - only add one here if the
+  category context gives an explicit, specific reason to)
+
+Only include a row for an item if the project metadata or category context gives you a genuine, specific basis for its responsibility codes. If you have no basis for a given item, omit that row entirely rather than guessing.
+
+Example of the required shape (values below are illustrative only):
+[
+  {"No": "-1", "ITEM": "{{SolutionName}} Server", "BD": "S", "BE": "S", "DD": "S", "SU": "S", "ER": "B", "COM": "S"},
+  {"No": "-6", "ITEM": "Network Cables", "BD": "B", "BE": "B", "DD": "B", "SU": "B", "ER": "B", "COM": "B"}
+]
+
+Output ONLY the JSON array. Do NOT include explanatory text or markdown code fences.
 """
 
 

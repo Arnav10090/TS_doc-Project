@@ -120,6 +120,7 @@ const REQUIRED_PREVIEW_COLOR = "#E60012";
 const LAST_CHANGED_COLOR = "#17F131";
 const LAST_CHANGED_SOFT = "rgba(23, 241, 49, 0.14)";
 const LAST_CHANGED_FILL = "rgba(23, 241, 49, 0.18)";
+const LAST_CHANGED_TEXT_COLOR = "#000000";
 const WORD_PAGE_WIDTH = "21.59cm";
 const WORD_PAGE_HEIGHT = "27.94cm";
 const WORD_PAGE_MARGIN = "2.54cm";
@@ -2465,7 +2466,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     ): React.CSSProperties =>
       isEditedPath(sectionKey, path)
         ? {
-            color: LAST_CHANGED_COLOR,
+            color: LAST_CHANGED_TEXT_COLOR,
             backgroundColor: LAST_CHANGED_SOFT,
             boxShadow: `inset 3px 0 0 ${LAST_CHANGED_COLOR}`,
             paddingLeft: "4px",
@@ -2478,7 +2479,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     ): React.CSSProperties =>
       isEditedPath(sectionKey, path)
         ? {
-            color: LAST_CHANGED_COLOR,
+            color: LAST_CHANGED_TEXT_COLOR,
             backgroundColor: LAST_CHANGED_SOFT,
             borderLeft: `3px solid ${LAST_CHANGED_COLOR}`,
             paddingLeft: "8px",
@@ -2491,7 +2492,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     ): React.CSSProperties =>
       isEditedPath(sectionKey, path)
         ? {
-            color: LAST_CHANGED_COLOR,
+            color: LAST_CHANGED_TEXT_COLOR,
             backgroundColor: LAST_CHANGED_FILL,
             border: `1.5px solid ${LAST_CHANGED_COLOR}`,
           }
@@ -3461,7 +3462,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
           }
           .edited-preview-content,
           .edited-preview-content * {
-            color: ${LAST_CHANGED_COLOR} !important;
+            color: ${LAST_CHANGED_TEXT_COLOR} !important;
           }
           .page-break-with-button {
             width: ${WORD_PAGE_WIDTH};

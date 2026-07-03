@@ -101,7 +101,7 @@ SECTION_SCHEMAS: Dict[str, SectionSchema] = {
         "family": "B",
         "description": "Division of engineering, software development, and erection/commissioning services",
         "fields": ["matrix_rows", "note_paragraphs", "training_days", "training_persons"],
-        "row_fields": [],  # Matrix structure, not standard rows
+        "row_fields": ["No", "ITEM", "BD", "BE", "DD", "SU", "ER", "COM"],  # Table 7: Responsibility Matrix columns
     },
 
     # ===== Family C: Mixed-Field Sections =====

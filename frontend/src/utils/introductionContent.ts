@@ -212,7 +212,11 @@ export function extractIntroductionTextContent(value: string): StructuredIntrodu
   )
     .split(/\n\s*\n+/)
     .map((paragraph) => paragraph.trim())
-    .filter(Boolean)
+    .filter((paragraph) => {
+      // Filter out any paragraph that is just "Tender Information" (case-insensitive)
+      const normalized = paragraph.replace(/\s+/g, ' ').trim().toLowerCase()
+      return normalized && normalized !== 'tender information'
+    })
 
   if (narrative.length === 0 && !tenderReference && !tenderDate) {
     return null

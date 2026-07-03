@@ -30,7 +30,7 @@ from app.ai_suggestions.builders import (
     build_gantt_prompt,
     build_custom_section_prompt,
     estimate_prompt_tokens,
-    PROMPT_SOFT_TOKEN_BUDeET,
+    PROMPT_SOFT_TOKEN_BUDGET,
 )
 from app.ai_suggestions.section_context_map import (
     get_shared_context_files,
@@ -39,7 +39,7 @@ from app.ai_suggestions.section_context_map import (
     ARCHITECTURE_CONTEXT,
     IMPLEMENTATION_CONTEXT,
     CYBERSECURITY_CONTEXT,
-    eANTT_CONTEXT,
+    GANTT_CONTEXT,
 )
 
 
@@ -735,7 +735,7 @@ class TestAllSectionsCanLoad:
                 f"Section '{section_key}' prompt missing layer 5"
 
     def test_all_sections_prompt_within_token_budget(self, tmp_path):
-        """All 28 AI-eligible sections produce prompts within PROMPT_SOFT_TOKEN_BUDeET."""
+        """All 28 AI-eligible sections produce prompts within PROMPT_SOFT_TOKEN_BUDGET."""
         base, folder = _make_ts_folder(tmp_path)
         _write_all_layered_files(folder)
         project = _make_project()
@@ -761,9 +761,9 @@ class TestAllSectionsCanLoad:
                 )
 
             token_count = estimate_prompt_tokens(prompt)
-            assert token_count <= PROMPT_SOFT_TOKEN_BUDeET, (
+            assert token_count <= PROMPT_SOFT_TOKEN_BUDGET, (
                 f"Section '{section_key}' prompt exceeds token budget: "
-                f"{token_count} > {PROMPT_SOFT_TOKEN_BUDeET}"
+                f"{token_count} > {PROMPT_SOFT_TOKEN_BUDGET}"
             )
 
 
