@@ -91,8 +91,8 @@ describe('DocumentPreview - Preservation Property Tests: Non-Deleted Section Beh
       expect(introductionHeadings.length).toBeGreaterThan(0);
 
       // Assert: Content should be present (template text with replacements)
-      const tenderRefText = screen.queryByText(/REF-12345/i);
-      expect(tenderRefText).not.toBeNull();
+      const tenderRefText = screen.queryAllByText(/REF-12345/i);
+      expect(tenderRefText.length).toBeGreaterThan(0);
     });
 
     it('renders imported rich text and markdown formatting cleanly for paragraph and text sections', () => {
@@ -129,6 +129,113 @@ describe('DocumentPreview - Preservation Property Tests: Non-Deleted Section Beh
       ).not.toBeNull();
       expect(screen.queryByText(/## Additional Context/)).toBeNull();
       expect(screen.queryByText(/## Flow Summary/)).toBeNull();
+    });
+
+    it('renders stringified introduction JSON as document paragraphs instead of raw JSON', () => {
+      const sectionContents = {
+        cover: { solution_full_name: 'Test Solution' },
+        introduction: {
+          paragraphs: [
+            JSON.stringify({
+              paragraphs: [
+                'This Technical Specification (TS) document is submitted in response to the tender reference TS-PMYMS-2026-001 dated 29 Jun 2026.',
+                'The solution is tailored to the specific needs of the JSPL Angul facility.',
+              ],
+              tender_reference: 'TS-PMYMS-2026-001',
+              tender_date: '29 Jun 2026',
+            }),
+          ],
+        },
+      };
+
+      renderWithRouter(
+        <DocumentPreview
+          projectId={projectId}
+          activeSectionKey={activeSectionKey}
+          sectionContents={sectionContents}
+          onSectionClick={onSectionClick}
+        />
+      );
+
+      expect(
+        screen.getByText(
+          /This Technical Specification \(TS\) document is submitted in response to the tender reference TS-PMYMS-2026-001 dated 29 Jun 2026\./,
+        ),
+      ).not.toBeNull();
+      expect(
+        screen.getByText(/The solution is tailored to the specific needs of the JSPL Angul facility\./),
+      ).not.toBeNull();
+      expect(screen.getByText(/Tender Information/i)).not.toBeNull();
+      expect(screen.getByText(/Tender Reference:/i)).not.toBeNull();
+      expect(screen.getByText(/Tender Date:/i)).not.toBeNull();
+      expect(screen.queryByText(/\{"paragraphs":/i)).toBeNull();
+    });
+
+    it('deduplicates introduction paragraphs when saved content contains both plain text and stringified JSON', () => {
+      const repeatedParagraph =
+        'This Technical Specification (TS) document is submitted in response to the tender reference TS-PMYMS-2026-001 dated 29 Jun 2026.';
+      const sectionContents = {
+        cover: { solution_full_name: 'Test Solution' },
+        introduction: {
+          paragraphs: [
+            repeatedParagraph,
+            'The solution is tailored to the specific needs of the JSPL Angul facility.',
+            JSON.stringify({
+              paragraphs: [
+                repeatedParagraph,
+                'The solution is tailored to the specific needs of the JSPL Angul facility.',
+              ],
+              tender_reference: 'TS-PMYMS-2026-001',
+              tender_date: '29 Jun 2026',
+            }),
+          ],
+          tender_reference: 'TS-PMYMS-2026-001',
+          tender_date: '29 Jun 2026',
+        },
+      };
+
+      renderWithRouter(
+        <DocumentPreview
+          projectId={projectId}
+          activeSectionKey={activeSectionKey}
+          sectionContents={sectionContents}
+          onSectionClick={onSectionClick}
+        />
+      );
+
+      expect(
+        screen.getAllByText(
+          /This Technical Specification \(TS\) document is submitted in response to the tender reference TS-PMYMS-2026-001 dated 29 Jun 2026\./,
+        ),
+      ).toHaveLength(1);
+      expect(screen.queryByText(/\{"paragraphs":/i)).toBeNull();
+    });
+
+    it('formats markdown-style tender metadata lines instead of rendering raw field names', () => {
+      const sectionContents = {
+        cover: { solution_full_name: 'Test Solution' },
+        introduction: {
+          paragraphs: [
+            'This Technical Specification (TS) document is submitted in response to the tender reference TS-PMYMS-2026-001 dated 29 Jun 2026.',
+            'Tender Information\n- **tender_reference**: TS-PMYMS-2026-001\n- **tender_date**: 29 Jun 2026',
+          ],
+        },
+      };
+
+      renderWithRouter(
+        <DocumentPreview
+          projectId={projectId}
+          activeSectionKey={activeSectionKey}
+          sectionContents={sectionContents}
+          onSectionClick={onSectionClick}
+        />
+      );
+
+      expect(screen.getByText(/Tender Information/i)).not.toBeNull();
+      expect(screen.getByText(/Tender Reference:/i)).not.toBeNull();
+      expect(screen.getByText(/Tender Date:/i)).not.toBeNull();
+      expect(screen.queryByText(/\*\*tender_reference\*\*/i)).toBeNull();
+      expect(screen.queryByText(/\*\*tender_date\*\*/i)).toBeNull();
     });
 
     it('should render abbreviations section with table rows when key exists in sectionContents', () => {

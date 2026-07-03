@@ -1,5 +1,11 @@
 import { setSectionDraft, getSectionDraft } from './sectionDraftStore'
 import type { CustomSectionContent, SubsectionData } from '../types/customSections'
+import { RESPONSIBILITY_MATRIX_ROWS } from '../components/preview/templateContent'
+import {
+  dedupeStringParagraphs,
+  extractStructuredIntroductionContent,
+  stripStructuredIntroductionJson,
+} from './introductionContent'
 
 type Suggestion = {
   section_key?: string
@@ -147,17 +153,25 @@ function cleanIntroductionNarrativeBlock(value: string): string {
 
 function normalizeIntroductionImport(existingDraft: Record<string, any>, content: any) {
   const next = { ...(existingDraft || {}) }
-  const fragments = collectTextFragments(content)
+  const structuredIntroduction = extractStructuredIntroductionContent(content)
+  const fragments =
+    structuredIntroduction && content && typeof content === 'object'
+      ? []
+      : collectTextFragments(content)
   const combinedText = fragments.join('\n\n')
 
   const tenderReference =
+    structuredIntroduction?.tenderReference ??
     (content && typeof content === 'object'
       ? getStringValueByKey(content, ['tender_reference', 'tenderreference'])
-      : undefined) ?? extractLabeledValue(combinedText, 'Tender Reference')
+      : undefined) ??
+    extractLabeledValue(combinedText, 'Tender Reference')
   const tenderDate =
+    structuredIntroduction?.tenderDate ??
     (content && typeof content === 'object'
       ? getStringValueByKey(content, ['tender_date', 'tenderdate'])
-      : undefined) ?? extractLabeledValue(combinedText, 'Tender Date')
+      : undefined) ??
+    extractLabeledValue(combinedText, 'Tender Date')
 
   if (tenderReference) {
     next.tender_reference = tenderReference
@@ -173,20 +187,18 @@ function normalizeIntroductionImport(existingDraft: Record<string, any>, content
 
   const importedParagraphs =
     typeof content === 'string'
-      ? splitImportedTextToParagraphs(content)
-      : Array.isArray(content?.paragraphs)
-        ? content.paragraphs
-            .flatMap((paragraph: unknown) =>
-              typeof paragraph === 'string' ? splitImportedTextToParagraphs(paragraph) : [],
-            )
+      ? [
+          ...splitImportedTextToParagraphs(stripStructuredIntroductionJson(content)),
+          ...(structuredIntroduction?.paragraphs ?? []),
+        ]
+      : structuredIntroduction?.paragraphs?.length
+        ? structuredIntroduction.paragraphs
         : fragments.flatMap((fragment) => splitImportedTextToParagraphs(fragment))
 
   const cleanedParagraphs = importedParagraphs
     .map((paragraph: string) => cleanIntroductionNarrativeBlock(paragraph))
     .filter(Boolean)
-  const uniqueParagraphs = cleanedParagraphs.filter(
-    (paragraph: string, index: number) => cleanedParagraphs.indexOf(paragraph) === index,
-  )
+  const uniqueParagraphs = dedupeStringParagraphs(cleanedParagraphs)
 
   if (uniqueParagraphs.length > 0) {
     next.paragraphs = uniqueParagraphs
@@ -233,6 +245,15 @@ export async function importSuggestion(
     return updated
   }
 
+  // Family D: list-based – check BEFORE Family B so that sections whose draft
+  // uses `items` (e.g. features) are not accidentally routed to importFamilyB
+  // which would create a spurious `rows` key instead of populating `items`.
+  if (Array.isArray(content) && Array.isArray(draft.items) && !Array.isArray(draft.rows)) {
+    const updated = importFamilyD(draft, content)
+    setSectionDraft(projectId, sectionKey, updated)
+    return updated
+  }
+
   // Family B: tabular
   if (content && (Array.isArray(content) || Array.isArray(content?.rows) || content?.tables)) {
     const updated = importFamilyB(draft, content)
@@ -247,7 +268,7 @@ export async function importSuggestion(
     return updated
   }
 
-  // Family D: list-based
+  // Family D: list-based (fallback for other array content)
   if (Array.isArray(content)) {
     const updated = importFamilyD(draft, content)
     setSectionDraft(projectId, sectionKey, updated)
@@ -349,30 +370,206 @@ function findDraftTableKey(draft: Record<string, any>): string {
   return 'rows' // default
 }
 
+const MATRIX_ROLE_KEY_CANDIDATES = [
+  ['BD', ['BD', 'Responsibility_Buyer', 'buyer']],
+  ['BE', ['BE', 'Responsibility_Design', 'design']],
+  ['DD', ['DD', 'Responsibility_Seller', 'seller']],
+  ['SU', ['SU', 'Responsibility_Supervision', 'supervision']],
+  ['ER', ['ER', 'Responsibility_Erection', 'erection']],
+  ['COM', ['COM', 'Responsibility_Commissioning', 'commissioning']],
+] as const
+
+function normalizeMatrixCell(value: unknown): string {
+  return value == null ? '' : String(value).trim()
+}
+
+function normalizeMatrixRows(rows: unknown): string[][] {
+  if (!Array.isArray(rows)) {
+    return []
+  }
+
+  return rows.map((row) =>
+    Array.isArray(row) ? row.map((cell) => normalizeMatrixCell(cell)) : [],
+  )
+}
+
+function normalizeMatrixTokens(value: string): string[] {
+  return value
+    .replace(/\{\{[^}]+\}\}/g, ' ')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .filter(
+      (token) =>
+        !['solutionname', 'trainingdays', 'trainingpersons', 'sw3name', 'ts4component', 'ts2technology'].includes(
+          token,
+        ),
+    )
+}
+
+function scoreMatrixItemMatch(left: string, right: string): number {
+  const leftTokens = normalizeMatrixTokens(left)
+  const rightTokens = normalizeMatrixTokens(right)
+
+  if (leftTokens.length === 0 || rightTokens.length === 0) {
+    return 0
+  }
+
+  const overlap = leftTokens.filter((token) => rightTokens.includes(token)).length
+  return overlap / Math.max(leftTokens.length, rightTokens.length)
+}
+
+function extractMatrixRow(row: unknown): string[] | null {
+  if (Array.isArray(row)) {
+    const normalized = row.map((cell) => normalizeMatrixCell(cell))
+    return normalized.length >= 8 ? normalized.slice(0, 8) : null
+  }
+
+  if (!row || typeof row !== 'object') {
+    return null
+  }
+
+  const record = row as Record<string, unknown>
+  const no =
+    normalizeMatrixCell(record.No ?? record['No.'] ?? record.no ?? record.sr_no)
+  const item =
+    normalizeMatrixCell(record.ITEM ?? record.item ?? record.Item ?? record.name)
+  const responsibilities = MATRIX_ROLE_KEY_CANDIDATES.map(([_, candidates]) => {
+    const matchedKey = candidates.find((candidate) => candidate in record)
+    return matchedKey ? normalizeMatrixCell(record[matchedKey]) : ''
+  })
+
+  if (!no && !item && responsibilities.every((value) => !value)) {
+    return null
+  }
+
+  return [no, item, ...responsibilities]
+}
+
+function isMatrixStructuralRow(row: string[]): boolean {
+  const no = normalizeMatrixCell(row[0])
+  const item = normalizeMatrixCell(row[1])
+  const normalizedItem = item.toLowerCase()
+
+  return (
+    (no === 'No.' && item === 'ITEM') ||
+    no.startsWith('(') ||
+    (!no && !item) ||
+    (Boolean(item) && !no.startsWith('-') && !normalizedItem.includes('training'))
+  )
+}
+
+function mergeResponsibilityMatrixRows(existingRows: unknown, importedRows: unknown): string[][] {
+  const baseRows = normalizeMatrixRows(existingRows)
+  const nextRows =
+    baseRows.length > 0
+      ? baseRows.map((row) => [...row])
+      : RESPONSIBILITY_MATRIX_ROWS.map((row) => [...row])
+
+  if (!Array.isArray(importedRows)) {
+    return nextRows
+  }
+
+  const rowIndexByExactItem = new Map<string, number>()
+  const candidateRowIndices: Array<{ index: number; item: string }> = []
+
+  nextRows.forEach((row, index) => {
+    if (index < 2 || isMatrixStructuralRow(row)) {
+      return
+    }
+
+    const item = normalizeMatrixCell(row[1])
+    if (!item) {
+      return
+    }
+
+    rowIndexByExactItem.set(item.toLowerCase(), index)
+    candidateRowIndices.push({ index, item })
+  })
+
+  importedRows.forEach((row) => {
+    const extracted = extractMatrixRow(row)
+    if (!extracted || isMatrixStructuralRow(extracted)) {
+      return
+    }
+
+    const importedItem = normalizeMatrixCell(extracted[1])
+    if (!importedItem) {
+      return
+    }
+
+    let targetIndex = rowIndexByExactItem.get(importedItem.toLowerCase())
+
+    if (targetIndex === undefined) {
+      let bestMatch: { index: number; score: number } | null = null
+
+      candidateRowIndices.forEach(({ index, item }) => {
+        const score = scoreMatrixItemMatch(importedItem, item)
+        if (score >= 0.6 && (!bestMatch || score > bestMatch.score)) {
+          bestMatch = { index, score }
+        }
+      })
+
+      targetIndex = bestMatch?.index
+    }
+
+    if (targetIndex === undefined) {
+      return
+    }
+
+    const currentRow = nextRows[targetIndex] || ['', '', '', '', '', '', '', '']
+    nextRows[targetIndex] = currentRow.map((cell, cellIndex) => {
+      if (cellIndex < 2) {
+        return cell
+      }
+
+      return extracted[cellIndex] || cell
+    })
+  })
+
+  return nextRows
+}
+
 export function importFamilyB(existingDraft: Record<string, any>, content: any) {
   const next = { ...(existingDraft || {}) }
   const targetKey = findDraftTableKey(next)
 
   if (Array.isArray(content)) {
-    next[targetKey] = content
+    next[targetKey] =
+      targetKey === 'matrix_rows'
+        ? mergeResponsibilityMatrixRows(next[targetKey], content)
+        : content
     return next
   }
 
   if (Array.isArray(content.rows)) {
-    next[targetKey] = content.rows
+    next[targetKey] =
+      targetKey === 'matrix_rows'
+        ? mergeResponsibilityMatrixRows(next[targetKey], content.rows)
+        : content.rows
     return next
   }
 
   if (Array.isArray(content.tables) && content.tables.length > 0) {
     // take first table as legacy rows
     const t = content.tables[0]
-    if (Array.isArray(t.rows)) next[targetKey] = t.rows
+    if (Array.isArray(t.rows)) {
+      next[targetKey] =
+        targetKey === 'matrix_rows'
+          ? mergeResponsibilityMatrixRows(next[targetKey], t.rows)
+          : t.rows
+    }
     return next
   }
 
   // fallback: look for an array in content
   const arrKey = findArrayKey(content)
-  if (arrKey) next[targetKey] = content[arrKey]
+  if (arrKey) {
+    next[targetKey] =
+      targetKey === 'matrix_rows'
+        ? mergeResponsibilityMatrixRows(next[targetKey], content[arrKey])
+        : content[arrKey]
+  }
 
   return next
 }
@@ -406,13 +603,44 @@ export function importFamilyD(existingDraft: Record<string, any>, content: any[]
 
   if (!targetKey) targetKey = 'items'
 
-  const existing = Array.isArray(next[targetKey]) ? next[targetKey] : []
-  const merged = [...existing]
-  content.forEach((ci) => {
-    const exists = merged.some((m) => JSON.stringify(m) === JSON.stringify(ci))
-    if (!exists) merged.push(ci)
-  })
-  next[targetKey] = merged
+  // Check if the target holds record-style items that require an `id` field
+  // (e.g. FeatureItem). If existing items all have `id`, ensure imported items
+  // also carry one so the editor (SortableFeatureCard) can key on it.
+  const existingItems = Array.isArray(next[targetKey]) ? next[targetKey] : []
+  const needsId = existingItems.length > 0
+    ? existingItems.every((item: any) => item && typeof item === 'object' && 'id' in item)
+    : targetKey === 'items' // features default uses items with id
+
+  const normalizedContent = needsId
+    ? content.map((ci) => {
+        if (ci && typeof ci === 'object' && !('id' in ci)) {
+          return { ...ci, id: crypto.randomUUID() }
+        }
+        return ci
+      })
+    : content
+
+  // For sections like features, replace the items entirely with the AI suggestion
+  // rather than merging/appending, so the Required table is fully populated.
+  // We detect this when the existing items are empty placeholder(s) (all fields blank).
+  const isEmptyPlaceholder = existingItems.length <= 1 &&
+    existingItems.every((item: any) => {
+      if (!item || typeof item !== 'object') return true
+      return Object.entries(item).every(
+        ([k, v]) => k === 'id' || v === '' || v === undefined || v === null
+      )
+    })
+
+  if (isEmptyPlaceholder && normalizedContent.length > 0) {
+    next[targetKey] = normalizedContent
+  } else {
+    const merged = [...existingItems]
+    normalizedContent.forEach((ci) => {
+      const exists = merged.some((m) => JSON.stringify(m) === JSON.stringify(ci))
+      if (!exists) merged.push(ci)
+    })
+    next[targetKey] = merged
+  }
   return next
 }
 

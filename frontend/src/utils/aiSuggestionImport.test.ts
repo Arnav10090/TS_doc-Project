@@ -8,6 +8,7 @@ import importSuggestion, {
   importCustomSection,
 } from './aiSuggestionImport'
 import { getSectionDraft, clearSectionDraft } from './sectionDraftStore'
+import { RESPONSIBILITY_MATRIX_ROWS } from '../components/preview/templateContent'
 
 describe('aiSuggestionImport utilities', () => {
   beforeEach(() => {
@@ -52,6 +53,60 @@ describe('aiSuggestionImport utilities', () => {
 
     expect(updated.rows).toEqual(content)
     expect(updated.other).toBe('keep')
+  })
+
+  it('importFamilyB preserves the full responsibility matrix when AI returns only subset rows', () => {
+    const existing = {
+      matrix_rows: RESPONSIBILITY_MATRIX_ROWS.map((row) => [...row]),
+      other: 'keep',
+    }
+    const content = [
+      {
+        No: '-4',
+        ITEM: 'GSM Modem',
+        Responsibility_Buyer: 'S',
+        Responsibility_Design: 'S',
+        Responsibility_Seller: 'S',
+        Responsibility_Supervision: 'S',
+        Responsibility_Erection: 'B',
+        Responsibility_Commissioning: 'S',
+      },
+    ]
+
+    const updated = importFamilyB(existing, content)
+
+    expect(updated.other).toBe('keep')
+    expect(updated.matrix_rows).toHaveLength(RESPONSIBILITY_MATRIX_ROWS.length)
+    expect(updated.matrix_rows[3]).toEqual([
+      '-1',
+      'Project Execution',
+      'B/S',
+      'B/S',
+      'B/S',
+      '-',
+      '-',
+      '-',
+    ])
+    expect(updated.matrix_rows[14]).toEqual([
+      '-4',
+      'GSM Modem',
+      'S',
+      'S',
+      'S',
+      'S',
+      'B',
+      'S',
+    ])
+    expect(updated.matrix_rows[29]).toEqual([
+      '-10',
+      'Trend Micro Antivirus',
+      'S',
+      'S',
+      'S',
+      'S',
+      '',
+      'S',
+    ])
   })
 
   it('importFamilyC performs shallow merge with suggestion fields overwriting', () => {
@@ -184,6 +239,42 @@ describe('aiSuggestionImport utilities', () => {
         tender_reference: 'TS-PMYMS-2026-001',
         tender_date: '29 Jun 2026',
       }),
+    }
+
+    const result = await importSuggestion('test-project', 'introduction', suggestion, existing)
+
+    expect(result).toEqual({
+      heading: 'INTRODUCTION',
+      paragraphs: [
+        'This Technical Specification document is submitted in response to the tender reference TS-PMYMS-2026-001 dated 29 Jun 2026.',
+        'The solution is tailored to the specific needs of the JSPL Angul facility.',
+      ],
+      tender_reference: 'TS-PMYMS-2026-001',
+      tender_date: '29 Jun 2026',
+    })
+  })
+
+  it('importSuggestion strips embedded introduction JSON blocks when narrative text is already present', async () => {
+    const existing = {
+      heading: 'INTRODUCTION',
+      paragraphs: ['Old introduction paragraph'],
+      tender_reference: '',
+      tender_date: '',
+    }
+    const suggestion = {
+      structured_import_available: true,
+      content: `This Technical Specification document is submitted in response to the tender reference TS-PMYMS-2026-001 dated 29 Jun 2026.
+
+The solution is tailored to the specific needs of the JSPL Angul facility.
+
+{
+  "paragraphs": [
+    "This Technical Specification document is submitted in response to the tender reference TS-PMYMS-2026-001 dated 29 Jun 2026.",
+    "The solution is tailored to the specific needs of the JSPL Angul facility."
+  ],
+  "tender_reference": "TS-PMYMS-2026-001",
+  "tender_date": "29 Jun 2026"
+}`,
     }
 
     const result = await importSuggestion('test-project', 'introduction', suggestion, existing)

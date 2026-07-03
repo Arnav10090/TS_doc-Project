@@ -55,6 +55,11 @@ import {
   type FigureReference,
   type TableReference,
 } from "../../utils/documentReferences";
+import {
+  dedupeStringParagraphs,
+  extractIntroductionTextContent,
+  extractStructuredIntroductionContent,
+} from "../../utils/introductionContent";
 
 interface DocumentPreviewProps {
   projectId: string;
@@ -276,6 +281,43 @@ const normalizeImportedTextHtml = (
         : convertPlainTextBlockToHtml(block),
     )
     .join("");
+};
+
+const normalizeIntroductionParagraphsForPreview = (paragraphs: string[]) => {
+  const normalizedParagraphs: string[] = [];
+  let tenderReference: string | undefined;
+  let tenderDate: string | undefined;
+  let containsStructuredContent = false;
+
+  paragraphs.forEach((paragraph) => {
+    const structured = extractStructuredIntroductionContent(paragraph);
+
+    if (!structured) {
+      const normalizedText = extractIntroductionTextContent(paragraph);
+      if (!normalizedText) {
+        normalizedParagraphs.push(paragraph);
+        return;
+      }
+
+      containsStructuredContent = true;
+      normalizedParagraphs.push(...normalizedText.paragraphs);
+      tenderReference ||= normalizedText.tenderReference;
+      tenderDate ||= normalizedText.tenderDate;
+      return;
+    }
+
+    containsStructuredContent = true;
+    normalizedParagraphs.push(...structured.paragraphs);
+    tenderReference ||= structured.tenderReference;
+    tenderDate ||= structured.tenderDate;
+  });
+
+  return {
+    paragraphs: dedupeStringParagraphs(normalizedParagraphs),
+    tenderReference,
+    tenderDate,
+    containsStructuredContent,
+  };
 };
 
 const filterFilledItems = (items?: string[]) =>
@@ -1185,6 +1227,19 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     const buyerPrerequisites = filterFilledItems(
       documentContent.buyerPrerequisites.items,
     );
+    const normalizedIntroductionPreview = useMemo(
+      () =>
+        normalizeIntroductionParagraphsForPreview(
+          documentContent.introduction.paragraphs || [],
+        ),
+      [documentContent.introduction.paragraphs],
+    );
+    const introductionTenderReference =
+      documentContent.introduction.tender_reference ||
+      normalizedIntroductionPreview.tenderReference;
+    const introductionTenderDate =
+      documentContent.introduction.tender_date ||
+      normalizedIntroductionPreview.tenderDate;
 
     const templateReplacements = useMemo<Record<string, string>>(
       () => ({
@@ -1198,9 +1253,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
         ClientLocation: coverClientLocation || "{ClientLocation}",
         CLIENTLOCATION: coverClientLocation || "{CLIENTLOCATION}",
         ClientAbbreviation: coverClientName || "{ClientAbbreviation}",
-        TenderReference:
-          documentContent.introduction.tender_reference || "{TenderReference}",
-        TenderDate: documentContent.introduction.tender_date || "{TenderDate}",
+        TenderReference: introductionTenderReference || "{TenderReference}",
+        TenderDate: introductionTenderDate || "{TenderDate}",
         ProcessFlowDescription:
           stripHtml(documentContent.processFlow.text || "") ||
           "{ProcessFlowDescription}",
@@ -1249,8 +1303,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
         documentContent.customerTraining.persons,
         documentContent.executiveSummary.para1,
         documentContent.fatCondition.text,
-        documentContent.introduction.tender_date,
-        documentContent.introduction.tender_reference,
+        introductionTenderDate,
+        introductionTenderReference,
         documentContent.overview.existing_system,
         documentContent.overview.integration,
         documentContent.overview.intangible_benefits,
@@ -2253,9 +2307,13 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       marginBottom: "18px",
     };
 
+    const matrixBorderColor = "#9DC3E6";
+    const matrixHeaderBackground = "#2F75B5";
+    const matrixBandBackground = "#DCE6F1";
+
     const matrixCellStyle: React.CSSProperties = {
-      padding: "3px 4px",
-      border: "1px solid #000",
+      padding: "3px 6px",
+      border: `1px solid ${matrixBorderColor}`,
       verticalAlign: "top",
       fontSize: "8.5pt",
       textAlign: "center",
@@ -2264,6 +2322,15 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     const matrixItemCellStyle: React.CSSProperties = {
       ...matrixCellStyle,
       textAlign: "left",
+    };
+
+    const matrixHeaderCellStyle: React.CSSProperties = {
+      ...matrixCellStyle,
+      backgroundColor: matrixHeaderBackground,
+      color: "#FFFFFF",
+      fontWeight: "bold",
+      textAlign: "center",
+      verticalAlign: "middle",
     };
 
     const placeholderStyle: React.CSSProperties = {
@@ -4053,9 +4120,39 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                     )}
                   </h2>
                   {renderTemplateParagraphs(
-                    documentContent.introduction.paragraphs ||
-                      INTRODUCTION_PARAGRAPHS,
+                    normalizedIntroductionPreview.paragraphs.length > 0
+                      ? normalizedIntroductionPreview.paragraphs
+                      : documentContent.introduction.paragraphs ||
+                          INTRODUCTION_PARAGRAPHS,
                   )}
+                  {normalizedIntroductionPreview.containsStructuredContent &&
+                    (introductionTenderReference || introductionTenderDate) && (
+                      <>
+                        <p style={bodyParagraphStyle}>
+                          <strong>Tender Information</strong>
+                        </p>
+                        {introductionTenderReference && (
+                          <p style={bodyParagraphStyle}>
+                            <strong>Tender Reference:</strong>{" "}
+                            {renderRequiredValue(
+                              "introduction",
+                              "tender_reference",
+                              introductionTenderReference,
+                            )}
+                          </p>
+                        )}
+                        {introductionTenderDate && (
+                          <p style={bodyParagraphStyle}>
+                            <strong>Tender Date:</strong>{" "}
+                            {renderRequiredValue(
+                              "introduction",
+                              "tender_date",
+                              introductionTenderDate,
+                            )}
+                          </p>
+                        )}
+                      </>
+                    )}
                 </SectionWrapper>
               )}
               {sectionExists('introduction') && renderInlineInsertionsAfter('introduction')}
@@ -5228,15 +5325,104 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                     tableLayout: "fixed",
                   }}
                 >
+                  <colgroup>
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "44%" }} />
+                    <col style={{ width: "7.666%" }} />
+                    <col style={{ width: "7.666%" }} />
+                    <col style={{ width: "7.666%" }} />
+                    <col style={{ width: "7.666%" }} />
+                    <col style={{ width: "7.666%" }} />
+                    <col style={{ width: "7.666%" }} />
+                  </colgroup>
                   <tbody>
-                    {resolvedMatrixRows.map((row: string[], rowIndex: number) => {
-                      const sourceRow = matrixRows[rowIndex] || row;
-                      const isHeaderRow = rowIndex <= 1;
+                    <tr>
+                      <td
+                        rowSpan={2}
+                        title={
+                          isEditedPath("division_of_eng", "matrix_rows.0.0")
+                            ? formatEditedTitle("division_of_eng", "matrix_rows.0.0")
+                            : undefined
+                        }
+                        style={{
+                          ...matrixHeaderCellStyle,
+                          ...getEditedCellStyle("division_of_eng", "matrix_rows.0.0"),
+                        }}
+                      >
+                        {resolvedMatrixRows[0]?.[0] || "No."}
+                      </td>
+                      <td
+                        rowSpan={2}
+                        title={
+                          isEditedPath("division_of_eng", "matrix_rows.0.1")
+                            ? formatEditedTitle("division_of_eng", "matrix_rows.0.1")
+                            : undefined
+                        }
+                        style={{
+                          ...matrixHeaderCellStyle,
+                          ...getEditedCellStyle("division_of_eng", "matrix_rows.0.1"),
+                        }}
+                      >
+                        {resolvedMatrixRows[0]?.[1] || "ITEM"}
+                      </td>
+                      <td
+                        colSpan={6}
+                        title={
+                          isEditedPath("division_of_eng", "matrix_rows.0.2")
+                            ? formatEditedTitle("division_of_eng", "matrix_rows.0.2")
+                            : undefined
+                        }
+                        style={{
+                          ...matrixHeaderCellStyle,
+                          ...getEditedCellStyle("division_of_eng", "matrix_rows.0.2"),
+                        }}
+                      >
+                        {resolvedMatrixRows[0]?.[2] || "Responsibility"}
+                      </td>
+                    </tr>
+                    <tr>
+                      {(resolvedMatrixRows[1] || []).slice(2).map((cell: string, cellIndex: number) => (
+                        <td
+                          key={`matrix-header-cell-${cellIndex}`}
+                          title={
+                            isEditedPath(
+                              "division_of_eng",
+                              `matrix_rows.1.${cellIndex + 2}`,
+                            )
+                              ? formatEditedTitle(
+                                  "division_of_eng",
+                                  `matrix_rows.1.${cellIndex + 2}`,
+                                )
+                              : undefined
+                          }
+                          style={{
+                            ...matrixHeaderCellStyle,
+                            ...getEditedCellStyle(
+                              "division_of_eng",
+                              `matrix_rows.1.${cellIndex + 2}`,
+                            ),
+                          }}
+                        >
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                    {resolvedMatrixRows.slice(2).map((row: string[], rowIndex: number) => {
+                      const actualRowIndex = rowIndex + 2;
+                      const sourceRow = matrixRows[actualRowIndex] || row;
+                      const isBlankRow = row.every((cell) => !cell);
                       const isGroupRow =
-                        !isHeaderRow && row[0] && !row[0].startsWith("-");
+                        !isBlankRow && row[0] && !row[0].startsWith("-");
+                      const rowBackgroundColor = isGroupRow
+                        ? matrixBandBackground
+                        : isBlankRow
+                          ? "#FFFFFF"
+                          : rowIndex % 2 === 0
+                            ? matrixBandBackground
+                            : "#FFFFFF";
 
                       return (
-                        <tr key={`matrix-row-${rowIndex}`}>
+                        <tr key={`matrix-row-${actualRowIndex}`}>
                           {row.map((cell: string, cellIndex: number) => {
                             const sourceCell = sourceRow[cellIndex] || cell;
                             const cellStyle =
@@ -5244,44 +5430,30 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                                 ? matrixItemCellStyle
                                 : matrixCellStyle;
 
-                            // Responsibility matrix header: shade = #2E75B5 (blue) from template
-                            const headerBg = isHeaderRow
-                              ? "#2E75B5"
-                              : undefined;
-                            const headerColor = isHeaderRow
-                              ? "#FFFFFF"
-                              : undefined;
-                            const groupBg =
-                              !isHeaderRow && isGroupRow
-                                ? "#F3F3F3"
-                                : undefined;
-
                             return (
                               <td
-                                key={`matrix-cell-${rowIndex}-${cellIndex}`}
+                                key={`matrix-cell-${actualRowIndex}-${cellIndex}`}
                                 title={
                                   isEditedPath(
                                     "division_of_eng",
-                                    `matrix_rows.${rowIndex}.${cellIndex}`,
+                                    `matrix_rows.${actualRowIndex}.${cellIndex}`,
                                   )
                                     ? formatEditedTitle(
                                         "division_of_eng",
-                                        `matrix_rows.${rowIndex}.${cellIndex}`,
+                                        `matrix_rows.${actualRowIndex}.${cellIndex}`,
                                       )
                                     : undefined
                                 }
                                 style={{
                                   ...cellStyle,
                                   fontWeight:
-                                    isHeaderRow || isGroupRow
+                                    isGroupRow
                                       ? "bold"
                                       : "normal",
-                                  backgroundColor:
-                                    headerBg || groupBg || "#FFFFFF",
-                                  color: headerColor || undefined,
+                                  backgroundColor: rowBackgroundColor,
                                   ...getEditedCellStyle(
                                     "division_of_eng",
-                                    `matrix_rows.${rowIndex}.${cellIndex}`,
+                                    `matrix_rows.${actualRowIndex}.${cellIndex}`,
                                   ),
                                 }}
                               >

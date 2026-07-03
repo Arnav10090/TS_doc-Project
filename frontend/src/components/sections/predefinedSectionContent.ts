@@ -497,6 +497,84 @@ const clone = <T,>(value: T): T => {
   return value;
 };
 
+const LEGACY_RESPONSIBILITY_MATRIX_KEYS = [
+  'No',
+  'ITEM',
+  'Responsibility_Buyer',
+  'Responsibility_Design',
+  'Responsibility_Seller',
+  'Responsibility_Erection',
+  'Responsibility_Supervision',
+  'Responsibility_Commissioning',
+];
+
+const cloneResponsibilityMatrixRows = () =>
+  RESPONSIBILITY_MATRIX_ROWS.map((row) => [...row]);
+
+const hasExpectedResponsibilityHeaders = (rows: string[][]) => {
+  const headerRow = rows[0] || [];
+  const subHeaderRow = rows[1] || [];
+
+  return (
+    headerRow[0] === 'No.' &&
+    headerRow[1] === 'ITEM' &&
+    headerRow[2] === 'Responsibility' &&
+    subHeaderRow[0] === 'No.' &&
+    subHeaderRow[1] === 'ITEM' &&
+    subHeaderRow[2] === 'BD' &&
+    subHeaderRow[3] === 'BE' &&
+    subHeaderRow[4] === 'DD' &&
+    subHeaderRow[5] === 'SU' &&
+    subHeaderRow[6] === 'ER' &&
+    subHeaderRow[7] === 'COM'
+  );
+};
+
+const isValidResponsibilityMatrixRows = (rows: string[][]) => {
+  if (rows.length < 3) {
+    return false;
+  }
+
+  if (!hasExpectedResponsibilityHeaders(rows)) {
+    return false;
+  }
+
+  return rows.every((row) => row.length >= 8);
+};
+
+const normalizeResponsibilityMatrixRows = (value: unknown): unknown => {
+  if (!Array.isArray(value)) {
+    return value;
+  }
+
+  const hasObjectRows = value.some((row) => isPlainRecord(row));
+
+  const normalizedRows = value.map((row) => {
+    if (Array.isArray(row)) {
+      return row.map((cell) => (cell == null ? '' : String(cell)));
+    }
+
+    if (isPlainRecord(row)) {
+      return LEGACY_RESPONSIBILITY_MATRIX_KEYS.map((key) =>
+        row[key] == null ? '' : String(row[key]),
+      );
+    }
+
+    return [];
+  });
+
+  const resolvedRows = hasObjectRows
+    ? [
+        ...RESPONSIBILITY_MATRIX_ROWS.slice(0, 2).map((row) => [...row]),
+        ...normalizedRows,
+      ]
+    : normalizedRows;
+
+  return isValidResponsibilityMatrixRows(resolvedRows)
+    ? resolvedRows
+    : cloneResponsibilityMatrixRows();
+};
+
 const mergeDefaults = (defaults: any, current: any): any => {
   if (current === undefined || current === null) {
     return clone(defaults);
@@ -534,8 +612,18 @@ export const mergeSectionContent = (
   sectionKey: string,
   content: Record<string, any> | undefined,
   context: DefaultContentContext = {},
-): Record<string, any> =>
-  mergeDefaults(getDefaultSectionContent(sectionKey, context), content || {});
+): Record<string, any> => {
+  const merged = mergeDefaults(getDefaultSectionContent(sectionKey, context), content || {});
+
+  if (sectionKey === 'division_of_eng') {
+    return {
+      ...merged,
+      matrix_rows: normalizeResponsibilityMatrixRows(merged.matrix_rows),
+    };
+  }
+
+  return merged;
+};
 
 export const isRequiredPath = (sectionKey: string, path: string): boolean =>
   Boolean(

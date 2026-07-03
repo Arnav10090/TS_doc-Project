@@ -1,6 +1,11 @@
 import React from 'react'
 import toast from 'react-hot-toast'
 import { downloadTextFile } from '../../utils/downloadHelper'
+import {
+  extractIntroductionTextContent,
+  extractStructuredIntroductionContent,
+  stripStructuredIntroductionJson,
+} from '../../utils/introductionContent'
 import ExpandableTableFrame from './ExpandableTableFrame'
 
 interface SubsectionSuggestion {
@@ -35,6 +40,24 @@ interface Props {
   onGenerateDrawio?: () => Promise<any>
   onDismiss?: () => void
   isRegenerating?: boolean
+}
+
+function renderSuggestionParagraph(paragraph: string, key: string) {
+  if (/<\/?[a-z][\s\S]*>/i.test(paragraph)) {
+    return (
+      <div
+        key={key}
+        style={{ marginBottom: 12 }}
+        dangerouslySetInnerHTML={{ __html: paragraph }}
+      />
+    )
+  }
+
+  return (
+    <p key={key} style={{ margin: '0 0 12px', whiteSpace: 'pre-wrap' }}>
+      {paragraph}
+    </p>
+  )
 }
 
 const SuggestionPanel: React.FC<Props> = ({
@@ -129,6 +152,68 @@ const SuggestionPanel: React.FC<Props> = ({
 
     if (suggestion.structured_import_available && suggestion.content) {
       const c = suggestion.content
+
+      if (sectionKey === 'introduction') {
+        const structuredIntroduction = extractStructuredIntroductionContent(c)
+        const plainIntroductionContent =
+          typeof c === 'string' ? extractIntroductionTextContent(c) : null
+        const plainIntroductionText =
+          typeof c === 'string' ? stripStructuredIntroductionJson(c).trim() : ''
+
+        if (structuredIntroduction) {
+          return (
+            <div>
+              {structuredIntroduction.paragraphs.map((paragraph, index) =>
+                renderSuggestionParagraph(paragraph, `intro-${index}`),
+              )}
+              {(structuredIntroduction.tenderReference || structuredIntroduction.tenderDate) && (
+                <div style={{ marginTop: 4 }}>
+                  <p style={{ margin: '0 0 8px', fontWeight: 700 }}>Tender Information</p>
+                  {structuredIntroduction.tenderReference && (
+                    <p style={{ margin: '0 0 6px' }}>
+                      <strong>Tender Reference:</strong> {structuredIntroduction.tenderReference}
+                    </p>
+                  )}
+                  {structuredIntroduction.tenderDate && (
+                    <p style={{ margin: 0 }}>
+                      <strong>Tender Date:</strong> {structuredIntroduction.tenderDate}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        }
+
+        if (plainIntroductionContent) {
+          return (
+            <div>
+              {plainIntroductionContent.paragraphs.map((paragraph, index) =>
+                renderSuggestionParagraph(paragraph, `intro-text-${index}`),
+              )}
+              {(plainIntroductionContent.tenderReference || plainIntroductionContent.tenderDate) && (
+                <div style={{ marginTop: 4 }}>
+                  <p style={{ margin: '0 0 8px', fontWeight: 700 }}>Tender Information</p>
+                  {plainIntroductionContent.tenderReference && (
+                    <p style={{ margin: '0 0 6px' }}>
+                      <strong>Tender Reference:</strong> {plainIntroductionContent.tenderReference}
+                    </p>
+                  )}
+                  {plainIntroductionContent.tenderDate && (
+                    <p style={{ margin: 0 }}>
+                      <strong>Tender Date:</strong> {plainIntroductionContent.tenderDate}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        }
+
+        if (plainIntroductionText) {
+          return <div style={{ whiteSpace: 'pre-wrap' }}>{plainIntroductionText}</div>
+        }
+      }
 
       // HTML string (rich text)
       if (typeof c === 'string') {
