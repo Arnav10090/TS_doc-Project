@@ -355,6 +355,17 @@ class TestFormatOutputInstructions:
         assert "JSON object" in result
         assert "process_summary" in result
     
+    def test_format_output_instructions_family_d(self):
+        """Should provide JSON array + item-field instructions for Family D (List-Based)."""
+        result = _format_output_instructions("features")
+        
+        assert "## 8. Output Format" in result
+        assert "JSON array" in result
+        assert "Item fields" in result
+        assert "title" in result
+        assert "brief" in result
+        assert "description" in result
+    
     def test_format_output_instructions_unknown_section(self):
         """Should provide generic instruction for unknown sections."""
         result = _format_output_instructions("unknown_section")

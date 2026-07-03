@@ -497,6 +497,17 @@ Do NOT include markdown code fences.
             field_guidance = f"\nRow fields: {', '.join(row_fields)}"
     elif family == "C" and schema:
         field_guidance = f"\nExpected fields: {', '.join(schema['fields'])}"
+    elif family == "D" and schema:
+        # Without explicit item field names the LLM invents its own keys —
+        # e.g. for `features` it has been observed emitting a "feature" key
+        # instead of "title". That shape cannot be imported into the `items`
+        # table the frontend renders (see FAMILY_D_ITEMS_SECTION_KEYS in
+        # frontend/src/utils/aiSuggestionImport.ts). This mirrors the existing
+        # fix for the `division_of_eng` Family B override further down in
+        # this file.
+        item_fields = schema.get('item_fields', [])
+        if item_fields:
+            field_guidance = f"\nItem fields: {', '.join(item_fields)}"
     
     return f"""## 8. Output Format (never truncated)
 {instruction}

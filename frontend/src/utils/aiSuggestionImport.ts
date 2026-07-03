@@ -14,6 +14,19 @@ type Suggestion = {
   subsection_suggestions?: Array<any> | null
 }
 
+// Predefined sections whose draft content canonically stores its list under an
+// `items` key (Family D per backend/app/ai_suggestions/section_schemas.py:
+// features, documentation_control, buyer_obligations, exclusion_list,
+// buyer_prerequisites). Suggestion content for these sections must always
+// populate `items`, even if an unrelated `rows` key already exists on the draft.
+const FAMILY_D_ITEMS_SECTION_KEYS = new Set([
+  'features',
+  'documentation_control',
+  'buyer_obligations',
+  'exclusion_list',
+  'buyer_prerequisites',
+])
+
 function parseStructuredStringContent(content: any): any {
   if (typeof content !== 'string') {
     return content
@@ -245,10 +258,21 @@ export async function importSuggestion(
     return updated
   }
 
-  // Family D: list-based – check BEFORE Family B so that sections whose draft
-  // uses `items` (e.g. features) are not accidentally routed to importFamilyB
-  // which would create a spurious `rows` key instead of populating `items`.
-  if (Array.isArray(content) && Array.isArray(draft.items) && !Array.isArray(draft.rows)) {
+  // Family D: list-based sections that canonically use `items`. Route by
+  // section key (FAMILY_D_ITEMS_SECTION_KEYS), not by incidentally checking
+  // whether a `rows` key is absent from the draft — that heuristic breaks
+  // permanently for a project once any `rows` key is ever written onto its
+  // `features` draft (including by this very bug), because
+  // mergeSectionContent() in
+  // frontend/src/components/sections/predefinedSectionContent.ts preserves
+  // any key not present in getDefaultSectionContent(). The document generator
+  // (backend/app/generation/context_builder.py) only reads `features.items`,
+  // so suggestions landing in `rows` never reach the doc preview or export.
+  if (
+    Array.isArray(content) &&
+    FAMILY_D_ITEMS_SECTION_KEYS.has(sectionKey) &&
+    Array.isArray(draft.items)
+  ) {
     const updated = importFamilyD(draft, content)
     setSectionDraft(projectId, sectionKey, updated)
     return updated

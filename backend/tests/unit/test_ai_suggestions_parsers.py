@@ -50,6 +50,14 @@ def test_parse_list_response_array_items():
     assert items[0]["brief"] == ""
 
 
+def test_parse_list_response_envelope_rows_key():
+    resp = '{"rows": [{"id": 1, "title": "Alpha"}]}'
+    ok, items, raw = parsers.parse_list_response(resp, expected_item_fields=["id", "title", "brief"])
+    assert ok is True
+    assert items[0]["title"] == "Alpha"
+    assert items[0]["brief"] == ""
+
+
 def test_parse_image_description_response_json_object():
     resp = '{"caption": "Diagram of system", "note": "Use L2 signals"}'
     ok, obj, raw = parsers.parse_image_description_response(resp, expected_fields=["caption", "note"])

@@ -199,6 +199,35 @@ describe('aiSuggestionImport utilities', () => {
     expect((stored as any).html === '<p>fresh</p>' || (stored as any).paragraph === '<p>fresh</p>').toBe(true)
   })
 
+  it('importSuggestion populates `items` for the features section even when a stray `rows` key already exists on the draft', async () => {
+    const existing = {
+      heading: 'DESIGN SCOPE OF WORK',
+      intro_text: 'Implementation of {{SolutionName}}',
+      items: [{ id: 'feature-1', title: '', brief: '', description: '' }],
+      // Simulates a project already corrupted by the routing bug: a `rows`
+      // key exists on the draft even though `features` never uses one.
+      rows: [],
+    }
+    const suggestionContent = [
+      {
+        id: '',
+        title: 'End-to-end Yard Visibility',
+        brief: 'Real-time tracking of yard operations',
+        description: '<p>Full description</p>',
+      },
+    ]
+    const suggestion = { structured_import_available: true, content: suggestionContent }
+
+    const result = await importSuggestion('test-project', 'features', suggestion, existing)
+
+    expect(result).toBeTruthy()
+    const updated = result as Record<string, any>
+    expect(updated.items).toEqual(suggestionContent)
+    // The pre-existing `rows` key must be left alone, not overwritten with
+    // the feature data.
+    expect(updated.rows).toEqual([])
+  })
+
   it('importSuggestion extracts introduction tender fields and removes metadata blocks from narrative text', async () => {
     const existing = {
       heading: 'INTRODUCTION',

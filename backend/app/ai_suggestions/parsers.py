@@ -154,6 +154,14 @@ def parse_list_response(response: str, expected_item_fields: Optional[List[str]]
         items = obj
     elif isinstance(obj, dict) and isinstance(obj.get('items'), list):
         items = obj.get('items')
+    elif isinstance(obj, dict) and isinstance(obj.get('rows'), list):
+        # Defensive fallback: even with the "Item fields" guidance added in
+        # builders.py, an LLM may still wrap its answer as {"rows": [...]}
+        # by analogy with the Family B sections referenced elsewhere in the
+        # prompt. Accept that shape too rather than silently failing
+        # structured parsing (structured_available=False), so the suggestion
+        # can still reach the frontend and be imported into `items`.
+        items = obj.get('rows')
     else:
         return False, None, cleaned
 
