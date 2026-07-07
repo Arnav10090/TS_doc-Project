@@ -27,6 +27,13 @@ const FAMILY_D_ITEMS_SECTION_KEYS = new Set([
   'buyer_prerequisites',
 ])
 
+const FAMILY_D_STRING_ITEM_SECTION_KEYS = new Set([
+  'documentation_control',
+  'buyer_obligations',
+  'exclusion_list',
+  'buyer_prerequisites',
+])
+
 function parseStructuredStringContent(content: any): any {
   if (typeof content !== 'string') {
     return content
@@ -235,6 +242,51 @@ function findArrayKey(obj: Record<string, any>) {
   return arrKey
 }
 
+function extractStringListItem(value: unknown): string[] {
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    return trimmed ? [trimmed] : []
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => extractStringListItem(item))
+  }
+
+  if (!value || typeof value !== 'object') {
+    return []
+  }
+
+  const record = value as Record<string, unknown>
+
+  if (Array.isArray(record.items)) {
+    const nestedItems = record.items.flatMap((item) => extractStringListItem(item))
+    if (nestedItems.length > 0) {
+      return nestedItems
+    }
+  }
+
+  const preferredKeys = ['name', 'title', 'item', 'label', 'text', 'description', 'brief']
+  for (const key of preferredKeys) {
+    const candidate = record[key]
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return [candidate.trim()]
+    }
+  }
+
+  return []
+}
+
+function dedupeStringList(items: string[]): string[] {
+  const seen = new Set<string>()
+  return items.filter((item) => {
+    if (seen.has(item)) {
+      return false
+    }
+    seen.add(item)
+    return true
+  })
+}
+
 export async function importSuggestion(
   projectId: string,
   sectionKey: string,
@@ -273,7 +325,37 @@ export async function importSuggestion(
     FAMILY_D_ITEMS_SECTION_KEYS.has(sectionKey) &&
     Array.isArray(draft.items)
   ) {
-    const updated = importFamilyD(draft, content)
+    const updated = importFamilyD(draft, content, sectionKey)
+    // #region debug-point A:documentation-control-import
+    if (sectionKey === 'documentation_control') {
+      fetch('http://127.0.0.1:7779/event', {
+        method: 'POST',
+        body: JSON.stringify({
+          sessionId: 'pmyms-fullscreen-blank',
+          runId: 'pre-fix',
+          hypothesisId: 'A',
+          location: 'aiSuggestionImport.ts:276',
+          msg: '[DEBUG] documentation_control importFamilyD output',
+          data: {
+            contentSample: content.slice(0, 3),
+            contentTypes: content.map((item) => ({
+              type: typeof item,
+              isArray: Array.isArray(item),
+              keys: item && typeof item === 'object' ? Object.keys(item) : [],
+            })),
+            updatedItemTypes: Array.isArray(updated.items)
+              ? updated.items.map((item) => ({
+                  type: typeof item,
+                  isArray: Array.isArray(item),
+                  keys: item && typeof item === 'object' ? Object.keys(item) : [],
+                }))
+              : null,
+          },
+          ts: Date.now(),
+        }),
+      }).catch(() => {})
+    }
+    // #endregion
     setSectionDraft(projectId, sectionKey, updated)
     return updated
   }
@@ -294,7 +376,7 @@ export async function importSuggestion(
 
   // Family D: list-based (fallback for other array content)
   if (Array.isArray(content)) {
-    const updated = importFamilyD(draft, content)
+    const updated = importFamilyD(draft, content, sectionKey)
     setSectionDraft(projectId, sectionKey, updated)
     return updated
   }
@@ -606,7 +688,11 @@ export function importFamilyC(existingDraft: Record<string, any>, content: Recor
 // (they are template boilerplate or secondary collections)
 const SKIP_LIST_KEYS = new Set(['paragraphs', 'custom_items', 'note_paragraphs', 'intro_paragraphs'])
 
-export function importFamilyD(existingDraft: Record<string, any>, content: any[]) {
+export function importFamilyD(
+  existingDraft: Record<string, any>,
+  content: any[],
+  sectionKey?: string,
+) {
   const next = { ...(existingDraft || {}) }
   // Expanded preferred keys to include `criteria` (used by work_completion)
   const preferredKeys = ['items', 'criteria', 'list', 'rows', 'entries']
@@ -626,11 +712,33 @@ export function importFamilyD(existingDraft: Record<string, any>, content: any[]
   }
 
   if (!targetKey) targetKey = 'items'
+  const existingItems = Array.isArray(next[targetKey]) ? next[targetKey] : []
+
+  const expectsStringItems =
+    targetKey === 'criteria' ||
+    targetKey === 'custom_items' ||
+    (targetKey === 'items' &&
+      Boolean(sectionKey) &&
+      FAMILY_D_STRING_ITEM_SECTION_KEYS.has(sectionKey))
+
+  if (expectsStringItems) {
+    const normalizedExistingItems = dedupeStringList(
+      existingItems.flatMap((item: unknown) => extractStringListItem(item)),
+    )
+    const normalizedImportedItems = dedupeStringList(
+      content.flatMap((item: unknown) => extractStringListItem(item)),
+    )
+
+    next[targetKey] = dedupeStringList([
+      ...normalizedExistingItems,
+      ...normalizedImportedItems,
+    ])
+    return next
+  }
 
   // Check if the target holds record-style items that require an `id` field
   // (e.g. FeatureItem). If existing items all have `id`, ensure imported items
   // also carry one so the editor (SortableFeatureCard) can key on it.
-  const existingItems = Array.isArray(next[targetKey]) ? next[targetKey] : []
   const needsId = existingItems.length > 0
     ? existingItems.every((item: any) => item && typeof item === 'object' && 'id' in item)
     : targetKey === 'items' // features default uses items with id

@@ -37,9 +37,9 @@ import {
   isParagraphData,
 } from "../../types/customSections";
 import {
+  getCustomSectionDisplayName,
   isCustomSectionKey,
   generateCustomSectionKey,
-  insertSubsectionAfter,
 } from "../../utils/customSectionUtils";
 import {
   isRequiredPath,
@@ -50,16 +50,6 @@ import {
   stripEditMetadata,
   type EditMetadata,
 } from "../../utils/editMetadata";
-import {
-  buildDocumentReferences,
-  type FigureReference,
-  type TableReference,
-} from "../../utils/documentReferences";
-import {
-  dedupeStringParagraphs,
-  extractIntroductionTextContent,
-  extractStructuredIntroductionContent,
-} from "../../utils/introductionContent";
 
 interface DocumentPreviewProps {
   projectId: string;
@@ -72,35 +62,13 @@ interface DocumentPreviewProps {
 
 type PreviewImageType = "architecture" | "gantt_overall" | "gantt_shutdown";
 type PreviewImageMap = Partial<Record<PreviewImageType, string>>;
-type TocEntryLevel = 1 | 2 | 3;
-type TocPageMap = Record<string, number>;
-type InsertTarget = {
-  sectionKey: string;
-  subsectionKey?: string;
-};
+type TocPageNumbers = Record<string, number>;
 
 interface TocEntry {
   id: string;
-  number: string;
-  title: string;
-  level: TocEntryLevel;
-  placement?: SubsectionAnchorPlacement;
-}
-
-interface SubsectionAnchorPlacement {
-  anchorKey: string;
-  insertAfterKey: string;
-  insertAfterSubsectionKey?: string;
-}
-
-interface SubsectionAnchorOption extends SubsectionAnchorPlacement {
-  key: string;
+  level: 1 | 2;
+  numberLabel: string;
   label: string;
-}
-
-interface CurrentSectionContext {
-  label: string;
-  subsections: SubsectionAnchorOption[];
 }
 
 interface SectionWrapperProps {
@@ -112,6 +80,7 @@ interface SectionWrapperProps {
   onClick: () => void;
   sectionRef: (el: HTMLDivElement | null) => void;
   style: React.CSSProperties;
+  tocId?: string;
   children: React.ReactNode;
 }
 
@@ -120,7 +89,6 @@ const REQUIRED_PREVIEW_COLOR = "#E60012";
 const LAST_CHANGED_COLOR = "#17F131";
 const LAST_CHANGED_SOFT = "rgba(23, 241, 49, 0.14)";
 const LAST_CHANGED_FILL = "rgba(23, 241, 49, 0.18)";
-const LAST_CHANGED_TEXT_COLOR = "#000000";
 const WORD_PAGE_WIDTH = "21.59cm";
 const WORD_PAGE_HEIGHT = "27.94cm";
 const WORD_PAGE_MARGIN = "2.54cm";
@@ -180,159 +148,8 @@ const resolveTemplateText = (
   return resolved.replace(/\s+/g, " ").trim();
 };
 
-const replaceTemplateTokens = (
-  text: string,
-  replacements: Record<string, string>,
-): string => {
-  let resolved = text;
-
-  Object.entries(replacements).forEach(([key, value]) => {
-    const safeValue = value || "";
-    resolved = resolved.replace(
-      new RegExp(`\\{\\{${key}\\}\\}`, "g"),
-      safeValue,
-    );
-  });
-
-  return resolved;
-};
-
-const escapeHtml = (value: string): string =>
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-
-const looksLikeRichTextInput = (value: string): boolean =>
-  /<\/?[a-z][\s\S]*>/i.test(value) ||
-  /(^|\n)\s*#{1,6}\s+/.test(value) ||
-  /(^|\n)\s*(?:[-*]|\d+\.)\s+/.test(value);
-
-const convertPlainTextBlockToHtml = (block: string): string => {
-  const lines = block
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (lines.length === 0) {
-    return "";
-  }
-
-  if (lines.every((line) => /^[-*]\s+/.test(line))) {
-    return `<ul>${lines
-      .map((line) => `<li>${escapeHtml(line.replace(/^[-*]\s+/, ""))}</li>`)
-      .join("")}</ul>`;
-  }
-
-  if (lines.every((line) => /^\d+\.\s+/.test(line))) {
-    return `<ol>${lines
-      .map((line) => `<li>${escapeHtml(line.replace(/^\d+\.\s+/, ""))}</li>`)
-      .join("")}</ol>`;
-  }
-
-  const headingMatch = lines[0].match(/^(#{1,6})\s+(.+)$/);
-  if (headingMatch) {
-    const level = Math.min(6, headingMatch[1].length + 1);
-    const remainder = lines.slice(1);
-    return [
-      `<h${level}>${escapeHtml(headingMatch[2].trim())}</h${level}>`,
-      remainder.length > 0
-        ? `<p>${remainder.map((line) => escapeHtml(line)).join("<br />")}</p>`
-        : "",
-    ].join("");
-  }
-
-  return `<p>${lines.map((line) => escapeHtml(line)).join("<br />")}</p>`;
-};
-
-const normalizeImportedTextHtml = (
-  value: string,
-  replacements: Record<string, string>,
-): string => {
-  const resolved = replaceTemplateTokens(value, replacements)
-    .replace(/\r\n/g, "\n")
-    .trim();
-
-  if (!resolved) {
-    return "";
-  }
-
-  const prepared = resolved
-    .replace(/<\/p>\s*<p/gi, "</p>\n\n<p")
-    .replace(
-      /<\/(h[1-6]|ul|ol|table|blockquote|div)>\s*(?=<|#{1,6}\s+|[-*]\s+|\d+\.\s+|\S)/gi,
-      "</$1>\n\n",
-    );
-
-  const blocks = prepared
-    .split(/\n\s*\n+/)
-    .map((block) => block.trim())
-    .filter(Boolean);
-
-  if (blocks.length === 0) {
-    return resolved;
-  }
-
-  return blocks
-    .map((block) =>
-      /<\/?[a-z][\s\S]*>/i.test(block)
-        ? block
-        : convertPlainTextBlockToHtml(block),
-    )
-    .join("");
-};
-
-const normalizeIntroductionParagraphsForPreview = (paragraphs: string[]) => {
-  const normalizedParagraphs: string[] = [];
-  let tenderReference: string | undefined;
-  let tenderDate: string | undefined;
-  let containsStructuredContent = false;
-
-  paragraphs.forEach((paragraph) => {
-    const structured = extractStructuredIntroductionContent(paragraph);
-
-    if (!structured) {
-      const normalizedText = extractIntroductionTextContent(paragraph);
-      if (!normalizedText) {
-        normalizedParagraphs.push(paragraph);
-        return;
-      }
-
-      containsStructuredContent = true;
-      normalizedParagraphs.push(...normalizedText.paragraphs);
-      tenderReference ||= normalizedText.tenderReference;
-      tenderDate ||= normalizedText.tenderDate;
-      return;
-    }
-
-    containsStructuredContent = true;
-    normalizedParagraphs.push(...structured.paragraphs);
-    tenderReference ||= structured.tenderReference;
-    tenderDate ||= structured.tenderDate;
-  });
-
-  return {
-    paragraphs: dedupeStringParagraphs(normalizedParagraphs),
-    tenderReference,
-    tenderDate,
-    containsStructuredContent,
-  };
-};
-
 const filterFilledItems = (items?: string[]) =>
   (items || []).map((item) => item.trim()).filter(Boolean);
-
-const areTocPageMapsEqual = (a: TocPageMap, b: TocPageMap): boolean => {
-  const aKeys = Object.keys(a);
-  const bKeys = Object.keys(b);
-
-  return (
-    aKeys.length === bKeys.length &&
-    aKeys.every((key) => a[key] === b[key])
-  );
-};
 
 const SectionWrapper: React.FC<SectionWrapperProps> = ({
   sectionKey,
@@ -343,11 +160,13 @@ const SectionWrapper: React.FC<SectionWrapperProps> = ({
   onClick,
   sectionRef,
   style,
+  tocId,
   children,
 }) => (
   <div
     ref={sectionRef}
     data-section-key={sectionKey}
+    data-toc-id={tocId}
     style={style}
     onMouseEnter={onMouseEnter}
     onMouseLeave={onMouseLeave}
@@ -380,11 +199,8 @@ interface PaginatedWordPreviewProps {
   activeSectionKey: string | null;
   onSectionClick?: (sectionKey: string) => void;
   onSubsectionClick?: (sectionKey: string, subsectionKey: string) => void;
-  onAddSectionClick: (
-    insertAfterKey: string,
-    insertAfterSubsectionKey?: string,
-  ) => void;
-  onTocPageMapChange?: (pageMap: TocPageMap) => void;
+  onAddSectionClick: (insertAfterKey: string) => void;
+  onTocPageNumbersChange?: (pageNumbers: TocPageNumbers) => void;
 }
 
 const PaginatedWordPreview: React.FC<PaginatedWordPreviewProps> = ({
@@ -394,7 +210,7 @@ const PaginatedWordPreview: React.FC<PaginatedWordPreviewProps> = ({
   onSectionClick,
   onSubsectionClick,
   onAddSectionClick,
-  onTocPageMapChange,
+  onTocPageNumbersChange,
 }) => {
   const visibleRootRef = useRef<HTMLDivElement | null>(null);
   const sourceContentRef = useRef<HTMLDivElement | null>(null);
@@ -411,12 +227,9 @@ const PaginatedWordPreview: React.FC<PaginatedWordPreviewProps> = ({
     if (addButton) {
       const breakElement = addButton.closest("[data-insert-after-key]");
       const insertAfterKey = breakElement?.getAttribute("data-insert-after-key");
-      const insertAfterSubsectionKey =
-        breakElement?.getAttribute("data-insert-after-subsection-key") ||
-        undefined;
 
       if (insertAfterKey) {
-        onAddSectionClick(insertAfterKey, insertAfterSubsectionKey);
+        onAddSectionClick(insertAfterKey);
       }
       return;
     }
@@ -492,133 +305,6 @@ const PaginatedWordPreview: React.FC<PaginatedWordPreviewProps> = ({
           return !child.classList.contains("section-hover-indicator");
         });
 
-      const getPageContent = (page: HTMLElement) =>
-        page.querySelector<HTMLElement>(".word-preview-page-content");
-
-      const findLastContentPage = () => {
-        const pages = Array.from(
-          pagesRoot.querySelectorAll<HTMLElement>(".word-preview-page"),
-        );
-
-        for (let index = pages.length - 1; index >= 0; index -= 1) {
-          const pageContent = getPageContent(pages[index]);
-
-          if (pageContent && hasContent(pageContent)) {
-            return pages[index];
-          }
-        }
-
-        return null;
-      };
-
-      const markLastContentPageInsertAfter = (
-        insertAfterKey: string | null,
-        insertAfterSubsectionKey?: string | null,
-      ) => {
-        if (!insertAfterKey) {
-          return;
-        }
-
-        const page = findLastContentPage();
-
-        if (page) {
-          page.dataset.insertAfterKey = insertAfterKey;
-
-          if (insertAfterSubsectionKey) {
-            page.dataset.insertAfterSubsectionKey = insertAfterSubsectionKey;
-          } else {
-            delete page.dataset.insertAfterSubsectionKey;
-          }
-        }
-      };
-
-      const getLastInsertTargetForPage = (
-        page: HTMLElement,
-      ): InsertTarget | null => {
-        const sectionElements = Array.from(
-          page.querySelectorAll<HTMLElement>("[data-section-key]"),
-        );
-
-        for (let index = sectionElements.length - 1; index >= 0; index -= 1) {
-          const sectionKey = sectionElements[index].getAttribute("data-section-key");
-
-          if (sectionKey) {
-            return {
-              sectionKey,
-              subsectionKey:
-                sectionElements[index].getAttribute("data-subsection-key") ||
-                undefined,
-            };
-          }
-        }
-
-        return null;
-      };
-
-      const getInsertTargetForPage = (
-        page: HTMLElement,
-        pageIndex: number,
-        pages: HTMLElement[],
-      ): InsertTarget | null => {
-        const explicitInsertAfterKey = page.dataset.insertAfterKey;
-
-        if (explicitInsertAfterKey) {
-          return {
-            sectionKey: explicitInsertAfterKey,
-            subsectionKey: page.dataset.insertAfterSubsectionKey || undefined,
-          };
-        }
-
-        const pageTarget = getLastInsertTargetForPage(page);
-
-        if (pageTarget) {
-          return pageTarget;
-        }
-
-        for (let index = pageIndex - 1; index >= 0; index -= 1) {
-          const fallbackKey = pages[index].dataset.insertAfterKey;
-
-          if (fallbackKey) {
-            return {
-              sectionKey: fallbackKey,
-              subsectionKey:
-                pages[index].dataset.insertAfterSubsectionKey || undefined,
-            };
-          }
-
-          const fallbackTarget = getLastInsertTargetForPage(pages[index]);
-
-          if (fallbackTarget) {
-            return fallbackTarget;
-          }
-        }
-
-        return null;
-      };
-
-      const appendPageBreakControls = () => {
-        const pages = Array.from(
-          pagesRoot.querySelectorAll<HTMLElement>(".word-preview-page"),
-        );
-
-        pages[pages.length - 1]?.classList.add("word-preview-page-last");
-
-        pages.forEach((page, pageIndex) => {
-          const insertTarget = getInsertTargetForPage(page, pageIndex, pages);
-
-          if (!insertTarget) {
-            return;
-          }
-
-          page.after(
-            createPageBreakControl(
-              insertTarget.sectionKey,
-              insertTarget.subsectionKey,
-            ),
-          );
-        });
-      };
-
       const startNewPage = () => {
         currentContent = createPage(pagesRoot);
         return currentContent;
@@ -629,11 +315,7 @@ const PaginatedWordPreview: React.FC<PaginatedWordPreviewProps> = ({
           currentContent.closest(".word-preview-page")?.remove();
         }
 
-        const separator = node as HTMLElement;
-        markLastContentPageInsertAfter(
-          separator.getAttribute("data-insert-after-key"),
-          separator.getAttribute("data-insert-after-subsection-key"),
-        );
+        pagesRoot.appendChild(node.cloneNode(true));
         startNewPage();
       };
 
@@ -754,22 +436,6 @@ const PaginatedWordPreview: React.FC<PaginatedWordPreviewProps> = ({
             return;
           }
 
-          const hasContentBeforeShell = Array.from(currentContent.childNodes).some(
-            (node) =>
-              node !== parent &&
-              (node.nodeType === Node.TEXT_NODE
-                ? Boolean(node.textContent?.trim())
-                : node.nodeType === Node.ELEMENT_NODE &&
-                  !(node as HTMLElement).classList.contains("section-hover-indicator")),
-          );
-
-          if (hasContentBeforeShell) {
-            parent.remove();
-            const nextParent = startNewShell();
-            nextParent.appendChild(childClone);
-            return;
-          }
-
           parent.appendChild(childClone);
         });
       };
@@ -808,13 +474,13 @@ const PaginatedWordPreview: React.FC<PaginatedWordPreviewProps> = ({
 
         currentContent.removeChild(clone);
 
+        if (hasContent(currentContent)) {
+          startNewPage();
+        }
+
         if (element.children.length > 1) {
           appendElementByChildren(element);
           return;
-        }
-
-        if (hasContent(currentContent)) {
-          startNewPage();
         }
 
         currentContent.appendChild(clone);
@@ -828,25 +494,20 @@ const PaginatedWordPreview: React.FC<PaginatedWordPreviewProps> = ({
         lastPage.remove();
       }
 
-      appendPageBreakControls();
-
-      if (onTocPageMapChange) {
-        const nextPageMap: TocPageMap = {};
-        Array.from(
-          pagesRoot.querySelectorAll<HTMLElement>(".word-preview-page"),
-        ).forEach((page, pageIndex) => {
-          page
-            .querySelectorAll<HTMLElement>("[data-toc-target-id]")
-            .forEach((element) => {
-              const tocId = element.getAttribute("data-toc-target-id");
-
-              if (tocId && nextPageMap[tocId] === undefined) {
-                nextPageMap[tocId] = pageIndex + 1;
-              }
-            });
-        });
-        onTocPageMapChange(nextPageMap);
-      }
+      const nextTocPageNumbers: TocPageNumbers = {};
+      Array.from(
+        pagesRoot.querySelectorAll<HTMLElement>(".word-preview-page"),
+      ).forEach((page, pageIndex) => {
+        Array.from(page.querySelectorAll<HTMLElement>("[data-toc-id]")).forEach(
+          (element) => {
+            const tocId = element.getAttribute("data-toc-id");
+            if (tocId && !(tocId in nextTocPageNumbers)) {
+              nextTocPageNumbers[tocId] = pageIndex + 1;
+            }
+          },
+        );
+      });
+      onTocPageNumbersChange?.(nextTocPageNumbers);
 
       if (activeSectionKey) {
         const activeElement = Array.from(
@@ -865,28 +526,23 @@ const PaginatedWordPreview: React.FC<PaginatedWordPreviewProps> = ({
     };
 
     paginate();
+    const animationFrame = window.requestAnimationFrame(paginate);
+    const timeout = window.setTimeout(paginate, 250);
 
-    const isTestEnv =
-      typeof process !== "undefined" && process.env && process.env.NODE_ENV === "test";
-
-    if (!isTestEnv) {
-      const animationFrame = window.requestAnimationFrame(paginate);
-      const timeout = window.setTimeout(paginate, 250);
-
-      return () => {
-        window.cancelAnimationFrame(animationFrame);
-        window.clearTimeout(timeout);
-        sourceRoot.remove();
-      };
-    }
-
-    // In test environment, avoid scheduling async frames/timeouts which
-    // can trigger state updates outside of React's act(...) wrapper and
-    // produce noisy warnings. Just remove the source root on cleanup.
     return () => {
+      window.cancelAnimationFrame(animationFrame);
+      window.clearTimeout(timeout);
       sourceRoot.remove();
     };
-  });
+  }, [
+    activeSectionKey,
+    children,
+    docFont,
+    onAddSectionClick,
+    onSectionClick,
+    onSubsectionClick,
+    onTocPageNumbersChange,
+  ]);
 
   const portal =
     sourceRootRef.current &&
@@ -930,36 +586,6 @@ const createPage = (pagesRoot: HTMLElement): HTMLDivElement => {
   return content;
 };
 
-const createPageBreakControl = (
-  insertAfterKey: string,
-  insertAfterSubsectionKey?: string,
-): HTMLDivElement => {
-  const container = document.createElement("div");
-  container.className = "page-break-with-button";
-  container.dataset.insertAfterKey = insertAfterKey;
-  if (insertAfterSubsectionKey) {
-    container.dataset.insertAfterSubsectionKey = insertAfterSubsectionKey;
-  }
-
-  const breakZone = document.createElement("div");
-  breakZone.className = "page-break-button-zone";
-
-  const breakGuide = document.createElement("div");
-  breakGuide.className = "page-break-guide";
-  breakGuide.setAttribute("aria-hidden", "true");
-
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "add-section-button";
-  button.textContent = "+ Add New Section";
-  button.setAttribute("aria-label", `Add new section after ${insertAfterKey}`);
-
-  breakZone.append(breakGuide, button);
-  container.appendChild(breakZone);
-
-  return container;
-};
-
 const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
   ({
     projectId,
@@ -983,17 +609,15 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const [hoveredSection, setHoveredSection] = useState<string | null>(null);
     const [imageUrls, setImageUrls] = useState<PreviewImageMap>({});
+    const [tocPageNumbers, setTocPageNumbers] = useState<TocPageNumbers>({});
     const [zoom, setZoom] = useState<number>(() => {
       const saved = localStorage.getItem("documentPreviewZoom");
       return saved ? parseFloat(saved) : 1;
     });
-    const [tocPageMap, setTocPageMap] = useState<TocPageMap>({});
 
     // State for Section Type Modal
     const [isSectionTypeModalOpen, setIsSectionTypeModalOpen] = useState(false);
     const [pendingInsertAfterKey, setPendingInsertAfterKey] = useState<string>('');
-    const [pendingInsertAfterSubsectionKey, setPendingInsertAfterSubsectionKey] =
-      useState<string>('');
 
     // Counter management for section and subsection numbering
     const sectionCounter = useRef<number>(0);
@@ -1043,6 +667,16 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
 
       return metadataMap;
     }, [sectionContents]);
+
+    const latestEditTimestamp = useMemo(() => {
+      const timestamps = Object.values(editMetadataBySection).flatMap((metadata) =>
+        Object.values(metadata.markers).map((marker) => marker.updatedAt),
+      );
+
+      return timestamps
+        .filter(Boolean)
+        .sort((left, right) => Date.parse(right) - Date.parse(left))[0];
+    }, [editMetadataBySection]);
 
     const sectionExists = (key: string): boolean => key in sectionContents;
 
@@ -1133,13 +767,26 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       setZoom(1);
     };
 
-    const handleTocPageMapChange = useCallback((nextPageMap: TocPageMap) => {
-      setTocPageMap((currentPageMap) =>
-        areTocPageMapsEqual(currentPageMap, nextPageMap)
-          ? currentPageMap
-          : nextPageMap,
-      );
-    }, []);
+    const handleTocPageNumbersChange = useCallback(
+      (nextPageNumbers: TocPageNumbers) => {
+        setTocPageNumbers((currentPageNumbers) => {
+          const currentKeys = Object.keys(currentPageNumbers);
+          const nextKeys = Object.keys(nextPageNumbers);
+
+          if (
+            currentKeys.length === nextKeys.length &&
+            currentKeys.every(
+              (key) => currentPageNumbers[key] === nextPageNumbers[key],
+            )
+          ) {
+            return currentPageNumbers;
+          }
+
+          return nextPageNumbers;
+        });
+      },
+      [],
+    );
 
     const documentContent = useMemo(() => {
       return {
@@ -1228,19 +875,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     const buyerPrerequisites = filterFilledItems(
       documentContent.buyerPrerequisites.items,
     );
-    const normalizedIntroductionPreview = useMemo(
-      () =>
-        normalizeIntroductionParagraphsForPreview(
-          documentContent.introduction.paragraphs || [],
-        ),
-      [documentContent.introduction.paragraphs],
-    );
-    const introductionTenderReference =
-      documentContent.introduction.tender_reference ||
-      normalizedIntroductionPreview.tenderReference;
-    const introductionTenderDate =
-      documentContent.introduction.tender_date ||
-      normalizedIntroductionPreview.tenderDate;
 
     const templateReplacements = useMemo<Record<string, string>>(
       () => ({
@@ -1254,8 +888,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
         ClientLocation: coverClientLocation || "{ClientLocation}",
         CLIENTLOCATION: coverClientLocation || "{CLIENTLOCATION}",
         ClientAbbreviation: coverClientName || "{ClientAbbreviation}",
-        TenderReference: introductionTenderReference || "{TenderReference}",
-        TenderDate: introductionTenderDate || "{TenderDate}",
+        TenderReference:
+          documentContent.introduction.tender_reference || "{TenderReference}",
+        TenderDate: documentContent.introduction.tender_date || "{TenderDate}",
         ProcessFlowDescription:
           stripHtml(documentContent.processFlow.text || "") ||
           "{ProcessFlowDescription}",
@@ -1304,8 +939,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
         documentContent.customerTraining.persons,
         documentContent.executiveSummary.para1,
         documentContent.fatCondition.text,
-        introductionTenderDate,
-        introductionTenderReference,
+        documentContent.introduction.tender_date,
+        documentContent.introduction.tender_reference,
         documentContent.overview.existing_system,
         documentContent.overview.integration,
         documentContent.overview.intangible_benefits,
@@ -1355,16 +990,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       return { predefinedSections: predefined, customSections: custom };
     }, [sectionContents]);
 
-    const documentReferences = useMemo(
-      () =>
-        buildDocumentReferences(sectionContents, {
-          architecture: Boolean(imageUrls.architecture),
-          gantt_overall: Boolean(imageUrls.gantt_overall),
-          gantt_shutdown: Boolean(imageUrls.gantt_shutdown),
-        }),
-      [imageUrls.architecture, imageUrls.gantt_overall, imageUrls.gantt_shutdown, sectionContents],
-    );
-
     const getCustomSectionsAfter = (afterKey: string) =>
       Object.entries(customSections).filter(
         ([_, content]) => content.insertAfterKey === afterKey,
@@ -1373,701 +998,20 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     const isInlineSubsectionSection = (content: CustomSectionContent) =>
       content.displayMode === 'subsection';
 
-    const renderInlineInsertionsAfter = (afterKey: string): React.ReactNode => {
-      const inlineSections = getCustomSectionsAfter(afterKey).filter(([_, content]) =>
-        isInlineSubsectionSection(content),
-      );
-
-      if (inlineSections.length === 0) {
-        return null;
-      }
-
-      return (
-        <>
-          {inlineSections.map(([sectionKey]) => (
-            <React.Fragment key={sectionKey}>
-              {renderInlineCustomSubsectionSection(sectionKey, sectionCounter.current)}
-              {renderInlineInsertionsAfter(sectionKey)}
-            </React.Fragment>
-          ))}
-        </>
-      );
-    };
-
-    const sectionTocId = (sectionKey: string) => `toc-section-${sectionKey}`;
-    const groupTocId = (groupKey: string) => `toc-group-${groupKey}`;
-    const customSubsectionTocId = (sectionKey: string, subsectionKey: string) =>
-      `toc-subsection-${sectionKey}-${subsectionKey}`;
-    const featureTocId = (index: number) => `toc-feature-${index}`;
-    const listOfFiguresTocId = sectionTocId("list_of_figures_and_tables");
-    const listOfFiguresSubsectionTocId = (subsectionKey: string) =>
-      `${listOfFiguresTocId}-${subsectionKey}`;
-
-    const cleanTocTitle = (value: string | undefined, fallback: string) =>
-      resolveTemplateText(value || fallback, templateReplacements) || fallback;
-
-    const tocEntries = useMemo<TocEntry[]>(() => {
-      const entries: TocEntry[] = [];
-      const visitedCustomSections = new Set<string>();
-      let sectionNumber = 0;
-      let subsectionNumber = 0;
-
-      const addTopLevelEntry = (
-        id: string,
-        title: string,
-        placement?: SubsectionAnchorPlacement,
-      ) => {
-        sectionNumber += 1;
-        subsectionNumber = 0;
-        entries.push({
-          id,
-          number: `${sectionNumber}.`,
-          title,
-          level: 1,
-          placement,
-        });
-      };
-
-      const addSubsectionEntry = (
-        id: string,
-        title: string,
-        placement?: SubsectionAnchorPlacement,
-      ) => {
-        subsectionNumber += 1;
-        entries.push({
-          id,
-          number: `${sectionNumber}.${subsectionNumber}`,
-          title,
-          level: 2,
-          placement,
-        });
-      };
-
-      const addNestedSubsectionEntry = (
-        id: string,
-        title: string,
-        nestedNumber: number,
-      ) => {
-        entries.push({
-          id,
-          number: `${sectionNumber}.${subsectionNumber}.${nestedNumber}`,
-          title,
-          level: 3,
-        });
-      };
-
-      const addCustomAfter = (
-        afterKey: string,
-        options: { inlineOnly?: boolean } = {},
-      ) => {
-        const sectionsToRender = getCustomSectionsAfter(afterKey).filter(
-          ([sectionKey]) => !visitedCustomSections.has(sectionKey),
-        );
-        const inlineSections = sectionsToRender.filter(([_, content]) =>
-          isInlineSubsectionSection(content),
-        );
-        const topLevelSections = sectionsToRender.filter(
-          ([_, content]) => !isInlineSubsectionSection(content),
-        );
-
-        inlineSections.forEach(([sectionKey, content]) => {
-          visitedCustomSections.add(sectionKey);
-          (content.subsections || []).forEach((subsection) => {
-            addSubsectionEntry(
-              customSubsectionTocId(sectionKey, subsection.key),
-              cleanTocTitle(subsection.name, "NEW SUBSECTION"),
-              {
-                anchorKey: `${sectionKey}:${subsection.key}`,
-                insertAfterKey: sectionKey,
-                insertAfterSubsectionKey: subsection.key,
-              },
-            );
-          });
-          addCustomAfter(sectionKey, options);
-        });
-
-        if (options.inlineOnly) {
-          return;
-        }
-
-        topLevelSections.forEach(([sectionKey, content]) => {
-          visitedCustomSections.add(sectionKey);
-          addTopLevelEntry(
-            sectionTocId(sectionKey),
-            cleanTocTitle(content.title, "NEW SECTION"),
-            {
-              anchorKey: sectionKey,
-              insertAfterKey: sectionKey,
-            },
-          );
-          (content.subsections || []).forEach((subsection) => {
-            addSubsectionEntry(
-              customSubsectionTocId(sectionKey, subsection.key),
-              cleanTocTitle(subsection.name, "NEW SUBSECTION"),
-              {
-                anchorKey: `${sectionKey}:${subsection.key}`,
-                insertAfterKey: sectionKey,
-                insertAfterSubsectionKey: subsection.key,
-              },
-            );
-          });
-          addCustomAfter(sectionKey);
-        });
-      };
-
-      const hasGeneralOverview =
-        sectionExists("introduction") ||
-        sectionExists("abbreviations") ||
-        sectionExists("process_flow") ||
-        sectionExists("overview");
-      const hasOfferings =
-        sectionExists("features") ||
-        sectionExists("remote_support") ||
-        sectionExists("documentation_control") ||
-        sectionExists("customer_training") ||
-        sectionExists("system_config") ||
-        sectionExists("fat_condition");
-      const hasSchedule =
-        sectionExists("overall_gantt") ||
-        sectionExists("shutdown_gantt") ||
-        sectionExists("supervisors");
-      const hasScopeOfSupply =
-        sectionExists("scope_definitions") ||
-        sectionExists("division_of_eng") ||
-        sectionExists("value_addition") ||
-        sectionExists("work_completion") ||
-        sectionExists("buyer_obligations") ||
-        sectionExists("exclusion_list") ||
-        sectionExists("buyer_prerequisites") ||
-        sectionExists("binding_conditions") ||
-        sectionExists("cybersecurity");
-
-      if (sectionExists("executive_summary")) {
-        addCustomAfter("revision_history");
-        addTopLevelEntry(
-          sectionTocId("executive_summary"),
-          cleanTocTitle(
-            documentContent.executiveSummary.heading,
-            "EXECUTIVE SUMMARY",
-          ),
-          {
-            anchorKey: "executive_summary",
-            insertAfterKey: "executive_summary",
-          },
-        );
-        addCustomAfter("executive_summary", { inlineOnly: true });
-      }
-
-      if (hasGeneralOverview) {
-        addCustomAfter("executive_summary");
-        addTopLevelEntry(groupTocId("general_overview"), "GENERAL OVERVIEW");
-
-        if (sectionExists("introduction")) {
-          addSubsectionEntry(
-            sectionTocId("introduction"),
-            cleanTocTitle(documentContent.introduction.heading, "INTRODUCTION"),
-            {
-              anchorKey: "introduction",
-              insertAfterKey: "introduction",
-            },
-          );
-          addCustomAfter("introduction", { inlineOnly: true });
-        }
-        if (sectionExists("abbreviations")) {
-          addSubsectionEntry(
-            sectionTocId("abbreviations"),
-            cleanTocTitle(
-              documentContent.abbreviations.heading,
-              "ABBREVIATIONS USED",
-            ),
-            {
-              anchorKey: "abbreviations",
-              insertAfterKey: "abbreviations",
-            },
-          );
-          addCustomAfter("abbreviations", { inlineOnly: true });
-        }
-        if (sectionExists("process_flow")) {
-          addSubsectionEntry(
-            sectionTocId("process_flow"),
-            cleanTocTitle(documentContent.processFlow.heading, "PROCESS FLOW"),
-            {
-              anchorKey: "process_flow",
-              insertAfterKey: "process_flow",
-            },
-          );
-          addCustomAfter("process_flow", { inlineOnly: true });
-        }
-        if (sectionExists("overview")) {
-          addSubsectionEntry(
-            sectionTocId("overview"),
-            cleanTocTitle(
-              documentContent.overview.heading,
-              `OVERVIEW OF ${(solutionName || "{SolutionName}").toUpperCase()}`,
-            ),
-            {
-              anchorKey: "overview",
-              insertAfterKey: "overview",
-            },
-          );
-          addCustomAfter("overview", { inlineOnly: true });
-        }
-      }
-
-      if (hasOfferings) {
-        addCustomAfter("overview");
-        addTopLevelEntry(groupTocId("offerings"), "OFFERINGS");
-
-        if (sectionExists("features")) {
-          addSubsectionEntry(
-            sectionTocId("features"),
-            cleanTocTitle(
-              documentContent.features.heading,
-              "DESIGN SCOPE OF WORK",
-            ),
-            {
-              anchorKey: "features",
-              insertAfterKey: "features",
-            },
-          );
-          featureItems.forEach((_feature: any, index: number) => {
-            // Use a numeric-only label for TOC feature entries to avoid
-            // duplicating the full feature title in the TOC and page content.
-            // Tests query by feature title in the page content; keeping the
-            // TOC label numeric-only prevents duplicate text matches.
-            addNestedSubsectionEntry(
-              featureTocId(index),
-              String(index + 1),
-              index + 1,
-            );
-          });
-          addCustomAfter("features", { inlineOnly: true });
-        }
-        if (sectionExists("remote_support")) {
-          addSubsectionEntry(
-            sectionTocId("remote_support"),
-            cleanTocTitle(
-              documentContent.remoteSupport.heading,
-              "REMOTE SUPPORT SYSTEM",
-            ),
-            {
-              anchorKey: "remote_support",
-              insertAfterKey: "remote_support",
-            },
-          );
-          addCustomAfter("remote_support", { inlineOnly: true });
-        }
-        if (sectionExists("documentation_control")) {
-          addSubsectionEntry(
-            sectionTocId("documentation_control"),
-            cleanTocTitle(
-              documentContent.documentationControl.heading,
-              "DOCUMENTATION CONTROL",
-            ),
-            {
-              anchorKey: "documentation_control",
-              insertAfterKey: "documentation_control",
-            },
-          );
-          addCustomAfter("documentation_control", { inlineOnly: true });
-        }
-        if (sectionExists("customer_training")) {
-          addSubsectionEntry(
-            sectionTocId("customer_training"),
-            cleanTocTitle(
-              documentContent.customerTraining.heading,
-              "CUSTOMER TRAINING",
-            ),
-            {
-              anchorKey: "customer_training",
-              insertAfterKey: "customer_training",
-            },
-          );
-          addCustomAfter("customer_training", { inlineOnly: true });
-        }
-        if (sectionExists("system_config")) {
-          addSubsectionEntry(
-            sectionTocId("system_config"),
-            cleanTocTitle(
-              documentContent.systemConfig.heading,
-              "SYSTEM CONFIGURATION (FOR REFERENCE)",
-            ),
-            {
-              anchorKey: "system_config",
-              insertAfterKey: "system_config",
-            },
-          );
-          addCustomAfter("system_config", { inlineOnly: true });
-        }
-        if (sectionExists("fat_condition")) {
-          addSubsectionEntry(
-            sectionTocId("fat_condition"),
-            cleanTocTitle(documentContent.fatCondition.heading, "FAT CONDITION"),
-            {
-              anchorKey: "fat_condition",
-              insertAfterKey: "fat_condition",
-            },
-          );
-          addCustomAfter("fat_condition", { inlineOnly: true });
-        }
-      }
-
-      if (sectionExists("tech_stack")) {
-        addCustomAfter("fat_condition");
-        addTopLevelEntry(
-          sectionTocId("tech_stack"),
-          cleanTocTitle(documentContent.techStack.heading, "TECHNOLOGY STACK"),
-          {
-            anchorKey: "tech_stack",
-            insertAfterKey: "tech_stack",
-          },
-        );
-        addCustomAfter("tech_stack", { inlineOnly: true });
-
-        if (sectionExists("hardware_specs")) {
-          addSubsectionEntry(
-            sectionTocId("hardware_specs"),
-            cleanTocTitle(
-              documentContent.hardwareSpecs.heading,
-              "HARDWARE SPECIFICATIONS",
-            ),
-            {
-              anchorKey: "hardware_specs",
-              insertAfterKey: "hardware_specs",
-            },
-          );
-          addCustomAfter("hardware_specs", { inlineOnly: true });
-        }
-        if (sectionExists("software_specs")) {
-          addSubsectionEntry(
-            sectionTocId("software_specs"),
-            cleanTocTitle(
-              documentContent.softwareSpecs.heading,
-              "SOFTWARE SPECIFICATIONS",
-            ),
-            {
-              anchorKey: "software_specs",
-              insertAfterKey: "software_specs",
-            },
-          );
-          addCustomAfter("software_specs", { inlineOnly: true });
-        }
-        if (sectionExists("third_party_sw")) {
-          addSubsectionEntry(
-            sectionTocId("third_party_sw"),
-            cleanTocTitle(
-              documentContent.thirdPartySw.heading,
-              "THIRD PARTY SOFTWARE",
-            ),
-            {
-              anchorKey: "third_party_sw",
-              insertAfterKey: "third_party_sw",
-            },
-          );
-          addCustomAfter("third_party_sw", { inlineOnly: true });
-        }
-      }
-
-      if (hasSchedule) {
-        addCustomAfter("third_party_sw");
-        addTopLevelEntry(groupTocId("schedule"), "SCHEDULE");
-
-        if (sectionExists("overall_gantt")) {
-          addSubsectionEntry(
-            sectionTocId("overall_gantt"),
-            cleanTocTitle(
-              documentContent.overallGantt.heading,
-              "OVERALL GANTT CHART",
-            ),
-            {
-              anchorKey: "overall_gantt",
-              insertAfterKey: "overall_gantt",
-            },
-          );
-          addCustomAfter("overall_gantt", { inlineOnly: true });
-        }
-        if (sectionExists("shutdown_gantt")) {
-          addSubsectionEntry(
-            sectionTocId("shutdown_gantt"),
-            cleanTocTitle(
-              documentContent.shutdownGantt.heading,
-              "SHUTDOWN GANTT CHART",
-            ),
-            {
-              anchorKey: "shutdown_gantt",
-              insertAfterKey: "shutdown_gantt",
-            },
-          );
-          addCustomAfter("shutdown_gantt", { inlineOnly: true });
-        }
-        if (sectionExists("supervisors")) {
-          addSubsectionEntry(
-            sectionTocId("supervisors"),
-            cleanTocTitle(documentContent.supervisors.heading, "SUPERVISORS:"),
-            {
-              anchorKey: "supervisors",
-              insertAfterKey: "supervisors",
-            },
-          );
-          addCustomAfter("supervisors", { inlineOnly: true });
-        }
-      }
-
-      if (hasScopeOfSupply) {
-        addCustomAfter("supervisors");
-        addTopLevelEntry(groupTocId("scope_of_supply"), "SCOPE OF SUPPLY");
-
-        if (sectionExists("scope_definitions")) {
-          addSubsectionEntry(
-            sectionTocId("scope_definitions"),
-            cleanTocTitle(
-              documentContent.scopeDefinitions.heading,
-              "SCOPE OF SUPPLY DEFINITIONS",
-            ),
-            {
-              anchorKey: "scope_definitions",
-              insertAfterKey: "scope_definitions",
-            },
-          );
-          addCustomAfter("scope_definitions", { inlineOnly: true });
-        }
-        if (sectionExists("division_of_eng")) {
-          addSubsectionEntry(
-            sectionTocId("division_of_eng"),
-            cleanTocTitle(
-              documentContent.divisionOfEng.heading,
-              "DIVISION OF ENGINEERING, SOFTWARE DEVELOPMENT, & ERECTION/COMMISSIONING SERVICES",
-            ),
-            {
-              anchorKey: "division_of_eng",
-              insertAfterKey: "division_of_eng",
-            },
-          );
-          addCustomAfter("division_of_eng", { inlineOnly: true });
-        }
-        if (sectionExists("value_addition")) {
-          addSubsectionEntry(
-            sectionTocId("value_addition"),
-            cleanTocTitle(documentContent.valueAddition.heading, "VALUE ADDITION"),
-            {
-              anchorKey: "value_addition",
-              insertAfterKey: "value_addition",
-            },
-          );
-          addCustomAfter("value_addition", { inlineOnly: true });
-        }
-        if (sectionExists("work_completion")) {
-          addSubsectionEntry(
-            sectionTocId("work_completion"),
-            cleanTocTitle(
-              documentContent.workCompletion.heading,
-              "WORK COMPLETION CERTIFICATE",
-            ),
-            {
-              anchorKey: "work_completion",
-              insertAfterKey: "work_completion",
-            },
-          );
-          addCustomAfter("work_completion", { inlineOnly: true });
-        }
-        if (sectionExists("buyer_obligations")) {
-          addSubsectionEntry(
-            sectionTocId("buyer_obligations"),
-            cleanTocTitle(
-              documentContent.buyerObligations.heading,
-              "BUYER OBLIGATIONS",
-            ),
-            {
-              anchorKey: "buyer_obligations",
-              insertAfterKey: "buyer_obligations",
-            },
-          );
-          addCustomAfter("buyer_obligations", { inlineOnly: true });
-        }
-        if (sectionExists("exclusion_list")) {
-          addSubsectionEntry(
-            sectionTocId("exclusion_list"),
-            cleanTocTitle(documentContent.exclusionList.heading, "EXCLUSION LIST"),
-            {
-              anchorKey: "exclusion_list",
-              insertAfterKey: "exclusion_list",
-            },
-          );
-          addCustomAfter("exclusion_list", { inlineOnly: true });
-        }
-        if (sectionExists("buyer_prerequisites")) {
-          addSubsectionEntry(
-            sectionTocId("buyer_prerequisites"),
-            cleanTocTitle(
-              documentContent.buyerPrerequisites.heading,
-              "BUYER PREREQUISITES:",
-            ),
-            {
-              anchorKey: "buyer_prerequisites",
-              insertAfterKey: "buyer_prerequisites",
-            },
-          );
-          addCustomAfter("buyer_prerequisites", { inlineOnly: true });
-        }
-        if (sectionExists("binding_conditions")) {
-          addSubsectionEntry(
-            sectionTocId("binding_conditions"),
-            cleanTocTitle(
-              documentContent.bindingConditions.heading,
-              "BINDING CONDITIONS:",
-            ),
-            {
-              anchorKey: "binding_conditions",
-              insertAfterKey: "binding_conditions",
-            },
-          );
-          addCustomAfter("binding_conditions", { inlineOnly: true });
-        }
-        if (sectionExists("cybersecurity")) {
-          addSubsectionEntry(
-            sectionTocId("cybersecurity"),
-            cleanTocTitle(
-              documentContent.cybersecurity.heading,
-              "CYBERSECURITY DISCLAIMER",
-            ),
-            {
-              anchorKey: "cybersecurity",
-              insertAfterKey: "cybersecurity",
-            },
-          );
-          addCustomAfter("cybersecurity", { inlineOnly: true });
-        }
-      }
-
-      if (sectionExists("disclaimer")) {
-        addCustomAfter("cybersecurity");
-        addTopLevelEntry(
-          sectionTocId("disclaimer"),
-          cleanTocTitle(documentContent.disclaimer.heading, "DISCLAIMER"),
-          {
-            anchorKey: "disclaimer",
-            insertAfterKey: "disclaimer",
-          },
-        );
-        (documentContent.disclaimer.sections || DISCLAIMER_SECTIONS).forEach(
-          (section: any) => {
-            addSubsectionEntry(
-              `${sectionTocId("disclaimer")}-${section.title}`,
-              cleanTocTitle(section.title, "DISCLAIMER SECTION"),
-            );
-          },
-        );
-      }
-
-      if (sectionExists("poc")) {
-        addCustomAfter("disclaimer");
-        addTopLevelEntry(
-          sectionTocId("poc"),
-          cleanTocTitle(
-            documentContent.poc.heading,
-            "COMPLIMENTRY PROOF OF CONCEPTS (PoC)",
-          ),
-          {
-            anchorKey: "poc",
-            insertAfterKey: "poc",
-          },
-        );
-        addCustomAfter("poc", { inlineOnly: true });
-      }
-
-      addCustomAfter("poc");
-      addTopLevelEntry(listOfFiguresTocId, "LIST OF FIGURES AND TABLES");
-      addSubsectionEntry(
-        listOfFiguresSubsectionTocId("figures"),
-        "List of Figures",
-      );
-      addSubsectionEntry(
-        listOfFiguresSubsectionTocId("tables"),
-        "List of Tables",
-      );
-
-      return entries;
-    }, [
-      customSections,
-      documentContent,
-      featureItems,
-      sectionContents,
-      solutionName,
-      templateReplacements,
-    ]);
-
-    const currentSectionContext = useMemo<CurrentSectionContext | null>(() => {
-      if (!pendingInsertAfterKey) {
-        return null;
-      }
-
-      const normalizeSubsectionKey = (value?: string | null) => value || "";
-      const placementMatches = (placement?: SubsectionAnchorPlacement) =>
-        Boolean(placement) &&
-        placement?.insertAfterKey === pendingInsertAfterKey &&
-        normalizeSubsectionKey(placement?.insertAfterSubsectionKey) ===
-          normalizeSubsectionKey(pendingInsertAfterSubsectionKey);
-
-      let activeTopLevelIndex = -1;
-      let matchedTopLevelIndex = -1;
-
-      for (let index = 0; index < tocEntries.length; index += 1) {
-        const entry = tocEntries[index];
-
-        if (entry.level === 1) {
-          activeTopLevelIndex = index;
-        }
-
-        if (placementMatches(entry.placement)) {
-          matchedTopLevelIndex = entry.level === 1 ? index : activeTopLevelIndex;
-          break;
-        }
-      }
-
-      if (matchedTopLevelIndex === -1) {
-        return null;
-      }
-
-      const topLevelEntry = tocEntries[matchedTopLevelIndex];
-      const subsections: SubsectionAnchorOption[] = [];
-
-      for (
-        let index = matchedTopLevelIndex + 1;
-        index < tocEntries.length && tocEntries[index].level !== 1;
-        index += 1
-      ) {
-        const entry = tocEntries[index];
-
-        if (entry.level !== 2 || !entry.placement) {
-          continue;
-        }
-
-        subsections.push({
-          key: entry.placement.anchorKey,
-          label: `${entry.number} ${entry.title}`,
-          anchorKey: entry.placement.anchorKey,
-          insertAfterKey: entry.placement.insertAfterKey,
-          insertAfterSubsectionKey: entry.placement.insertAfterSubsectionKey,
-        });
-      }
-
-      return {
-        label: `${topLevelEntry.number} ${topLevelEntry.title}`,
-        subsections,
-      };
-    }, [pendingInsertAfterKey, pendingInsertAfterSubsectionKey, tocEntries]);
-
     // Inline subsections stay on the current page; only full sections get a page break.
     const renderInsertionsAfter = (
       afterKey: string,
       appendBreakAfterLast: boolean = true,
     ) => {
       const sectionsToRender = getCustomSectionsAfter(afterKey);
+      const inlineSections = sectionsToRender.filter(([_, content]) =>
+        isInlineSubsectionSection(content),
+      );
       const topLevelSections = sectionsToRender.filter(
         ([_, content]) => !isInlineSubsectionSection(content),
       );
 
-      if (topLevelSections.length === 0) {
+      if (sectionsToRender.length === 0) {
         return appendBreakAfterLast ? (
           <PageBreakWithButton
             insertAfterKey={afterKey}
@@ -2078,6 +1022,12 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
 
       return (
         <>
+          {inlineSections.map(([sectionKey]) => (
+            <React.Fragment key={sectionKey}>
+              {renderInlineCustomSubsectionSection(sectionKey, sectionCounter.current)}
+              {renderInsertionsAfter(sectionKey, false)}
+            </React.Fragment>
+          ))}
           {(topLevelSections.length > 0 || appendBreakAfterLast) && (
             <PageBreakWithButton
               insertAfterKey={afterKey}
@@ -2091,7 +1041,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
             return (
               <React.Fragment key={sectionKey}>
                 {renderCustomSection(sectionKey, sectionNumber)}
-                {renderInlineInsertionsAfter(sectionKey)}
                 {renderInsertionsAfter(
                   sectionKey,
                   hasFollowingSibling || appendBreakAfterLast,
@@ -2267,6 +1216,31 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       textAlign: "left",
     };
 
+    const tocEntryBaseStyle: React.CSSProperties = {
+      display: "flex",
+      alignItems: "baseline",
+      gap: "8px",
+      width: "100%",
+      marginBottom: "4px",
+      color: "#000000",
+      fontFamily: DOC_FONT,
+      fontSize: "10.5pt",
+      lineHeight: "1.2",
+    };
+
+    const tocLeaderStyle: React.CSSProperties = {
+      flex: 1,
+      minWidth: "12px",
+      borderBottom: "1px dotted #000000",
+      transform: "translateY(-2px)",
+    };
+
+    const tocPageNumberStyle: React.CSSProperties = {
+      minWidth: "18px",
+      textAlign: "right",
+      fontVariantNumeric: "tabular-nums",
+    };
+
     const tableStyle: React.CSSProperties = {
       width: "100%",
       borderCollapse: "collapse",
@@ -2289,32 +1263,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       verticalAlign: "top",
     };
 
-    const captionStyle: React.CSSProperties = {
-      margin: "4px 0 10px",
-      fontSize: "10pt",
-      textAlign: "center",
-      color: "#000000",
-    };
-
-    const tableCaptionStyle: React.CSSProperties = {
-      ...captionStyle,
-      marginTop: "10px",
-      marginBottom: "4px",
-    };
-
-    const referenceListTableStyle: React.CSSProperties = {
-      ...tableStyle,
-      marginTop: "6px",
-      marginBottom: "18px",
-    };
-
-    const matrixBorderColor = "#9DC3E6";
-    const matrixHeaderBackground = "#2F75B5";
-    const matrixBandBackground = "#DCE6F1";
-
     const matrixCellStyle: React.CSSProperties = {
-      padding: "3px 6px",
-      border: `1px solid ${matrixBorderColor}`,
+      padding: "3px 4px",
+      border: "1px solid #000",
       verticalAlign: "top",
       fontSize: "8.5pt",
       textAlign: "center",
@@ -2325,67 +1276,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       textAlign: "left",
     };
 
-    const matrixHeaderCellStyle: React.CSSProperties = {
-      ...matrixCellStyle,
-      backgroundColor: matrixHeaderBackground,
-      color: "#FFFFFF",
-      fontWeight: "bold",
-      textAlign: "center",
-      verticalAlign: "middle",
-    };
-
     const placeholderStyle: React.CSSProperties = {
       fontStyle: "italic",
       color: "#6B7280",
-    };
-
-    const tocContainerStyle: React.CSSProperties = {
-      marginBottom: "32px",
-      fontFamily: DOC_FONT,
-      color: "#000000",
-    };
-
-    const tocTitleStyle: React.CSSProperties = {
-      ...heading2RedStyle,
-      marginBottom: "14px",
-    };
-
-    const tocRowStyle = (level: TocEntryLevel): React.CSSProperties => ({
-      display: "flex",
-      alignItems: "baseline",
-      gap: "4px",
-      marginBottom: "3px",
-      paddingLeft: level === 1 ? 0 : level === 2 ? "22px" : "44px",
-      fontSize: level === 1 ? "8pt" : "7.5pt",
-      fontWeight: level === 1 ? "bold" : 600,
-      lineHeight: 1.2,
-      textTransform: "uppercase",
-    });
-
-    const tocNumberStyle: React.CSSProperties = {
-      flex: "0 0 38px",
-      whiteSpace: "nowrap",
-    };
-
-    const tocTextStyle: React.CSSProperties = {
-      flex: "0 1 auto",
-      minWidth: 0,
-      overflow: "hidden",
-      textOverflow: "ellipsis",
-      whiteSpace: "nowrap",
-    };
-
-    const tocLeaderStyle: React.CSSProperties = {
-      flex: "1 1 auto",
-      borderBottom: "1px dotted #000000",
-      transform: "translateY(-3px)",
-      minWidth: "18px",
-    };
-
-    const tocPageStyle: React.CSSProperties = {
-      flex: "0 0 28px",
-      textAlign: "right",
-      whiteSpace: "nowrap",
     };
 
     const requiredTextStyle: React.CSSProperties = {
@@ -2403,32 +1296,29 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     const getSectionEditMetadata = (sectionKey: string) =>
       editMetadataBySection[sectionKey];
 
-    const getMostRecentMarker = (markers: EditMetadata["markers"]) =>
-      Object.values(markers)
-        .filter((marker) => Boolean(marker.updatedAt))
-        .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))[0];
-
     const getEditedMarker = (sectionKey: string, path: string) => {
       const metadata = getSectionEditMetadata(sectionKey);
-      if (!metadata) {
+      if (!metadata || !latestEditTimestamp) {
         return undefined;
       }
 
       const normalizedPath = normalizeEditPath(path);
 
-      return Object.values(metadata.markers)
-        .filter((marker) => {
-          const markerPath = marker.path;
-          const normalizedMarkerPath = normalizeEditPath(markerPath);
+      return Object.values(metadata.markers).find((marker) => {
+        if (marker.updatedAt !== latestEditTimestamp) {
+          return false;
+        }
 
-          return (
-            markerPath === path ||
-            markerPath.startsWith(`${path}.`) ||
-            normalizedMarkerPath === normalizedPath ||
-            normalizedMarkerPath.startsWith(`${normalizedPath}.`)
-          );
-        })
-        .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))[0];
+        const markerPath = marker.path;
+        const normalizedMarkerPath = normalizeEditPath(markerPath);
+
+        return (
+          markerPath === path ||
+          markerPath.startsWith(`${path}.`) ||
+          normalizedMarkerPath === normalizedPath ||
+          normalizedMarkerPath.startsWith(`${normalizedPath}.`)
+        );
+      });
     };
 
     const isEditedPath = (sectionKey: string, path: string): boolean =>
@@ -2437,16 +1327,19 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     const hasSectionEdits = (sectionKey: string) => {
       const metadata = getSectionEditMetadata(sectionKey);
 
-      return Boolean(metadata && Object.keys(metadata.markers).length > 0);
+      return Boolean(
+        metadata &&
+          latestEditTimestamp &&
+          Object.values(metadata.markers).some(
+            (marker) => marker.updatedAt === latestEditTimestamp,
+          ),
+      );
     };
 
     const formatEditedTitle = (sectionKey: string, path?: string) => {
       const metadata = getSectionEditMetadata(sectionKey);
       const marker = path ? getEditedMarker(sectionKey, path) : undefined;
-      const updatedAt =
-        marker?.updatedAt ||
-        getMostRecentMarker(metadata?.markers || {})?.updatedAt ||
-        metadata?.sectionUpdatedAt;
+      const updatedAt = marker?.updatedAt || metadata?.sectionUpdatedAt;
 
       if (!updatedAt) {
         return "Modified previously";
@@ -2466,7 +1359,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     ): React.CSSProperties =>
       isEditedPath(sectionKey, path)
         ? {
-            color: LAST_CHANGED_TEXT_COLOR,
+            color: LAST_CHANGED_COLOR,
             backgroundColor: LAST_CHANGED_SOFT,
             boxShadow: `inset 3px 0 0 ${LAST_CHANGED_COLOR}`,
             paddingLeft: "4px",
@@ -2479,7 +1372,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     ): React.CSSProperties =>
       isEditedPath(sectionKey, path)
         ? {
-            color: LAST_CHANGED_TEXT_COLOR,
+            color: LAST_CHANGED_COLOR,
             backgroundColor: LAST_CHANGED_SOFT,
             borderLeft: `3px solid ${LAST_CHANGED_COLOR}`,
             paddingLeft: "8px",
@@ -2492,7 +1385,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     ): React.CSSProperties =>
       isEditedPath(sectionKey, path)
         ? {
-            color: LAST_CHANGED_TEXT_COLOR,
+            color: LAST_CHANGED_COLOR,
             backgroundColor: LAST_CHANGED_FILL,
             border: `1.5px solid ${LAST_CHANGED_COLOR}`,
           }
@@ -2568,34 +1461,11 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       paragraphs: string[],
       style: React.CSSProperties = bodyParagraphStyle,
     ) =>
-      paragraphs.map((paragraph, index) => {
-        const resolvedParagraph = replaceTemplateTokens(
-          paragraph,
-          templateReplacements,
-        ).trim();
-
-        if (looksLikeRichTextInput(resolvedParagraph)) {
-          return (
-            <div
-              key={`${paragraph}-${index}`}
-              className="rich-text-preview"
-              style={style}
-              dangerouslySetInnerHTML={{
-                __html: normalizeImportedTextHtml(
-                  paragraph,
-                  templateReplacements,
-                ),
-              }}
-            />
-          );
-        }
-
-        return (
-          <p key={`${paragraph}-${index}`} style={style}>
-            {renderTemplateText(paragraph)}
-          </p>
-        );
-      });
+      paragraphs.map((paragraph, index) => (
+        <p key={`${paragraph}-${index}`} style={style}>
+          {renderTemplateText(paragraph)}
+        </p>
+      ));
 
     const renderRichTextPreview = (
       html: string | undefined,
@@ -2605,11 +1475,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       const isRequired =
         requiredField &&
         isRequiredPreviewPath(requiredField.sectionKey, requiredField.path);
-      const normalizedHtml = html
-        ? normalizeImportedTextHtml(html, templateReplacements)
-        : "";
 
-      if (!normalizedHtml || !stripHtml(normalizedHtml)) {
+      if (!html || !stripHtml(html)) {
         return placeholderText ? (
           <p
             style={{
@@ -2642,7 +1509,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               ? getEditedBlockStyle(requiredField.sectionKey, requiredField.path)
               : {}),
           }}
-          dangerouslySetInnerHTML={{ __html: normalizedHtml }}
+          dangerouslySetInnerHTML={{ __html: html }}
         />
       );
     };
@@ -2689,141 +1556,26 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       );
     };
 
-    const renderTableOfContents = () => (
-      <div style={tocContainerStyle}>
-        <h2 style={tocTitleStyle}>TABLE OF CONTENTS</h2>
-        {tocEntries.map((entry) => (
-          <div key={entry.id} style={tocRowStyle(entry.level)}>
-            <span style={tocNumberStyle}>{entry.number}</span>
-            <span style={tocTextStyle}>{entry.title}</span>
-            <span aria-hidden="true" style={tocLeaderStyle} />
-            <span style={tocPageStyle}>{tocPageMap[entry.id] || ""}</span>
-          </div>
-        ))}
-      </div>
-    );
-
-    const renderFigureCaption = (referenceId: string) => {
-      const reference = documentReferences.figureById[referenceId];
-
-      return reference ? (
-        <p style={captionStyle}>
-          Figure {reference.number}: {reference.name}
-        </p>
-      ) : null;
-    };
-
-    const renderTableCaption = (referenceId: string) => {
-      const reference = documentReferences.tableById[referenceId];
-
-      return reference ? (
-        <p style={tableCaptionStyle}>
-          Table {reference.number}: {reference.name}
-        </p>
-      ) : null;
-    };
-
-    const renderReferenceRows = (
-      references: Array<FigureReference | TableReference>,
-      numberColumnLabel: string,
-      nameColumnLabel: string,
-      prefix: "Figure" | "Table",
-    ) => (
-      <table style={referenceListTableStyle}>
-        <thead>
-          <tr>
-            <th style={{ ...tableHeaderStyle, width: "70px", backgroundColor: "#D9D9D9" }}>
-              S No.
-            </th>
-            <th style={{ ...tableHeaderStyle, width: "110px", backgroundColor: "#D9D9D9" }}>
-              {numberColumnLabel}
-            </th>
-            <th style={{ ...tableHeaderStyle, backgroundColor: "#D9D9D9" }}>
-              {nameColumnLabel}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {references.map((reference, index) => (
-            <tr key={reference.id}>
-              <td style={tableCellStyle}>{index + 1}</td>
-              <td style={tableCellStyle}>
-                {prefix} {reference.number}
-              </td>
-              <td style={tableCellStyle}>{reference.name}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
-
-    const renderListOfFiguresAndTables = () => (
-      <div style={{ marginTop: "36px" }}>
-        <h1 {...tocTargetProps(listOfFiguresTocId)} style={heading1BlueStyle}>
-          {tocEntries.find((entry) => entry.id === listOfFiguresTocId)?.number ||
-            ""}
-          {" "}
-          LIST OF FIGURES AND TABLES
-        </h1>
-        <h2
-          {...tocTargetProps(listOfFiguresSubsectionTocId("figures"))}
-          style={heading2BlackStyle}
-        >
-          {tocEntries.find(
-            (entry) => entry.id === listOfFiguresSubsectionTocId("figures"),
-          )?.number || ""}
-          {" "}
-          List of Figures
-        </h2>
-        {renderReferenceRows(
-          documentReferences.figures,
-          "Figure No.",
-          "Figure Name",
-          "Figure",
-        )}
-        <h2
-          {...tocTargetProps(listOfFiguresSubsectionTocId("tables"))}
-          style={heading2BlackStyle}
-        >
-          {tocEntries.find(
-            (entry) => entry.id === listOfFiguresSubsectionTocId("tables"),
-          )?.number || ""}
-          {" "}
-          List of Tables
-        </h2>
-        {renderReferenceRows(
-          documentReferences.tables,
-          "Table No.",
-          "Table Name",
-          "Table",
-        )}
-      </div>
-    );
-
     const renderImageOrPlaceholder = (
       imageType: PreviewImageType,
       placeholderText: string,
       alt: string,
-      referenceId: string,
     ) => {
       const imageUrl = imageUrls[imageType];
 
       if (imageUrl) {
         return (
-          <>
-            <div style={imageFrameStyle}>
-              <img
-                src={imageUrl}
-                alt={alt}
-                style={{
-                  width: "100%",
-                  display: "block",
-                  objectFit: "contain",
-                }}
-              />
-            </div>
-            {renderFigureCaption(referenceId)}
-          </>
+          <div style={imageFrameStyle}>
+            <img
+              src={imageUrl}
+              alt={alt}
+              style={{
+                width: "100%",
+                display: "block",
+                objectFit: "contain",
+              }}
+            />
+          </div>
         );
       }
 
@@ -2982,12 +1734,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       handleSectionClick(sectionKey);
     };
 
-    const handleAddSectionClick = (
-      insertAfterKey: string,
-      insertAfterSubsectionKey?: string,
-    ) => {
+    const handleAddSectionClick = (insertAfterKey: string) => {
       setPendingInsertAfterKey(insertAfterKey);
-      setPendingInsertAfterSubsectionKey(insertAfterSubsectionKey || '');
       setIsSectionTypeModalOpen(true);
     };
 
@@ -3022,7 +1770,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     const handleCreateSubsection = async (
       parentSectionKey: string,
       subsection: CustomSubsection,
-      insertAfterSubsectionKey?: string,
     ) => {
       const parentSection = customSections[parentSectionKey];
 
@@ -3063,11 +1810,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
 
       const updatedSection: CustomSectionContent = {
         ...parentSection,
-        subsections: insertSubsectionAfter(
-          parentSection.subsections,
-          subsection,
-          insertAfterSubsectionKey,
-        ),
+        subsections: [...parentSection.subsections, subsection],
       };
 
       try {
@@ -3098,7 +1841,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     const handleCloseModal = () => {
       setIsSectionTypeModalOpen(false);
       setPendingInsertAfterKey('');
-      setPendingInsertAfterSubsectionKey('');
     };
 
     // Helper functions for section and subsection numbering
@@ -3122,9 +1864,353 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       return `${number} ${text}`;
     };
 
-    const tocTargetProps = (id: string) => ({
-      "data-toc-target-id": id,
-    });
+    const tocEntries = useMemo<TocEntry[]>(() => {
+      const entries: TocEntry[] = [];
+      let sectionNumber = 0;
+      let subsectionNumber = 0;
+
+      const addSection = (id: string, label: string) => {
+        sectionNumber += 1;
+        subsectionNumber = 0;
+        entries.push({
+          id,
+          level: 1,
+          numberLabel: `${sectionNumber}.`,
+          label,
+        });
+      };
+
+      const addSubsection = (id: string, label: string) => {
+        subsectionNumber += 1;
+        entries.push({
+          id,
+          level: 2,
+          numberLabel: `${sectionNumber}.${subsectionNumber}`,
+          label,
+        });
+      };
+
+      const appendCustomInsertions = (afterKey: string) => {
+        const sectionsToRender = getCustomSectionsAfter(afterKey);
+        const inlineSections = sectionsToRender.filter(([, content]) =>
+          isInlineSubsectionSection(content),
+        );
+        const topLevelSections = sectionsToRender.filter(
+          ([, content]) => !isInlineSubsectionSection(content),
+        );
+
+        inlineSections.forEach(([sectionKey, content]) => {
+          content.subsections.forEach((subsection) => {
+            addSubsection(
+              `custom-subsection:${subsection.key}`,
+              subsection.name || "NEW SUBSECTION",
+            );
+          });
+          appendCustomInsertions(sectionKey);
+        });
+
+        topLevelSections.forEach(([sectionKey, content]) => {
+          addSection(
+            `custom-section:${sectionKey}`,
+            getCustomSectionDisplayName(content),
+          );
+          content.subsections.forEach((subsection) => {
+            addSubsection(
+              `custom-subsection:${subsection.key}`,
+              subsection.name || "NEW SUBSECTION",
+            );
+          });
+          appendCustomInsertions(sectionKey);
+        });
+      };
+
+      if (sectionExists("executive_summary")) {
+        addSection(
+          "section:executive_summary",
+          documentContent.executiveSummary.heading || "EXECUTIVE SUMMARY",
+        );
+        appendCustomInsertions("executive_summary");
+      }
+
+      if (
+        sectionExists("introduction") ||
+        sectionExists("abbreviations") ||
+        sectionExists("process_flow") ||
+        sectionExists("overview")
+      ) {
+        addSection("group:general_overview", "GENERAL OVERVIEW");
+
+        if (sectionExists("introduction")) {
+          addSubsection(
+            "section:introduction",
+            documentContent.introduction.heading || "INTRODUCTION",
+          );
+          appendCustomInsertions("introduction");
+        }
+
+        if (sectionExists("abbreviations")) {
+          addSubsection(
+            "section:abbreviations",
+            documentContent.abbreviations.heading || "ABBREVIATIONS USED",
+          );
+          appendCustomInsertions("abbreviations");
+        }
+
+        if (sectionExists("process_flow")) {
+          addSubsection(
+            "section:process_flow",
+            documentContent.processFlow.heading || "PROCESS FLOW",
+          );
+          appendCustomInsertions("process_flow");
+        }
+
+        if (sectionExists("overview")) {
+          addSubsection(
+            "section:overview",
+            documentContent.overview.heading ||
+              `OVERVIEW OF ${(solutionName || "{SolutionName}").toUpperCase()}`,
+          );
+          appendCustomInsertions("overview");
+        }
+      }
+
+      if (
+        sectionExists("features") ||
+        sectionExists("remote_support") ||
+        sectionExists("documentation_control") ||
+        sectionExists("customer_training") ||
+        sectionExists("system_config") ||
+        sectionExists("fat_condition")
+      ) {
+        addSection("group:offerings", "OFFERINGS");
+
+        if (sectionExists("features")) {
+          addSubsection(
+            "section:features",
+            documentContent.features.heading || "DESIGN SCOPE OF WORK",
+          );
+          appendCustomInsertions("features");
+        }
+
+        if (sectionExists("remote_support")) {
+          addSubsection(
+            "section:remote_support",
+            documentContent.remoteSupport.heading || "REMOTE SUPPORT SYSTEM",
+          );
+          appendCustomInsertions("remote_support");
+        }
+
+        if (sectionExists("documentation_control")) {
+          addSubsection(
+            "section:documentation_control",
+            documentContent.documentationControl.heading ||
+              "DOCUMENTATION CONTROL",
+          );
+          appendCustomInsertions("documentation_control");
+        }
+
+        if (sectionExists("customer_training")) {
+          addSubsection(
+            "section:customer_training",
+            documentContent.customerTraining.heading || "CUSTOMER TRAINING",
+          );
+          appendCustomInsertions("customer_training");
+        }
+
+        if (sectionExists("system_config")) {
+          addSubsection(
+            "section:system_config",
+            documentContent.systemConfig.heading ||
+              "SYSTEM CONFIGURATION (FOR REFERENCE)",
+          );
+          appendCustomInsertions("system_config");
+        }
+
+        if (sectionExists("fat_condition")) {
+          addSubsection(
+            "section:fat_condition",
+            documentContent.fatCondition.heading || "FAT CONDITION",
+          );
+          appendCustomInsertions("fat_condition");
+        }
+      }
+
+      if (sectionExists("tech_stack")) {
+        addSection(
+          "section:tech_stack",
+          documentContent.techStack.heading || "TECHNOLOGY STACK",
+        );
+        appendCustomInsertions("tech_stack");
+      }
+
+      if (sectionExists("hardware_specs")) {
+        addSubsection(
+          "section:hardware_specs",
+          documentContent.hardwareSpecs.heading || "HARDWARE SPECIFICATIONS",
+        );
+        appendCustomInsertions("hardware_specs");
+      }
+
+      if (sectionExists("software_specs")) {
+        addSubsection(
+          "section:software_specs",
+          documentContent.softwareSpecs.heading || "SOFTWARE SPECIFICATIONS",
+        );
+        appendCustomInsertions("software_specs");
+      }
+
+      if (sectionExists("third_party_sw")) {
+        addSubsection(
+          "section:third_party_sw",
+          documentContent.thirdPartySw.heading || "THIRD PARTY SOFTWARE",
+        );
+        appendCustomInsertions("third_party_sw");
+      }
+
+      if (
+        sectionExists("overall_gantt") ||
+        sectionExists("shutdown_gantt") ||
+        sectionExists("supervisors")
+      ) {
+        addSection("group:schedule", "SCHEDULE");
+
+        if (sectionExists("overall_gantt")) {
+          addSubsection(
+            "section:overall_gantt",
+            documentContent.overallGantt.heading || "OVERALL GANTT CHART",
+          );
+          appendCustomInsertions("overall_gantt");
+        }
+
+        if (sectionExists("shutdown_gantt")) {
+          addSubsection(
+            "section:shutdown_gantt",
+            documentContent.shutdownGantt.heading || "SHUTDOWN GANTT CHART",
+          );
+          appendCustomInsertions("shutdown_gantt");
+        }
+
+        if (sectionExists("supervisors")) {
+          appendCustomInsertions("supervisors");
+        }
+      }
+
+      if (
+        sectionExists("scope_definitions") ||
+        sectionExists("division_of_eng") ||
+        sectionExists("value_addition") ||
+        sectionExists("work_completion") ||
+        sectionExists("buyer_obligations") ||
+        sectionExists("exclusion_list") ||
+        sectionExists("buyer_prerequisites") ||
+        sectionExists("binding_conditions") ||
+        sectionExists("cybersecurity")
+      ) {
+        addSection("group:scope_of_supply", "SCOPE OF SUPPLY");
+
+        if (sectionExists("scope_definitions")) {
+          addSubsection(
+            "section:scope_definitions",
+            documentContent.scopeDefinitions.heading ||
+              "SCOPE OF SUPPLY DEFINITIONS",
+          );
+          appendCustomInsertions("scope_definitions");
+        }
+
+        if (sectionExists("division_of_eng")) {
+          addSubsection(
+            "section:division_of_eng",
+            documentContent.divisionOfEng.heading ||
+              "DIVISION OF ENGINEERING, SOFTWARE DEVELOPMENT, & ERECTION/COMMISSIONING SERVICES",
+          );
+          appendCustomInsertions("division_of_eng");
+        }
+
+        if (sectionExists("value_addition")) {
+          addSubsection(
+            "section:value_addition",
+            documentContent.valueAddition.heading || "VALUE ADDITION",
+          );
+          appendCustomInsertions("value_addition");
+        }
+
+        if (sectionExists("work_completion")) {
+          addSubsection(
+            "section:work_completion",
+            documentContent.workCompletion.heading ||
+              "WORK COMPLETION CERTIFICATE",
+          );
+          appendCustomInsertions("work_completion");
+        }
+
+        if (sectionExists("buyer_obligations")) {
+          addSubsection(
+            "section:buyer_obligations",
+            documentContent.buyerObligations.heading || "BUYER OBLIGATIONS",
+          );
+          appendCustomInsertions("buyer_obligations");
+        }
+
+        if (sectionExists("exclusion_list")) {
+          addSubsection(
+            "section:exclusion_list",
+            documentContent.exclusionList.heading || "EXCLUSION LIST",
+          );
+          appendCustomInsertions("exclusion_list");
+        }
+
+        if (sectionExists("buyer_prerequisites")) {
+          addSubsection(
+            "section:buyer_prerequisites",
+            documentContent.buyerPrerequisites.heading ||
+              "BUYER PREREQUISITES:",
+          );
+          appendCustomInsertions("buyer_prerequisites");
+        }
+
+        if (sectionExists("binding_conditions")) {
+          addSubsection(
+            "section:binding_conditions",
+            documentContent.bindingConditions.heading || "BINDING CONDITIONS:",
+          );
+          appendCustomInsertions("binding_conditions");
+        }
+
+        if (sectionExists("cybersecurity")) {
+          addSubsection(
+            "section:cybersecurity",
+            documentContent.cybersecurity.heading || "CYBERSECURITY DISCLAIMER",
+          );
+          appendCustomInsertions("cybersecurity");
+        }
+      }
+
+      if (sectionExists("disclaimer")) {
+        addSection(
+          "section:disclaimer",
+          documentContent.disclaimer.heading || "DISCLAIMER",
+        );
+        (documentContent.disclaimer.sections || DISCLAIMER_SECTIONS).forEach(
+          (section: any, index: number) => {
+            addSubsection(
+              `disclaimer-subsection:${index}`,
+              section.title || `DISCLAIMER ${index + 1}`,
+            );
+          },
+        );
+        appendCustomInsertions("disclaimer");
+      }
+
+      if (sectionExists("poc")) {
+        addSection(
+          "section:poc",
+          documentContent.poc.heading || "COMPLIMENTRY PROOF OF CONCEPTS (PoC)",
+        );
+        appendCustomInsertions("poc");
+      }
+
+      return entries;
+    }, [customSections, documentContent, sectionContents, solutionName]);
 
     // Custom section rendering functions
     const renderCustomSubsectionContent = (
@@ -3144,62 +2230,60 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {tables.map((table, tableIndex) => (
-              <div key={tableIndex}>
-                {renderTableCaption(`table:${sectionKey}:${subsection.key}:${tableIndex}`)}
-                <table
-                  style={{
-                    width: '100%',
-                    borderCollapse: 'collapse',
-                    margin: '4px 0 16px',
-                  }}
-                >
-                  <thead>
-                    <tr>
-                      {table.columns.map((column, columnIndex) => (
-                        <th
-                          key={`${column}-${columnIndex}`}
-                          style={{
-                            border: '1px solid #ddd',
-                            padding: '12px',
-                            backgroundColor: '#f5f5f5',
-                            textAlign: 'left',
-                            fontWeight: 'bold',
-                          }}
-                        >
-                          {column}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {table.rows.map((row, rowIndex) => (
-                      <tr key={rowIndex}>
-                        {table.columns.map((column, columnIndex) => {
-                          const cellPath = `${dataPath}.tables.${tableIndex}.rows.${rowIndex}.${column}`;
-                          return (
-                            <td
-                              key={`${column}-${columnIndex}`}
-                              title={
-                                isEditedPath(sectionKey, cellPath)
-                                  ? formatEditedTitle(sectionKey, cellPath)
-                                  : undefined
-                              }
-                              style={{
-                                border: '1px solid #ddd',
-                                padding: '12px',
-                                textAlign: 'left',
-                                ...getEditedCellStyle(sectionKey, cellPath),
-                              }}
-                            >
-                              {row[column] || ''}
-                            </td>
-                          );
-                        })}
-                      </tr>
+              <table
+                key={tableIndex}
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  margin: '16px 0',
+                }}
+              >
+                <thead>
+                  <tr>
+                    {table.columns.map((column, columnIndex) => (
+                      <th
+                        key={`${column}-${columnIndex}`}
+                        style={{
+                          border: '1px solid #ddd',
+                          padding: '12px',
+                          backgroundColor: '#f5f5f5',
+                          textAlign: 'left',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        {column}
+                      </th>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </tr>
+                </thead>
+                <tbody>
+                  {table.rows.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {table.columns.map((column, columnIndex) => {
+                        const cellPath = `${dataPath}.tables.${tableIndex}.rows.${rowIndex}.${column}`;
+                        return (
+                          <td
+                            key={`${column}-${columnIndex}`}
+                            title={
+                              isEditedPath(sectionKey, cellPath)
+                                ? formatEditedTitle(sectionKey, cellPath)
+                                : undefined
+                            }
+                            style={{
+                              border: '1px solid #ddd',
+                              padding: '12px',
+                              textAlign: 'left',
+                              ...getEditedCellStyle(sectionKey, cellPath),
+                            }}
+                          >
+                            {row[column] || ''}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             ))}
           </div>
         );
@@ -3221,19 +2305,17 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
             }}
           >
             {images.map((image, index) => (
-              <div key={`${image.filename}-${index}`}>
-                <img
-                  src={image.base64}
-                  alt={image.filename}
-                  style={{
-                    maxWidth: '100%',
-                    height: 'auto',
-                    display: 'block',
-                    margin: '0 auto',
-                  }}
-                />
-                {renderFigureCaption(`figure:${sectionKey}:${subsection.key}:${index}`)}
-              </div>
+              <img
+                key={`${image.filename}-${index}`}
+                src={image.base64}
+                alt={image.filename}
+                style={{
+                  maxWidth: '100%',
+                  height: 'auto',
+                  display: 'block',
+                  alignSelf: 'center',
+                }}
+              />
             ))}
           </div>
         );
@@ -3287,6 +2369,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
           key={subsection.key}
           data-section-key={sectionKey}
           data-subsection-key={subsection.key}
+          data-toc-id={`custom-subsection:${subsection.key}`}
           role="button"
           tabIndex={0}
           style={subsectionStyle(subsection.key)}
@@ -3300,10 +2383,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
             }
           }}
         >
-          <h2
-            {...tocTargetProps(customSubsectionTocId(sectionKey, subsection.key))}
-            style={heading2BlackStyle}
-          >
+          <h2 style={heading2BlackStyle}>
             <span
               title={
                 isEditedPath(
@@ -3343,6 +2423,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
         <SectionWrapper
           key={sectionKey}
           sectionKey={sectionKey}
+          tocId={`custom-section:${sectionKey}`}
           isActive={isActive(sectionKey)}
           isHovered={hoveredSection === sectionKey}
           onMouseEnter={() => setHoveredSection(sectionKey)}
@@ -3351,7 +2432,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
           sectionRef={(el) => (sectionRefs.current[sectionKey] = el)}
           style={sectionStyle(sectionKey)}
         >
-          <h1 {...tocTargetProps(sectionTocId(sectionKey))} style={heading1RedStyle}>
+          <h1 style={heading1RedStyle}>
             <span
               title={
                 isEditedPath(sectionKey, "title")
@@ -3422,20 +2503,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
           .rich-text-preview p:empty {
             display: none;
           }
-          .rich-text-preview h1,
-          .rich-text-preview h2,
-          .rich-text-preview h3,
-          .rich-text-preview h4,
-          .rich-text-preview h5,
-          .rich-text-preview h6 {
-            margin: 0 0 8px 0;
-            line-height: 1.35;
-          }
-          .rich-text-preview h1,
-          .rich-text-preview h2,
-          .rich-text-preview h3 {
-            font-size: 16px;
-          }
           .rich-text-preview ul,
           .rich-text-preview ol {
             margin: 0 0 8px 22px;
@@ -3462,53 +2529,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
           }
           .edited-preview-content,
           .edited-preview-content * {
-            color: ${LAST_CHANGED_TEXT_COLOR} !important;
-          }
-          .page-break-with-button {
-            width: ${WORD_PAGE_WIDTH};
-            max-width: 100%;
-            margin: 0 auto;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            box-sizing: border-box;
-            padding: 18px 24px;
-            background-color: #E8E8E8;
-            box-shadow: inset 0 8px 10px -10px rgba(15, 23, 42, 0.22), inset 0 -8px 10px -10px rgba(15, 23, 42, 0.22);
-          }
-          .page-break-button-zone {
-            position: relative;
-            min-height: 44px;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-          .page-break-guide {
-            position: absolute;
-            left: 24px;
-            right: 24px;
-            top: 50%;
-            transform: translateY(-50%);
-            border-top: 1px solid #D1D5DB;
-            z-index: 0;
-          }
-          .add-section-button {
-            padding: 8px 18px;
-            background-color: #FFFFFF;
-            color: #E60012;
-            border: 1px solid #E60012;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
-            position: relative;
-            z-index: 1;
+            color: ${LAST_CHANGED_COLOR} !important;
           }
           .word-preview-pages {
             display: flex;
@@ -3528,8 +2549,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
             break-after: page;
             page-break-after: always;
           }
-          .word-preview-page:last-child,
-          .word-preview-page.word-preview-page-last {
+          .word-preview-page:last-child {
             break-after: auto;
             page-break-after: auto;
           }
@@ -3733,7 +2753,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               onSectionClick={onSectionClick}
               onSubsectionClick={onSubsectionClick}
               onAddSectionClick={handleAddSectionClick}
-              onTocPageMapChange={handleTocPageMapChange}
             >
               {/* ── COVER PAGE ── */}
               <SectionWrapper
@@ -3877,13 +2896,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 style={sectionStyle("revision_history")}
               >
                 {/* "REVISION HISTORY:" is Normal style + #EE0000 bold in template */}
-                <h2
-                  {...tocTargetProps(sectionTocId("remote_support"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {documentContent.revisionHistory.heading || "REVISION HISTORY:"}
                 </h2>
-                {renderTableCaption("table:revision_history")}
                 <table style={tableStyle}>
                   <thead>
                     <tr>
@@ -3993,16 +3008,44 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {renderTableOfContents()}
+              <div style={{ marginBottom: "32px" }}>
+                <h2 style={heading2RedStyle}>TABLE OF CONTENTS</h2>
+                {tocEntries.length > 0 ? (
+                  <div>
+                    {tocEntries.map((entry) => (
+                      <div
+                        key={entry.id}
+                        style={{
+                          ...tocEntryBaseStyle,
+                          paddingLeft: entry.level === 1 ? "0" : "28px",
+                          fontWeight: entry.level === 1 ? "bold" : "normal",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        <span>{entry.numberLabel}</span>
+                        <span>{entry.label}</span>
+                        <span style={tocLeaderStyle} />
+                        <span style={tocPageNumberStyle}>
+                          {tocPageNumbers[entry.id] || ""}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={placeholderStyle}>
+                    [Auto-generated table of contents]
+                  </p>
+                )}
+              </div>
 
               {/* Page Break: End of Page 2-4 (Revision History / Legal / TOC) */}
               {sectionExists('executive_summary') &&
                 renderInsertionsAfter('revision_history')}
 
               {/* ── EXECUTIVE SUMMARY ── */}
-              {sectionExists('executive_summary') && (
               <SectionWrapper
                 sectionKey="executive_summary"
+                tocId="section:executive_summary"
                 isActive={isActive("executive_summary")}
                 isHovered={hoveredSection === "executive_summary"}
                 onMouseEnter={() => setHoveredSection("executive_summary")}
@@ -4014,10 +3057,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 style={sectionStyle("executive_summary")}
               >
                 {/* Heading 1, burgundy #943634 — matches template */}
-                <h1
-                  {...tocTargetProps(sectionTocId("executive_summary"))}
-                  style={heading1BurgundyStyle}
-                >
+                <h1 style={heading1BurgundyStyle}>
                   {formatHeadingWithNumber(
                     documentContent.executiveSummary.heading ||
                       "EXECUTIVE SUMMARY",
@@ -4043,7 +3083,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                     EXECUTIVE_SUMMARY_PARAGRAPHS).slice(1),
                 )}
                 <p style={bodyParagraphStyle}>Some of our clients include:</p>
-                {renderTableCaption("table:executive_summary:client_logos")}
                 <table
                   style={{
                     width: "100%",
@@ -4076,8 +3115,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   </tbody>
                 </table>
               </SectionWrapper>
-              )}
-              {sectionExists('executive_summary') && renderInlineInsertionsAfter('executive_summary')}
 
               {/* Page Break: End of Page 5 (Executive Summary) */}
               {(sectionExists('introduction') || sectionExists('abbreviations') ||
@@ -4087,10 +3124,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {/* ── GENERAL OVERVIEW heading (Heading 1, #EE0000) ── */}
               {(sectionExists('introduction') || sectionExists('abbreviations') || 
                 sectionExists('process_flow') || sectionExists('overview')) && (
-                <h1
-                  {...tocTargetProps(groupTocId("general_overview"))}
-                  style={heading1RedStyle}
-                >
+                <h1 style={heading1RedStyle} data-toc-id="group:general_overview">
                   {formatHeadingWithNumber(
                     "GENERAL OVERVIEW",
                     `${getNextSectionNumber()}.`,
@@ -4102,6 +3136,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('introduction') && (
                 <SectionWrapper
                   sectionKey="introduction"
+                  tocId="section:introduction"
                   isActive={isActive("introduction")}
                   isHovered={hoveredSection === "introduction"}
                   onMouseEnter={() => setHoveredSection("introduction")}
@@ -4111,57 +3146,24 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   style={sectionStyle("introduction")}
                 >
                   {/* Heading 2, no color (black) — matches template */}
-                  <h2
-                    {...tocTargetProps(sectionTocId("introduction"))}
-                    style={heading2BlackStyle}
-                  >
+                  <h2 style={heading2BlackStyle}>
                     {formatHeadingWithNumber(
                       documentContent.introduction.heading || "INTRODUCTION",
                       `${sectionCounter.current}.${getNextSubsectionNumber()}`,
                     )}
                   </h2>
                   {renderTemplateParagraphs(
-                    normalizedIntroductionPreview.paragraphs.length > 0
-                      ? normalizedIntroductionPreview.paragraphs
-                      : documentContent.introduction.paragraphs ||
-                          INTRODUCTION_PARAGRAPHS,
+                    documentContent.introduction.paragraphs ||
+                      INTRODUCTION_PARAGRAPHS,
                   )}
-                  {normalizedIntroductionPreview.containsStructuredContent &&
-                    (introductionTenderReference || introductionTenderDate) && (
-                      <>
-                        <p style={bodyParagraphStyle}>
-                          <strong>Tender Information</strong>
-                        </p>
-                        {introductionTenderReference && (
-                          <p style={bodyParagraphStyle}>
-                            <strong>Tender Reference:</strong>{" "}
-                            {renderRequiredValue(
-                              "introduction",
-                              "tender_reference",
-                              introductionTenderReference,
-                            )}
-                          </p>
-                        )}
-                        {introductionTenderDate && (
-                          <p style={bodyParagraphStyle}>
-                            <strong>Tender Date:</strong>{" "}
-                            {renderRequiredValue(
-                              "introduction",
-                              "tender_date",
-                              introductionTenderDate,
-                            )}
-                          </p>
-                        )}
-                      </>
-                    )}
                 </SectionWrapper>
               )}
-              {sectionExists('introduction') && renderInlineInsertionsAfter('introduction')}
 
               {/* ── ABBREVIATIONS ── */}
               {sectionExists('abbreviations') && (
                 <SectionWrapper
                   sectionKey="abbreviations"
+                  tocId="section:abbreviations"
                   isActive={isActive("abbreviations")}
                   isHovered={hoveredSection === "abbreviations"}
                   onMouseEnter={() => setHoveredSection("abbreviations")}
@@ -4170,17 +3172,13 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   sectionRef={(el) => (sectionRefs.current.abbreviations = el)}
                   style={sectionStyle("abbreviations")}
                 >
-                  <h2
-                    {...tocTargetProps(sectionTocId("abbreviations"))}
-                    style={heading2RedStyle}
-                  >
+                  <h2 style={heading2RedStyle}>
                     {formatHeadingWithNumber(
                       documentContent.abbreviations.heading ||
                         "ABBREVIATIONS USED",
                       `${sectionCounter.current}.${getNextSubsectionNumber()}`,
                     )}
                   </h2>
-                  {renderTableCaption("table:abbreviations")}
                   <table style={tableStyle}>
                     <thead>
                       <tr>
@@ -4265,12 +3263,12 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   </table>
                 </SectionWrapper>
               )}
-              {sectionExists('abbreviations') && renderInlineInsertionsAfter('abbreviations')}
 
               {/* ── PROCESS FLOW ── */}
               {sectionExists('process_flow') && (
                 <SectionWrapper
                   sectionKey="process_flow"
+                  tocId="section:process_flow"
                   isActive={isActive("process_flow")}
                   isHovered={hoveredSection === "process_flow"}
                   onMouseEnter={() => setHoveredSection("process_flow")}
@@ -4279,10 +3277,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   sectionRef={(el) => (sectionRefs.current.process_flow = el)}
                   style={sectionStyle("process_flow")}
                 >
-                  <h2
-                    {...tocTargetProps(sectionTocId("process_flow"))}
-                    style={heading2RedStyle}
-                  >
+                  <h2 style={heading2RedStyle}>
                     {formatHeadingWithNumber(
                       documentContent.processFlow.heading || "PROCESS FLOW",
                       `${sectionCounter.current}.${getNextSubsectionNumber()}`,
@@ -4295,12 +3290,12 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 )}
                 </SectionWrapper>
               )}
-              {sectionExists('process_flow') && renderInlineInsertionsAfter('process_flow')}
 
               {/* ── OVERVIEW ── */}
               {sectionExists('overview') && (
                 <SectionWrapper
                   sectionKey="overview"
+                  tocId="section:overview"
                   isActive={isActive("overview")}
                   isHovered={hoveredSection === "overview"}
                   onMouseEnter={() => setHoveredSection("overview")}
@@ -4309,10 +3304,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   sectionRef={(el) => (sectionRefs.current.overview = el)}
                   style={sectionStyle("overview")}
                 >
-                  <h2
-                    {...tocTargetProps(sectionTocId("overview"))}
-                    style={heading2RedStyle}
-                  >
+                  <h2 style={heading2RedStyle}>
                     {formatHeadingWithNumber(
                       documentContent.overview.heading ||
                         `OVERVIEW OF ${(solutionName || "{SolutionName}").toUpperCase()}`,
@@ -4376,7 +3368,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   )}
                 </SectionWrapper>
               )}
-              {sectionExists('overview') && renderInlineInsertionsAfter('overview')}
 
               {/* Page Break: End of Page 6-8 (General Overview) */}
               {(sectionExists("features") ||
@@ -4394,10 +3385,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionExists("customer_training") ||
                 sectionExists("system_config") ||
                 sectionExists("fat_condition")) && (
-                <h1
-                  {...tocTargetProps(groupTocId("offerings"))}
-                  style={heading1RedStyle}
-                >
+                <h1 style={heading1RedStyle} data-toc-id="group:offerings">
                   {formatHeadingWithNumber(
                     "OFFERINGS",
                     `${getNextSectionNumber()}.`,
@@ -4409,6 +3397,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists("features") && (
                 <SectionWrapper
                 sectionKey="features"
+                tocId="section:features"
                 isActive={isActive("features")}
                 isHovered={hoveredSection === "features"}
                 onMouseEnter={() => setHoveredSection("features")}
@@ -4417,10 +3406,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.features = el)}
                 style={sectionStyle("features")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("features"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.features.heading || "DESIGN SCOPE OF WORK",
                     `${sectionCounter.current}.${getNextSubsectionNumber()}`,
@@ -4439,10 +3425,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                       style={{ marginBottom: "14px" }}
                     >
                       {/* Feature titles: Heading 2, no color (black) — matches template */}
-                      <h2
-                        {...tocTargetProps(featureTocId(index))}
-                        style={heading2BlackStyle}
-                      >
+                      <h2 style={heading2BlackStyle}>
                         {renderRequiredValue(
                           "features",
                           `items.${index}.title`,
@@ -4465,11 +3448,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── REMOTE SUPPORT ── */}
-              {sectionExists("features") && renderInlineInsertionsAfter("features")}
-
               {sectionExists("remote_support") && (
                 <SectionWrapper
                 sectionKey="remote_support"
+                tocId="section:remote_support"
                 isActive={isActive("remote_support")}
                 isHovered={hoveredSection === "remote_support"}
                 onMouseEnter={() => setHoveredSection("remote_support")}
@@ -4479,10 +3461,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 style={sectionStyle("remote_support")}
               >
                 {/* Heading 2, #EE0000 — matches template (was incorrectly black before) */}
-                <h2
-                  {...tocTargetProps(sectionTocId("documentation_control"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.remoteSupport.heading ||
                       "REMOTE SUPPORT SYSTEM",
@@ -4502,11 +3481,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── DOCUMENTATION CONTROL ── */}
-              {sectionExists("remote_support") && renderInlineInsertionsAfter("remote_support")}
-
               {sectionExists("documentation_control") && (
                 <SectionWrapper
                 sectionKey="documentation_control"
+                tocId="section:documentation_control"
                 isActive={isActive("documentation_control")}
                 isHovered={hoveredSection === "documentation_control"}
                 onMouseEnter={() => setHoveredSection("documentation_control")}
@@ -4517,10 +3495,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 }
                 style={sectionStyle("documentation_control")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("customer_training"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.documentationControl.heading ||
                       "DOCUMENTATION CONTROL",
@@ -4541,11 +3516,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── CUSTOMER TRAINING ── */}
-              {sectionExists("documentation_control") && renderInlineInsertionsAfter("documentation_control")}
-
               {sectionExists("customer_training") && (
                 <SectionWrapper
                 sectionKey="customer_training"
+                tocId="section:customer_training"
                 isActive={isActive("customer_training")}
                 isHovered={hoveredSection === "customer_training"}
                 onMouseEnter={() => setHoveredSection("customer_training")}
@@ -4556,10 +3530,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 }
                 style={sectionStyle("customer_training")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("system_config"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.customerTraining.heading ||
                       "CUSTOMER TRAINING",
@@ -4576,11 +3547,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── SYSTEM CONFIGURATION ── */}
-              {sectionExists("customer_training") && renderInlineInsertionsAfter("customer_training")}
-
               {sectionExists("system_config") && (
                 <SectionWrapper
                 sectionKey="system_config"
+                tocId="section:system_config"
                 isActive={isActive("system_config")}
                 isHovered={hoveredSection === "system_config"}
                 onMouseEnter={() => setHoveredSection("system_config")}
@@ -4589,10 +3559,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.system_config = el)}
                 style={sectionStyle("system_config")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("fat_condition"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.systemConfig.heading ||
                       "SYSTEM CONFIGURATION (FOR REFERENCE)",
@@ -4610,7 +3577,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   documentContent.systemConfig.placeholder_text ||
                     "[Architecture diagram to be inserted]",
                   "Architecture diagram",
-                  "figure:system_config:architecture",
                 )}
                 <p style={noteParagraphStyle}>
                   {documentContent.systemConfig.note ||
@@ -4620,11 +3586,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── FAT CONDITION ── */}
-              {sectionExists("system_config") && renderInlineInsertionsAfter("system_config")}
-
               {sectionExists("fat_condition") && (
                 <SectionWrapper
                 sectionKey="fat_condition"
+                tocId="section:fat_condition"
                 isActive={isActive("fat_condition")}
                 isHovered={hoveredSection === "fat_condition"}
                 onMouseEnter={() => setHoveredSection("fat_condition")}
@@ -4633,10 +3598,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.fat_condition = el)}
                 style={sectionStyle("fat_condition")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("fat_condition"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.fatCondition.heading || "FAT CONDITION",
                     `${sectionCounter.current}.${getNextSubsectionNumber()}`,
@@ -4649,7 +3611,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 )}
               </SectionWrapper>
               )}
-              {sectionExists('fat_condition') && renderInlineInsertionsAfter('fat_condition')}
 
               {/* Page Break: End of Page 9-11 (Offerings) */}
               {sectionExists('tech_stack') && renderInsertionsAfter('fat_condition')}
@@ -4658,6 +3619,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('tech_stack') && (
                 <SectionWrapper
                   sectionKey="tech_stack"
+                  tocId="section:tech_stack"
                   isActive={isActive("tech_stack")}
                   isHovered={hoveredSection === "tech_stack"}
                   onMouseEnter={() => setHoveredSection("tech_stack")}
@@ -4666,10 +3628,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   sectionRef={(el) => (sectionRefs.current.tech_stack = el)}
                   style={sectionStyle("tech_stack")}
                 >
-                  <h1
-                    {...tocTargetProps(sectionTocId("tech_stack"))}
-                    style={heading1RedStyle}
-                  >
+                  <h1 style={heading1RedStyle}>
                     {formatHeadingWithNumber(
                       documentContent.techStack.heading || "TECHNOLOGY STACK",
                       `${getNextSectionNumber()}.`,
@@ -4679,7 +3638,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   {documentContent.techStack.intro_text ||
                     "The technology stack for various components is as follows:"}
                 </p>
-                {renderTableCaption("table:tech_stack")}
                 <table style={tableStyle}>
                   <thead>
                     <tr>
@@ -4777,11 +3735,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── HARDWARE SPECS (Heading 3, #EE0000) ── */}
-              {sectionExists('tech_stack') && renderInlineInsertionsAfter('tech_stack')}
-
               {sectionExists('hardware_specs') && (
                 <SectionWrapper
                 sectionKey="hardware_specs"
+                tocId="section:hardware_specs"
                 isActive={isActive("hardware_specs")}
                 isHovered={hoveredSection === "hardware_specs"}
                 onMouseEnter={() => setHoveredSection("hardware_specs")}
@@ -4790,10 +3747,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.hardware_specs = el)}
                 style={sectionStyle("hardware_specs")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("hardware_specs"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.hardwareSpecs.heading ||
                       "HARDWARE SPECIFICATIONS",
@@ -4806,7 +3760,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                       "Following is the list of Hardware required for {{SolutionName}} Application.",
                   )}
                 </p>
-                {renderTableCaption("table:hardware_specs")}
                 <table style={tableStyle}>
                   <thead>
                     <tr>
@@ -4927,11 +3880,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── SOFTWARE SPECS (Heading 3, #EE0000) ── */}
-              {sectionExists('hardware_specs') && renderInlineInsertionsAfter('hardware_specs')}
-
               {sectionExists('software_specs') && (
                 <SectionWrapper
                 sectionKey="software_specs"
+                tocId="section:software_specs"
                 isActive={isActive("software_specs")}
                 isHovered={hoveredSection === "software_specs"}
                 onMouseEnter={() => setHoveredSection("software_specs")}
@@ -4940,10 +3892,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.software_specs = el)}
                 style={sectionStyle("software_specs")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("software_specs"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.softwareSpecs.heading ||
                       "SOFTWARE SPECIFICATIONS",
@@ -4956,7 +3905,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                       "Below are the Software Specifications for the Proposed {{SolutionName}} system.",
                   )}
                 </p>
-                {renderTableCaption("table:software_specs")}
                 <table style={tableStyle}>
                   <thead>
                     <tr>
@@ -5050,11 +3998,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── THIRD PARTY SW (Heading 3, #EE0000) ── */}
-              {sectionExists('software_specs') && renderInlineInsertionsAfter('software_specs')}
-
               {sectionExists('third_party_sw') && (
                 <SectionWrapper
                 sectionKey="third_party_sw"
+                tocId="section:third_party_sw"
                 isActive={isActive("third_party_sw")}
                 isHovered={hoveredSection === "third_party_sw"}
                 onMouseEnter={() => setHoveredSection("third_party_sw")}
@@ -5063,10 +4010,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.third_party_sw = el)}
                 style={sectionStyle("third_party_sw")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("third_party_sw"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.thirdPartySw.heading ||
                       "THIRD PARTY SOFTWARE",
@@ -5094,8 +4038,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* Page Break: End of Page 12-14 (Technology Stack) */}
-              {sectionExists('third_party_sw') && renderInlineInsertionsAfter('third_party_sw')}
-
               {(sectionExists("overall_gantt") ||
                 sectionExists("shutdown_gantt") ||
                 sectionExists("supervisors")) &&
@@ -5105,10 +4047,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {(sectionExists("overall_gantt") ||
                 sectionExists("shutdown_gantt") ||
                 sectionExists("supervisors")) && (
-                <h1
-                  {...tocTargetProps(groupTocId("schedule"))}
-                  style={heading1RedStyle}
-                >
+                <h1 style={heading1RedStyle} data-toc-id="group:schedule">
                   {formatHeadingWithNumber(
                     "SCHEDULE",
                     `${getNextSectionNumber()}.`,
@@ -5120,6 +4059,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists("overall_gantt") && (
                 <SectionWrapper
                 sectionKey="overall_gantt"
+                tocId="section:overall_gantt"
                 isActive={isActive("overall_gantt")}
                 isHovered={hoveredSection === "overall_gantt"}
                 onMouseEnter={() => setHoveredSection("overall_gantt")}
@@ -5128,10 +4068,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.overall_gantt = el)}
                 style={sectionStyle("overall_gantt")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("overall_gantt"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.overallGantt.heading ||
                       "OVERALL GANTT CHART",
@@ -5143,7 +4080,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   documentContent.overallGantt.placeholder_text ||
                     "[Overall Gantt chart to be inserted]",
                   "Overall Gantt chart",
-                  "figure:overall_gantt",
                 )}
                 <p style={noteParagraphStyle}>
                   {renderTemplateText(
@@ -5155,11 +4091,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── SHUTDOWN GANTT ── */}
-              {sectionExists("overall_gantt") && renderInlineInsertionsAfter("overall_gantt")}
-
               {sectionExists("shutdown_gantt") && (
                 <SectionWrapper
                 sectionKey="shutdown_gantt"
+                tocId="section:shutdown_gantt"
                 isActive={isActive("shutdown_gantt")}
                 isHovered={hoveredSection === "shutdown_gantt"}
                 onMouseEnter={() => setHoveredSection("shutdown_gantt")}
@@ -5168,10 +4103,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.shutdown_gantt = el)}
                 style={sectionStyle("shutdown_gantt")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("shutdown_gantt"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.shutdownGantt.heading ||
                       "SHUTDOWN GANTT CHART",
@@ -5183,7 +4115,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   documentContent.shutdownGantt.placeholder_text ||
                     "[Shutdown Gantt chart to be inserted]",
                   "Shutdown Gantt chart",
-                  "figure:shutdown_gantt",
                 )}
                 <p style={labelParagraphStyle}>
                   {documentContent.shutdownGantt.note_label || "NOTE:"}
@@ -5198,8 +4129,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── SUPERVISORS (Heading 3, #EE0000) ── */}
-              {sectionExists("shutdown_gantt") && renderInlineInsertionsAfter("shutdown_gantt")}
-
               {sectionExists("supervisors") && (
                 <SectionWrapper
                 sectionKey="supervisors"
@@ -5211,10 +4140,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.supervisors = el)}
                 style={sectionStyle("supervisors")}
               >
-                <h3
-                  {...tocTargetProps(sectionTocId("supervisors"))}
-                  style={heading3RedStyle}
-                >
+                <h3 style={heading3RedStyle}>
                   {documentContent.supervisors.heading || "SUPERVISORS:"}
                 </h3>
                 <p style={bodyParagraphStyle}>
@@ -5238,8 +4164,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* Page Break: End of Page 15 (Schedule) */}
-              {sectionExists("supervisors") && renderInlineInsertionsAfter("supervisors")}
-
               {(sectionExists('scope_definitions') || sectionExists('division_of_eng') ||
                 sectionExists('value_addition') || sectionExists('work_completion') ||
                 sectionExists('buyer_obligations') || sectionExists('exclusion_list') ||
@@ -5253,10 +4177,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionExists('buyer_obligations') || sectionExists('exclusion_list') || 
                 sectionExists('buyer_prerequisites') || sectionExists('binding_conditions') || 
                 sectionExists('cybersecurity')) && (
-              <h1
-                {...tocTargetProps(groupTocId("scope_of_supply"))}
-                style={heading1RedStyle}
-              >
+              <h1 style={heading1RedStyle}>
                 {formatHeadingWithNumber(
                   "SCOPE OF SUPPLY",
                   `${getNextSectionNumber()}.`,
@@ -5278,10 +4199,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 }
                 style={sectionStyle("scope_definitions")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("scope_definitions"))}
-                  style={heading2BlackStyle}
-                >
+                <h2 style={heading2BlackStyle}>
                   {formatHeadingWithNumber(
                     documentContent.scopeDefinitions.heading ||
                       "SCOPE OF SUPPLY DEFINITIONS",
@@ -5296,8 +4214,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── DIVISION OF ENGINEERING ── */}
-              {sectionExists('scope_definitions') && renderInlineInsertionsAfter('scope_definitions')}
-
               {sectionExists('division_of_eng') && (
               <SectionWrapper
                 sectionKey="division_of_eng"
@@ -5309,121 +4225,28 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.division_of_eng = el)}
                 style={sectionStyle("division_of_eng")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("division_of_eng"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.divisionOfEng.heading ||
                       "DIVISION OF ENGINEERING, SOFTWARE DEVELOPMENT, & ERECTION/COMMISSIONING SERVICES",
                     `${sectionCounter.current}.${getNextSubsectionNumber()}`,
                   )}
                 </h2>
-                {renderTableCaption("table:division_of_eng")}
                 <table
                   style={{
                     ...tableStyle,
                     tableLayout: "fixed",
                   }}
                 >
-                  <colgroup>
-                    <col style={{ width: "10%" }} />
-                    <col style={{ width: "44%" }} />
-                    <col style={{ width: "7.666%" }} />
-                    <col style={{ width: "7.666%" }} />
-                    <col style={{ width: "7.666%" }} />
-                    <col style={{ width: "7.666%" }} />
-                    <col style={{ width: "7.666%" }} />
-                    <col style={{ width: "7.666%" }} />
-                  </colgroup>
                   <tbody>
-                    <tr>
-                      <td
-                        rowSpan={2}
-                        title={
-                          isEditedPath("division_of_eng", "matrix_rows.0.0")
-                            ? formatEditedTitle("division_of_eng", "matrix_rows.0.0")
-                            : undefined
-                        }
-                        style={{
-                          ...matrixHeaderCellStyle,
-                          ...getEditedCellStyle("division_of_eng", "matrix_rows.0.0"),
-                        }}
-                      >
-                        {resolvedMatrixRows[0]?.[0] || "No."}
-                      </td>
-                      <td
-                        rowSpan={2}
-                        title={
-                          isEditedPath("division_of_eng", "matrix_rows.0.1")
-                            ? formatEditedTitle("division_of_eng", "matrix_rows.0.1")
-                            : undefined
-                        }
-                        style={{
-                          ...matrixHeaderCellStyle,
-                          ...getEditedCellStyle("division_of_eng", "matrix_rows.0.1"),
-                        }}
-                      >
-                        {resolvedMatrixRows[0]?.[1] || "ITEM"}
-                      </td>
-                      <td
-                        colSpan={6}
-                        title={
-                          isEditedPath("division_of_eng", "matrix_rows.0.2")
-                            ? formatEditedTitle("division_of_eng", "matrix_rows.0.2")
-                            : undefined
-                        }
-                        style={{
-                          ...matrixHeaderCellStyle,
-                          ...getEditedCellStyle("division_of_eng", "matrix_rows.0.2"),
-                        }}
-                      >
-                        {resolvedMatrixRows[0]?.[2] || "Responsibility"}
-                      </td>
-                    </tr>
-                    <tr>
-                      {(resolvedMatrixRows[1] || []).slice(2).map((cell: string, cellIndex: number) => (
-                        <td
-                          key={`matrix-header-cell-${cellIndex}`}
-                          title={
-                            isEditedPath(
-                              "division_of_eng",
-                              `matrix_rows.1.${cellIndex + 2}`,
-                            )
-                              ? formatEditedTitle(
-                                  "division_of_eng",
-                                  `matrix_rows.1.${cellIndex + 2}`,
-                                )
-                              : undefined
-                          }
-                          style={{
-                            ...matrixHeaderCellStyle,
-                            ...getEditedCellStyle(
-                              "division_of_eng",
-                              `matrix_rows.1.${cellIndex + 2}`,
-                            ),
-                          }}
-                        >
-                          {cell}
-                        </td>
-                      ))}
-                    </tr>
-                    {resolvedMatrixRows.slice(2).map((row: string[], rowIndex: number) => {
-                      const actualRowIndex = rowIndex + 2;
-                      const sourceRow = matrixRows[actualRowIndex] || row;
-                      const isBlankRow = row.every((cell) => !cell);
+                    {resolvedMatrixRows.map((row: string[], rowIndex: number) => {
+                      const sourceRow = matrixRows[rowIndex] || row;
+                      const isHeaderRow = rowIndex <= 1;
                       const isGroupRow =
-                        !isBlankRow && row[0] && !row[0].startsWith("-");
-                      const rowBackgroundColor = isGroupRow
-                        ? matrixBandBackground
-                        : isBlankRow
-                          ? "#FFFFFF"
-                          : rowIndex % 2 === 0
-                            ? matrixBandBackground
-                            : "#FFFFFF";
+                        !isHeaderRow && row[0] && !row[0].startsWith("-");
 
                       return (
-                        <tr key={`matrix-row-${actualRowIndex}`}>
+                        <tr key={`matrix-row-${rowIndex}`}>
                           {row.map((cell: string, cellIndex: number) => {
                             const sourceCell = sourceRow[cellIndex] || cell;
                             const cellStyle =
@@ -5431,30 +4254,44 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                                 ? matrixItemCellStyle
                                 : matrixCellStyle;
 
+                            // Responsibility matrix header: shade = #2E75B5 (blue) from template
+                            const headerBg = isHeaderRow
+                              ? "#2E75B5"
+                              : undefined;
+                            const headerColor = isHeaderRow
+                              ? "#FFFFFF"
+                              : undefined;
+                            const groupBg =
+                              !isHeaderRow && isGroupRow
+                                ? "#F3F3F3"
+                                : undefined;
+
                             return (
                               <td
-                                key={`matrix-cell-${actualRowIndex}-${cellIndex}`}
+                                key={`matrix-cell-${rowIndex}-${cellIndex}`}
                                 title={
                                   isEditedPath(
                                     "division_of_eng",
-                                    `matrix_rows.${actualRowIndex}.${cellIndex}`,
+                                    `matrix_rows.${rowIndex}.${cellIndex}`,
                                   )
                                     ? formatEditedTitle(
                                         "division_of_eng",
-                                        `matrix_rows.${actualRowIndex}.${cellIndex}`,
+                                        `matrix_rows.${rowIndex}.${cellIndex}`,
                                       )
                                     : undefined
                                 }
                                 style={{
                                   ...cellStyle,
                                   fontWeight:
-                                    isGroupRow
+                                    isHeaderRow || isGroupRow
                                       ? "bold"
                                       : "normal",
-                                  backgroundColor: rowBackgroundColor,
+                                  backgroundColor:
+                                    headerBg || groupBg || "#FFFFFF",
+                                  color: headerColor || undefined,
                                   ...getEditedCellStyle(
                                     "division_of_eng",
-                                    `matrix_rows.${actualRowIndex}.${cellIndex}`,
+                                    `matrix_rows.${rowIndex}.${cellIndex}`,
                                   ),
                                 }}
                               >
@@ -5481,8 +4318,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── VALUE ADDITION ── */}
-              {sectionExists('division_of_eng') && renderInlineInsertionsAfter('division_of_eng')}
-
               {sectionExists('value_addition') && (
               <SectionWrapper
                 sectionKey="value_addition"
@@ -5494,10 +4329,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.value_addition = el)}
                 style={sectionStyle("value_addition")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("value_addition"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.valueAddition.heading || "VALUE ADDITION",
                     `${sectionCounter.current}.${getNextSubsectionNumber()}`,
@@ -5518,8 +4350,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── WORK COMPLETION ── */}
-              {sectionExists('value_addition') && renderInlineInsertionsAfter('value_addition')}
-
               {sectionExists('work_completion') && (
               <SectionWrapper
                 sectionKey="work_completion"
@@ -5531,10 +4361,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.work_completion = el)}
                 style={sectionStyle("work_completion")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("work_completion"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.workCompletion.heading ||
                       "WORK COMPLETION CERTIFICATE",
@@ -5557,8 +4384,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── BUYER OBLIGATIONS ── */}
-              {sectionExists('work_completion') && renderInlineInsertionsAfter('work_completion')}
-
               {sectionExists('buyer_obligations') && (
               <SectionWrapper
                 sectionKey="buyer_obligations"
@@ -5572,10 +4397,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 }
                 style={sectionStyle("buyer_obligations")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("buyer_obligations"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.buyerObligations.heading ||
                       "BUYER OBLIGATIONS",
@@ -5594,8 +4416,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── EXCLUSION LIST ── */}
-              {sectionExists('buyer_obligations') && renderInlineInsertionsAfter('buyer_obligations')}
-
               {sectionExists('exclusion_list') && (
               <SectionWrapper
                 sectionKey="exclusion_list"
@@ -5607,10 +4427,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.exclusion_list = el)}
                 style={sectionStyle("exclusion_list")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("exclusion_list"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.exclusionList.heading || "EXCLUSION LIST",
                     `${sectionCounter.current}.${getNextSubsectionNumber()}`,
@@ -5625,8 +4442,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── BUYER PREREQUISITES ── */}
-              {sectionExists('exclusion_list') && renderInlineInsertionsAfter('exclusion_list')}
-
               {sectionExists('buyer_prerequisites') && (
               <SectionWrapper
                 sectionKey="buyer_prerequisites"
@@ -5640,10 +4455,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 }
                 style={sectionStyle("buyer_prerequisites")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("buyer_prerequisites"))}
-                  style={heading2RedStyle}
-                >
+                <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.buyerPrerequisites.heading ||
                       "BUYER PREREQUISITES:",
@@ -5665,8 +4477,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── BINDING CONDITIONS (Heading 2, #4F81BD) ── */}
-              {sectionExists('buyer_prerequisites') && renderInlineInsertionsAfter('buyer_prerequisites')}
-
               {sectionExists('binding_conditions') && (
               <SectionWrapper
                 sectionKey="binding_conditions"
@@ -5680,10 +4490,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 }
                 style={sectionStyle("binding_conditions")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("binding_conditions"))}
-                  style={heading2BlueStyle}
-                >
+                <h2 style={heading2BlueStyle}>
                   {formatHeadingWithNumber(
                     documentContent.bindingConditions.heading ||
                       "BINDING CONDITIONS:",
@@ -5698,8 +4505,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               )}
 
               {/* ── CYBERSECURITY (Heading 2, #4F81BD) ── */}
-              {sectionExists('binding_conditions') && renderInlineInsertionsAfter('binding_conditions')}
-
               {sectionExists('cybersecurity') && (
               <SectionWrapper
                 sectionKey="cybersecurity"
@@ -5711,10 +4516,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.cybersecurity = el)}
                 style={sectionStyle("cybersecurity")}
               >
-                <h2
-                  {...tocTargetProps(sectionTocId("cybersecurity"))}
-                  style={heading2BlueStyle}
-                >
+                <h2 style={heading2BlueStyle}>
                   {formatHeadingWithNumber(
                     documentContent.cybersecurity.heading ||
                       "CYBERSECURITY DISCLAIMER",
@@ -5727,8 +4529,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 )}
               </SectionWrapper>
               )}
-
-              {sectionExists('cybersecurity') && renderInlineInsertionsAfter('cybersecurity')}
 
               {/* Page Break: End of Page 16-23 (Scope of Supply) */}
               {sectionExists('disclaimer') &&
@@ -5746,10 +4546,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.disclaimer = el)}
                 style={sectionStyle("disclaimer")}
               >
-                <h1
-                  {...tocTargetProps(sectionTocId("disclaimer"))}
-                  style={heading1BlueStyle}
-                >
+                <h1 style={heading1BlueStyle}>
                   {formatHeadingWithNumber(
                     documentContent.disclaimer.heading || "DISCLAIMER",
                     `${getNextSectionNumber()}.`,
@@ -5758,10 +4555,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 {(documentContent.disclaimer.sections || DISCLAIMER_SECTIONS).map((section: any) => (
                   <div key={section.title} style={{ marginBottom: "18px" }}>
                     {/* Disclaimer subsections: Heading 2, no color (black) — matches template */}
-                    <h2
-                      {...tocTargetProps(`${sectionTocId("disclaimer")}-${section.title}`)}
-                      style={heading2BlackStyle}
-                    >
+                    <h2 style={heading2BlackStyle}>
                       {formatHeadingWithNumber(
                         section.title,
                         `${sectionCounter.current}.${getNextSubsectionNumber()}`,
@@ -5772,8 +4566,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 ))}
               </SectionWrapper>
               )}
-
-              {sectionExists('disclaimer') && renderInlineInsertionsAfter('disclaimer')}
 
               {/* Page Break: End of Page 24-25 (Disclaimer) */}
               {sectionExists('poc') && renderInsertionsAfter('disclaimer')}
@@ -5790,7 +4582,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.poc = el)}
                 style={sectionStyle("poc")}
               >
-                <h1 {...tocTargetProps(sectionTocId("poc"))} style={heading1BlueStyle}>
+                <h1 style={heading1BlueStyle}>
                   {formatHeadingWithNumber(
                     documentContent.poc.heading ||
                       "COMPLIMENTRY PROOF OF CONCEPTS (PoC)",
@@ -5819,12 +4611,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {sectionExists('poc') && renderInlineInsertionsAfter('poc')}
-
               {/* Render custom sections after poc (last section) */}
               {renderInsertionsAfter('poc', false)}
-
-              {renderListOfFiguresAndTables()}
 
               <p
                 style={{
@@ -5844,15 +4632,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
         <SectionTypeModal
           isOpen={isSectionTypeModalOpen}
           insertAfterKey={pendingInsertAfterKey}
-          insertAfterSubsectionKey={pendingInsertAfterSubsectionKey || undefined}
-          currentSection={currentSectionContext}
           availableCustomSections={Object.entries(customSections).map(([key, content]) => ({
             key,
             title: content.title || 'NEW SECTION',
-            subsections: content.subsections.map((subsection) => ({
-              key: subsection.key,
-              name: subsection.name,
-            })),
           }))}
           onClose={handleCloseModal}
           onCreateSection={handleCreateSection}

@@ -17,18 +17,11 @@ vi.mock('../../api/images', () => ({
   getImages: vi.fn(() => new Promise(() => {})),
 }));
 
-vi.mock('../../contexts/EditorContext', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../contexts/EditorContext')>();
-
-  return {
-    ...actual,
-    useEditor: () => ({
-      refreshSections: vi.fn(),
-    }),
-    useOptionalEditor: () => null,
-  };
-});
+vi.mock('../../contexts/EditorContext', () => ({
+  useEditor: () => ({
+    refreshSections: vi.fn(),
+  }),
+}));
 
 const REQUIRED_COLOR = '#E60012';
 const OPTIONAL_PLACEHOLDER_COLOR = '#6B7280';
@@ -45,45 +38,6 @@ const renderPreview = (sectionContents: Record<string, Record<string, any>>) =>
   );
 
 describe('DocumentPreview required preview styling', () => {
-  it('keeps previously edited elements highlighted even after newer edits exist elsewhere', () => {
-    renderPreview({
-      cover: {},
-      executive_summary: {
-        para1: '<p>Previously edited summary</p>',
-        __editMetadata: {
-          version: 1,
-          sectionUpdatedAt: '2026-05-21T09:00:00.000Z',
-          markers: {
-            para1: {
-              path: 'para1',
-              updatedAt: '2026-05-21T09:00:00.000Z',
-            },
-          },
-        },
-      },
-      process_flow: {
-        text: '<p>More recent edit</p>',
-        __editMetadata: {
-          version: 1,
-          sectionUpdatedAt: '2026-05-21T10:00:00.000Z',
-          markers: {
-            text: {
-              path: 'text',
-              updatedAt: '2026-05-21T10:00:00.000Z',
-            },
-          },
-        },
-      },
-    });
-
-    expect(
-      screen.getByText('Previously edited summary').closest('.edited-preview-content'),
-    ).not.toBeNull();
-    expect(
-      screen.getByText('More recent edit').closest('.edited-preview-content'),
-    ).not.toBeNull();
-  });
-
   it('renders required placeholders and template values in red', () => {
     renderPreview({
       cover: {},

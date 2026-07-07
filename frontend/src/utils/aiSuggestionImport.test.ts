@@ -130,6 +130,44 @@ describe('aiSuggestionImport utilities', () => {
     expect(updated.title).toBe('keep')
   })
 
+  it('importFamilyD normalizes documentation_control imports into plain string items', () => {
+    const existing = {
+      items: [
+        'Screen Design Document',
+        {
+          items: [
+            {
+              name: 'Hardware Specifications',
+              description: 'Nested duplicate that should collapse to a string item',
+            },
+          ],
+          title: 'Documentation Control',
+          description: 'Nested container object from malformed saved content',
+        },
+      ],
+      custom_items: [],
+    }
+    const content = [
+      {
+        name: 'Software Specifications',
+        description: 'Imported as an object by AI structured output',
+      },
+      {
+        name: 'Operation Manual',
+        description: 'Imported as an object by AI structured output',
+      },
+    ]
+
+    const updated = importFamilyD(existing, content, 'documentation_control')
+
+    expect(updated.items).toEqual([
+      'Screen Design Document',
+      'Hardware Specifications',
+      'Software Specifications',
+      'Operation Manual',
+    ])
+  })
+
   it('importFamilyE replaces description-like fields and preserves images', () => {
     const existing = { images: [{ filename: 'img1' }], description: 'old' }
     const content = 'a new description'
@@ -226,6 +264,59 @@ describe('aiSuggestionImport utilities', () => {
     // The pre-existing `rows` key must be left alone, not overwritten with
     // the feature data.
     expect(updated.rows).toEqual([])
+  })
+
+  it('importSuggestion heals malformed documentation_control items before draft save', async () => {
+    const existing = {
+      heading: 'DOCUMENTATION CONTROL',
+      intro_text: 'SELLER shall provide the following technical documentation.',
+      items: [
+        'Screen Design Document',
+        {
+          items: [
+            {
+              name: 'Hardware Specifications',
+              description: 'Nested object persisted by older bad imports',
+            },
+          ],
+          title: 'Documentation Control',
+          description: 'Malformed container object',
+        },
+      ],
+      custom_items: [],
+    }
+    const suggestion = {
+      structured_import_available: true,
+      content: [
+        {
+          name: 'Software Specifications',
+          description: 'Imported as object',
+        },
+        {
+          name: 'Operation Manual',
+          description: 'Imported as object',
+        },
+      ],
+    }
+
+    const result = await importSuggestion(
+      'test-project',
+      'documentation_control',
+      suggestion,
+      existing,
+    )
+
+    expect(result).toEqual({
+      heading: 'DOCUMENTATION CONTROL',
+      intro_text: 'SELLER shall provide the following technical documentation.',
+      items: [
+        'Screen Design Document',
+        'Hardware Specifications',
+        'Software Specifications',
+        'Operation Manual',
+      ],
+      custom_items: [],
+    })
   })
 
   it('importSuggestion extracts introduction tender fields and removes metadata blocks from narrative text', async () => {
