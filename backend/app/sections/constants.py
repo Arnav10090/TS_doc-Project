@@ -39,6 +39,7 @@ VALID_SECTION_KEYS = [
     "value_addition",
     "buyer_prerequisites",
     "poc",
+    "list_of_figures_tables",
 ]
 
 # Regex patterns for custom section keys
