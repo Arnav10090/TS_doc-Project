@@ -61,6 +61,7 @@ export const PREDEFINED_SECTION_TITLES: Record<string, string> = {
   disclaimer: 'Disclaimer',
   value_addition: 'Value Addition',
   poc: 'Proof of Concept',
+  list_of_figures_tables: 'List of Figures & Tables',
 };
 
 export const PREDEFINED_SECTION_KEYS = Object.keys(PREDEFINED_SECTION_TITLES);
@@ -475,6 +476,10 @@ export const getDefaultSectionContent = (
         name: '',
         description: '',
       };
+    case 'list_of_figures_tables':
+      return {
+        heading: 'LIST OF FIGURES & TABLES',
+      };
     default:
       return {};
   }
@@ -565,9 +570,9 @@ const normalizeResponsibilityMatrixRows = (value: unknown): unknown => {
 
   const resolvedRows = hasObjectRows
     ? [
-        ...RESPONSIBILITY_MATRIX_ROWS.slice(0, 2).map((row) => [...row]),
-        ...normalizedRows,
-      ]
+      ...RESPONSIBILITY_MATRIX_ROWS.slice(0, 2).map((row) => [...row]),
+      ...normalizedRows,
+    ]
     : normalizedRows;
 
   return isValidResponsibilityMatrixRows(resolvedRows)

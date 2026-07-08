@@ -66,7 +66,7 @@ type TocPageNumbers = Record<string, number>;
 
 interface TocEntry {
   id: string;
-  level: 1 | 2;
+  level: 1 | 2 | 3;
   numberLabel: string;
   label: string;
 }
@@ -629,6 +629,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
         "cybersecurity",
         "disclaimer",
         "scope_definitions",
+        "list_of_figures_tables",
       ];
 
       return Object.entries(sectionCompletion).filter(
@@ -637,7 +638,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     }, [sectionCompletion]);
 
     const totalCompletable = sectionContents
-      ? Object.keys(sectionContents).length - 4
+      ? Object.keys(sectionContents).length - 5
       : 27;
 
     const getSectionContent = (key: string): Record<string, any> => {
@@ -821,6 +822,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
         cybersecurity: getSectionContent("cybersecurity"),
         disclaimer: getSectionContent("disclaimer"),
         poc: getSectionContent("poc"),
+        listOfFiguresTables: getSectionContent("list_of_figures_tables"),
       };
     }, [sectionContents]);
 
@@ -989,6 +991,150 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
 
       return { predefinedSections: predefined, customSections: custom };
     }, [sectionContents]);
+
+    // ── Collect all figures and tables across the document in order ──
+    interface FigureEntry { sNo: number; figNo: string; name: string; }
+    interface TableEntry { sNo: number; tableNo: string; name: string; }
+
+    const { figureEntries, tableEntries } = useMemo(() => {
+      const figures: FigureEntry[] = [];
+      const tables: TableEntry[] = [];
+      let figCounter = 0;
+      let tblCounter = 0;
+
+      // Helper: collect figures/tables from custom sections inserted after a given key
+      const collectFromCustomSectionsAfter = (afterKey: string) => {
+        const customAfter = Object.entries(customSections).filter(
+          ([, content]) => content.insertAfterKey === afterKey,
+        );
+        customAfter.forEach(([csKey, content]) => {
+          (content.subsections || []).forEach((sub) => {
+            if (sub.contentType === 'image' && isImageData(sub.data)) {
+              const images = getImageItems(sub.data);
+              images.forEach((img) => {
+                figCounter += 1;
+                figures.push({
+                  sNo: figures.length + 1,
+                  figNo: `Fig ${figCounter}`,
+                  name: img.caption || sub.name || `Figure ${figCounter}`,
+                });
+              });
+            }
+            if (sub.contentType === 'table' && isTableData(sub.data)) {
+              const tbs = getTableItems(sub.data);
+              tbs.forEach((tb) => {
+                tblCounter += 1;
+                tables.push({
+                  sNo: tables.length + 1,
+                  tableNo: `Table ${tblCounter}`,
+                  name: tb.caption || sub.name || `Table ${tblCounter}`,
+                });
+              });
+            }
+          });
+          // Recurse for nested custom sections
+          collectFromCustomSectionsAfter(csKey);
+        });
+      };
+
+      // Walk document in render order, collecting predefined figures/tables
+      // then custom sections after each predefined section
+
+      // Cover & Revision History: no figures, 1 table (revision history)
+      if (sectionExists('revision_history')) {
+        tblCounter += 1;
+        tables.push({ sNo: tables.length + 1, tableNo: `Table ${tblCounter}`, name: 'Revision History' });
+      }
+      collectFromCustomSectionsAfter('cover');
+      collectFromCustomSectionsAfter('revision_history');
+
+      // Executive Summary
+      collectFromCustomSectionsAfter('executive_summary');
+
+      // General Overview group
+      collectFromCustomSectionsAfter('introduction');
+
+      if (sectionExists('abbreviations')) {
+        tblCounter += 1;
+        tables.push({ sNo: tables.length + 1, tableNo: `Table ${tblCounter}`, name: 'Abbreviations' });
+      }
+      collectFromCustomSectionsAfter('abbreviations');
+      collectFromCustomSectionsAfter('process_flow');
+      collectFromCustomSectionsAfter('overview');
+
+      // Offerings group
+      collectFromCustomSectionsAfter('features');
+      collectFromCustomSectionsAfter('remote_support');
+      collectFromCustomSectionsAfter('documentation_control');
+      collectFromCustomSectionsAfter('customer_training');
+
+      if (sectionExists('system_config')) {
+        figCounter += 1;
+        figures.push({ sNo: figures.length + 1, figNo: `Fig ${figCounter}`, name: 'System Architecture Diagram' });
+      }
+      collectFromCustomSectionsAfter('system_config');
+      collectFromCustomSectionsAfter('fat_condition');
+
+      // Technology Stack group
+      if (sectionExists('tech_stack')) {
+        tblCounter += 1;
+        tables.push({ sNo: tables.length + 1, tableNo: `Table ${tblCounter}`, name: 'Technology Stack' });
+      }
+      collectFromCustomSectionsAfter('tech_stack');
+
+      if (sectionExists('hardware_specs')) {
+        tblCounter += 1;
+        tables.push({ sNo: tables.length + 1, tableNo: `Table ${tblCounter}`, name: 'Hardware Specifications' });
+      }
+      collectFromCustomSectionsAfter('hardware_specs');
+
+      if (sectionExists('software_specs')) {
+        tblCounter += 1;
+        tables.push({ sNo: tables.length + 1, tableNo: `Table ${tblCounter}`, name: 'Software Specifications' });
+      }
+      collectFromCustomSectionsAfter('software_specs');
+      collectFromCustomSectionsAfter('third_party_sw');
+
+      // Schedule group
+      if (sectionExists('overall_gantt')) {
+        figCounter += 1;
+        figures.push({ sNo: figures.length + 1, figNo: `Fig ${figCounter}`, name: 'Overall Gantt Chart' });
+      }
+      collectFromCustomSectionsAfter('overall_gantt');
+
+      if (sectionExists('shutdown_gantt')) {
+        figCounter += 1;
+        figures.push({ sNo: figures.length + 1, figNo: `Fig ${figCounter}`, name: 'Shutdown Gantt Chart' });
+      }
+      collectFromCustomSectionsAfter('shutdown_gantt');
+
+      if (sectionExists('supervisors')) {
+        tblCounter += 1;
+        tables.push({ sNo: tables.length + 1, tableNo: `Table ${tblCounter}`, name: 'Supervisors' });
+      }
+      collectFromCustomSectionsAfter('supervisors');
+
+      // Scope of Supply group
+      if (sectionExists('division_of_eng')) {
+        tblCounter += 1;
+        tables.push({ sNo: tables.length + 1, tableNo: `Table ${tblCounter}`, name: 'Division of Engineering Responsibility Matrix' });
+      }
+      collectFromCustomSectionsAfter('scope_definitions');
+      collectFromCustomSectionsAfter('division_of_eng');
+      collectFromCustomSectionsAfter('value_addition');
+      collectFromCustomSectionsAfter('work_completion');
+      collectFromCustomSectionsAfter('buyer_obligations');
+      collectFromCustomSectionsAfter('exclusion_list');
+      collectFromCustomSectionsAfter('buyer_prerequisites');
+      collectFromCustomSectionsAfter('binding_conditions');
+      collectFromCustomSectionsAfter('cybersecurity');
+
+      // Legal group
+      collectFromCustomSectionsAfter('disclaimer');
+      collectFromCustomSectionsAfter('poc');
+
+      return { figureEntries: figures, tableEntries: tables };
+    }, [customSections, sectionContents]);
 
     const getCustomSectionsAfter = (afterKey: string) =>
       Object.entries(customSections).filter(
@@ -1868,10 +2014,12 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       const entries: TocEntry[] = [];
       let sectionNumber = 0;
       let subsectionNumber = 0;
+      let subSubsectionNumber = 0;
 
       const addSection = (id: string, label: string) => {
         sectionNumber += 1;
         subsectionNumber = 0;
+        subSubsectionNumber = 0;
         entries.push({
           id,
           level: 1,
@@ -1882,10 +2030,21 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
 
       const addSubsection = (id: string, label: string) => {
         subsectionNumber += 1;
+        subSubsectionNumber = 0;
         entries.push({
           id,
           level: 2,
           numberLabel: `${sectionNumber}.${subsectionNumber}`,
+          label,
+        });
+      };
+
+      const addSubSubsection = (id: string, label: string) => {
+        subSubsectionNumber += 1;
+        entries.push({
+          id,
+          level: 3,
+          numberLabel: `${sectionNumber}.${subsectionNumber}.${subSubsectionNumber}`,
           label,
         });
       };
@@ -1989,6 +2148,14 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
             "section:features",
             documentContent.features.heading || "DESIGN SCOPE OF WORK",
           );
+          // Add feature items as level-3 entries
+          const items = documentContent.features.items || [];
+          items.forEach((feature: any, index: number) => {
+            addSubSubsection(
+              `feature-item:${index}`,
+              feature.title || `Feature ${index + 1}`,
+            );
+          });
           appendCustomInsertions("features");
         }
 
@@ -2207,6 +2374,22 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
           documentContent.poc.heading || "COMPLIMENTRY PROOF OF CONCEPTS (PoC)",
         );
         appendCustomInsertions("poc");
+      }
+
+      if (sectionExists("list_of_figures_tables")) {
+        addSection(
+          "section:list_of_figures_tables",
+          documentContent.listOfFiguresTables.heading || "LIST OF FIGURES & TABLES",
+        );
+        addSubsection(
+          "section:list_of_figures",
+          "List of Figures",
+        );
+        addSubsection(
+          "section:list_of_tables",
+          "List of Tables",
+        );
+        appendCustomInsertions("list_of_figures_tables");
       }
 
       return entries;
@@ -2753,6 +2936,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               onSectionClick={onSectionClick}
               onSubsectionClick={onSubsectionClick}
               onAddSectionClick={handleAddSectionClick}
+              onTocPageNumbersChange={handleTocPageNumbersChange}
             >
               {/* ── COVER PAGE ── */}
               <SectionWrapper
@@ -3011,26 +3195,24 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               <div style={{ marginBottom: "32px" }}>
                 <h2 style={heading2RedStyle}>TABLE OF CONTENTS</h2>
                 {tocEntries.length > 0 ? (
-                  <div>
-                    {tocEntries.map((entry) => (
-                      <div
-                        key={entry.id}
-                        style={{
-                          ...tocEntryBaseStyle,
-                          paddingLeft: entry.level === 1 ? "0" : "28px",
-                          fontWeight: entry.level === 1 ? "bold" : "normal",
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        <span>{entry.numberLabel}</span>
-                        <span>{entry.label}</span>
-                        <span style={tocLeaderStyle} />
-                        <span style={tocPageNumberStyle}>
-                          {tocPageNumbers[entry.id] || ""}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                  tocEntries.map((entry) => (
+                    <div
+                      key={entry.id}
+                      style={{
+                        ...tocEntryBaseStyle,
+                        paddingLeft: entry.level === 1 ? "0" : entry.level === 2 ? "28px" : "56px",
+                        fontWeight: entry.level === 1 ? "bold" : "normal",
+                        textTransform: entry.level === 3 ? "capitalize" as const : "uppercase" as const,
+                      }}
+                    >
+                      <span>{entry.numberLabel}</span>
+                      <span>{entry.label}</span>
+                      <span style={tocLeaderStyle} />
+                      <span style={tocPageNumberStyle}>
+                        {tocPageNumbers[entry.id] || ""}
+                      </span>
+                    </div>
+                  ))
                 ) : (
                   <p style={placeholderStyle}>
                     [Auto-generated table of contents]
@@ -3419,26 +3601,31 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   )}
                 </p>
                 {featureItems.length > 0 ? (
-                  featureItems.map((feature: any, index: number) => (
-                    <div
-                      key={feature.id || `feature-${index}`}
-                      style={{ marginBottom: "14px" }}
-                    >
-                      {/* Feature titles: Heading 2, no color (black) — matches template */}
-                      <h2 style={heading2BlackStyle}>
-                        {renderRequiredValue(
-                          "features",
-                          `items.${index}.title`,
-                          feature.title || `Feature ${index + 1}`,
+                  featureItems.map((feature: any, index: number) => {
+                    const featureSubNum = `${sectionCounter.current}.${subsectionCounter.current}.${index + 1}`;
+                    return (
+                      <div
+                        key={feature.id || `feature-${index}`}
+                        data-toc-id={`feature-item:${index}`}
+                        style={{ marginBottom: "14px" }}
+                      >
+                        {/* Feature titles: Heading 3, numbered sub-subsection — matches template TOC */}
+                        <h3 style={heading3RedStyle}>
+                          {featureSubNum}{" "}
+                          {renderRequiredValue(
+                            "features",
+                            `items.${index}.title`,
+                            feature.title || `Feature ${index + 1}`,
+                          )}
+                        </h3>
+                        {renderRichTextPreview(
+                          feature.description,
+                          "[Enter feature description]",
+                          { sectionKey: "features", path: `items.${index}.description` },
                         )}
-                      </h2>
-                      {renderRichTextPreview(
-                        feature.description,
-                        "[Enter feature description]",
-                        { sectionKey: "features", path: `items.${index}.description` },
-                      )}
-                    </div>
-                  ))
+                      </div>
+                    );
+                  })
                 ) : (
                   <p style={requiredPlaceholderStyle}>
                     [No features defined yet]
@@ -4177,7 +4364,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionExists('buyer_obligations') || sectionExists('exclusion_list') || 
                 sectionExists('buyer_prerequisites') || sectionExists('binding_conditions') || 
                 sectionExists('cybersecurity')) && (
-              <h1 style={heading1RedStyle}>
+              <h1 style={heading1RedStyle} data-toc-id="group:scope_of_supply">
                 {formatHeadingWithNumber(
                   "SCOPE OF SUPPLY",
                   `${getNextSectionNumber()}.`,
@@ -4189,6 +4376,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('scope_definitions') && (
               <SectionWrapper
                 sectionKey="scope_definitions"
+                tocId="section:scope_definitions"
                 isActive={isActive("scope_definitions")}
                 isHovered={hoveredSection === "scope_definitions"}
                 onMouseEnter={() => setHoveredSection("scope_definitions")}
@@ -4217,6 +4405,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('division_of_eng') && (
               <SectionWrapper
                 sectionKey="division_of_eng"
+                tocId="section:division_of_eng"
                 isActive={isActive("division_of_eng")}
                 isHovered={hoveredSection === "division_of_eng"}
                 onMouseEnter={() => setHoveredSection("division_of_eng")}
@@ -4321,6 +4510,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('value_addition') && (
               <SectionWrapper
                 sectionKey="value_addition"
+                tocId="section:value_addition"
                 isActive={isActive("value_addition")}
                 isHovered={hoveredSection === "value_addition"}
                 onMouseEnter={() => setHoveredSection("value_addition")}
@@ -4353,6 +4543,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('work_completion') && (
               <SectionWrapper
                 sectionKey="work_completion"
+                tocId="section:work_completion"
                 isActive={isActive("work_completion")}
                 isHovered={hoveredSection === "work_completion"}
                 onMouseEnter={() => setHoveredSection("work_completion")}
@@ -4387,6 +4578,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('buyer_obligations') && (
               <SectionWrapper
                 sectionKey="buyer_obligations"
+                tocId="section:buyer_obligations"
                 isActive={isActive("buyer_obligations")}
                 isHovered={hoveredSection === "buyer_obligations"}
                 onMouseEnter={() => setHoveredSection("buyer_obligations")}
@@ -4419,6 +4611,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('exclusion_list') && (
               <SectionWrapper
                 sectionKey="exclusion_list"
+                tocId="section:exclusion_list"
                 isActive={isActive("exclusion_list")}
                 isHovered={hoveredSection === "exclusion_list"}
                 onMouseEnter={() => setHoveredSection("exclusion_list")}
@@ -4445,6 +4638,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('buyer_prerequisites') && (
               <SectionWrapper
                 sectionKey="buyer_prerequisites"
+                tocId="section:buyer_prerequisites"
                 isActive={isActive("buyer_prerequisites")}
                 isHovered={hoveredSection === "buyer_prerequisites"}
                 onMouseEnter={() => setHoveredSection("buyer_prerequisites")}
@@ -4480,6 +4674,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('binding_conditions') && (
               <SectionWrapper
                 sectionKey="binding_conditions"
+                tocId="section:binding_conditions"
                 isActive={isActive("binding_conditions")}
                 isHovered={hoveredSection === "binding_conditions"}
                 onMouseEnter={() => setHoveredSection("binding_conditions")}
@@ -4508,6 +4703,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('cybersecurity') && (
               <SectionWrapper
                 sectionKey="cybersecurity"
+                tocId="section:cybersecurity"
                 isActive={isActive("cybersecurity")}
                 isHovered={hoveredSection === "cybersecurity"}
                 onMouseEnter={() => setHoveredSection("cybersecurity")}
@@ -4538,6 +4734,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('disclaimer') && (
               <SectionWrapper
                 sectionKey="disclaimer"
+                tocId="section:disclaimer"
                 isActive={isActive("disclaimer")}
                 isHovered={hoveredSection === "disclaimer"}
                 onMouseEnter={() => setHoveredSection("disclaimer")}
@@ -4552,8 +4749,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                     `${getNextSectionNumber()}.`,
                   )}
                 </h1>
-                {(documentContent.disclaimer.sections || DISCLAIMER_SECTIONS).map((section: any) => (
-                  <div key={section.title} style={{ marginBottom: "18px" }}>
+                {(documentContent.disclaimer.sections || DISCLAIMER_SECTIONS).map((section: any, sectionIdx: number) => (
+                  <div key={section.title} style={{ marginBottom: "18px" }} data-toc-id={`disclaimer-subsection:${sectionIdx}`}>
                     {/* Disclaimer subsections: Heading 2, no color (black) — matches template */}
                     <h2 style={heading2BlackStyle}>
                       {formatHeadingWithNumber(
@@ -4574,6 +4771,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('poc') && (
               <SectionWrapper
                 sectionKey="poc"
+                tocId="section:poc"
                 isActive={isActive("poc")}
                 isHovered={hoveredSection === "poc"}
                 onMouseEnter={() => setHoveredSection("poc")}
@@ -4611,8 +4809,117 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* Render custom sections after poc (last section) */}
-              {renderInsertionsAfter('poc', false)}
+              {/* Render custom sections after poc */}
+              {sectionExists('list_of_figures_tables') && renderInsertionsAfter('poc')}
+              {!sectionExists('list_of_figures_tables') && renderInsertionsAfter('poc', false)}
+
+              {/* ── LIST OF FIGURES & TABLES (Heading 1, #4F81BD) ── */}
+              {sectionExists('list_of_figures_tables') && (
+              <SectionWrapper
+                sectionKey="list_of_figures_tables"
+                tocId="section:list_of_figures_tables"
+                isActive={isActive("list_of_figures_tables")}
+                isHovered={hoveredSection === "list_of_figures_tables"}
+                onMouseEnter={() => setHoveredSection("list_of_figures_tables")}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => handleSectionClick("list_of_figures_tables")}
+                sectionRef={(el) => (sectionRefs.current.list_of_figures_tables = el)}
+                style={sectionStyle("list_of_figures_tables")}
+              >
+                <h1 style={heading1BlueStyle}>
+                  {formatHeadingWithNumber(
+                    documentContent.listOfFiguresTables.heading ||
+                      "LIST OF FIGURES & TABLES",
+                    `${getNextSectionNumber()}.`,
+                  )}
+                </h1>
+
+                {/* ── List of Figures subsection ── */}
+                <h2
+                  data-toc-id="section:list_of_figures"
+                  style={{
+                    ...heading2BlackStyle,
+                    marginTop: '24px',
+                  }}
+                >
+                  {`${sectionCounter.current}.${getNextSubsectionNumber()} List of Figures`}
+                </h2>
+                {figureEntries.length > 0 ? (
+                  <table
+                    style={{
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      margin: '12px 0 24px',
+                    }}
+                  >
+                    <thead>
+                      <tr>
+                        <th style={{ border: '1px solid #000', padding: '8px 12px', backgroundColor: '#D9E2F3', textAlign: 'center', fontWeight: 'bold', width: '60px' }}>S No.</th>
+                        <th style={{ border: '1px solid #000', padding: '8px 12px', backgroundColor: '#D9E2F3', textAlign: 'center', fontWeight: 'bold', width: '100px' }}>Fig No.</th>
+                        <th style={{ border: '1px solid #000', padding: '8px 12px', backgroundColor: '#D9E2F3', textAlign: 'left', fontWeight: 'bold' }}>Name</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {figureEntries.map((entry) => (
+                        <tr key={entry.figNo}>
+                          <td style={{ border: '1px solid #000', padding: '6px 12px', textAlign: 'center' }}>{entry.sNo}</td>
+                          <td style={{ border: '1px solid #000', padding: '6px 12px', textAlign: 'center' }}>{entry.figNo}</td>
+                          <td style={{ border: '1px solid #000', padding: '6px 12px', textAlign: 'left' }}>{entry.name}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p style={{ fontStyle: 'italic', color: '#888', margin: '12px 0 24px' }}>
+                    No figures in the document.
+                  </p>
+                )}
+
+                {/* ── List of Tables subsection ── */}
+                <h2
+                  data-toc-id="section:list_of_tables"
+                  style={{
+                    ...heading2BlackStyle,
+                    marginTop: '24px',
+                  }}
+                >
+                  {`${sectionCounter.current}.${getNextSubsectionNumber()} List of Tables`}
+                </h2>
+                {tableEntries.length > 0 ? (
+                  <table
+                    style={{
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      margin: '12px 0 24px',
+                    }}
+                  >
+                    <thead>
+                      <tr>
+                        <th style={{ border: '1px solid #000', padding: '8px 12px', backgroundColor: '#D9E2F3', textAlign: 'center', fontWeight: 'bold', width: '60px' }}>S No.</th>
+                        <th style={{ border: '1px solid #000', padding: '8px 12px', backgroundColor: '#D9E2F3', textAlign: 'center', fontWeight: 'bold', width: '100px' }}>Table No.</th>
+                        <th style={{ border: '1px solid #000', padding: '8px 12px', backgroundColor: '#D9E2F3', textAlign: 'left', fontWeight: 'bold' }}>Name</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tableEntries.map((entry) => (
+                        <tr key={entry.tableNo}>
+                          <td style={{ border: '1px solid #000', padding: '6px 12px', textAlign: 'center' }}>{entry.sNo}</td>
+                          <td style={{ border: '1px solid #000', padding: '6px 12px', textAlign: 'center' }}>{entry.tableNo}</td>
+                          <td style={{ border: '1px solid #000', padding: '6px 12px', textAlign: 'left' }}>{entry.name}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p style={{ fontStyle: 'italic', color: '#888', margin: '12px 0 24px' }}>
+                    No tables in the document.
+                  </p>
+                )}
+              </SectionWrapper>
+              )}
+
+              {/* Render custom sections after list_of_figures_tables (last section) */}
+              {renderInsertionsAfter('list_of_figures_tables', false)}
 
               <p
                 style={{

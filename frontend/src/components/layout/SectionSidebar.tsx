@@ -101,6 +101,7 @@ const SECTION_GROUPS: SectionGroup[] = [
       { key: 'cybersecurity', label: 'Cybersecurity' },
       { key: 'disclaimer', label: 'Disclaimer' },
       { key: 'poc', label: 'Proof of Concept' },
+      { key: 'list_of_figures_tables', label: 'List of Figures & Tables' },
     ],
   },
 ];
@@ -147,8 +148,8 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
   // Calculate completion statistics (27 completable sections, excluding custom sections)
   const completedCount = Object.entries(sectionCompletion).filter(
     ([key, isComplete]) => {
-      // Exclude 4 auto-complete sections from count
-      const excludedSections = ['binding_conditions', 'cybersecurity', 'disclaimer', 'scope_definitions'];
+      // Exclude 5 auto-complete sections from count
+      const excludedSections = ['binding_conditions', 'cybersecurity', 'disclaimer', 'scope_definitions', 'list_of_figures_tables'];
       // Exclude custom sections from completion count
       return !excludedSections.includes(key) && !isCustomSectionKey(key) && isComplete;
     }
@@ -162,7 +163,7 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
     ? Object.keys(sectionContents).some((k) => isCustomSectionKey(k))
     : false;
 
-  const totalCompletable = hasCustomSections ? 27 : Math.max(0, totalKeys - 4);
+  const totalCompletable = hasCustomSections ? 27 : Math.max(0, totalKeys - 5);
 
   const completionPercentage = totalCompletable === 0 ? 0 : Math.round((completedCount / totalCompletable) * 100);
 
@@ -181,10 +182,10 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
 
     try {
       const blob = await generateDocument(projectId);
-      
+
       // Extract filename from response headers if available
       const filename = `TS_Document_${Date.now()}.docx`;
-      
+
       handleDocumentDownload(blob, filename);
     } catch (error: any) {
       if (error.response?.status === 422) {
@@ -393,11 +394,11 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingBottom: '16px' }}>
         {SECTION_GROUPS.map((group) => {
           const visibleSections = group.sections.filter(section => sectionContents?.[section.key]);
-          
+
           if (visibleSections.length === 0) {
             return null;
           }
-          
+
           return (
             <div key={group.category}>
               <div
@@ -415,7 +416,7 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
               {visibleSections.map((section) => {
                 const isActive = activeSectionKey === section.key;
                 const status = getSectionStatus(section.key);
-                const lockedSections = ['binding_conditions', 'cybersecurity', 'disclaimer', 'scope_definitions'];
+                const lockedSections = ['binding_conditions', 'cybersecurity', 'disclaimer', 'scope_definitions', 'list_of_figures_tables'];
                 const isLocked = lockedSections.includes(section.key);
 
                 return (
