@@ -1,2 +1,0 @@
-[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
-Structure: Numbered subsections per feature. Each: short title, description, buyer benefit. Mark value-added items explicitly. Required: product-specific capability list. Do not invent capabilities not in scope.

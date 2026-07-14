@@ -9,7 +9,7 @@ def test_collect_document_references_numbers_builtin_tables_and_custom_items(tmp
     project_id = "project-1"
     sections = {
         "revision_history": {"rows": []},
-        "executive_summary": {"client_logo_rows": []},
+        "executive_summary": {},
         "system_config": {},
         "custom_section_1700000000000_12345678-1234-1234-1234-123456789abc": {
             "title": "Custom Section",
@@ -59,8 +59,7 @@ def test_collect_document_references_numbers_builtin_tables_and_custom_items(tmp
     ]
     assert [(table.number, table.name) for table in references.tables] == [
         (1, "Revision History"),
-        (2, "Client Reference Logos"),
-        (3, "Training Schedule"),
+        (2, "Training Schedule"),
     ]
 
 
@@ -118,7 +117,7 @@ def test_apply_document_references_adds_captions_and_final_lists(tmp_path):
         str(file_path),
         {
             "revision_history": {"rows": []},
-            "executive_summary": {"client_logo_rows": []},
+            "executive_summary": {},
             "abbreviations": {"rows": []},
         },
         str(tmp_path),
@@ -129,8 +128,8 @@ def test_apply_document_references_adds_captions_and_final_lists(tmp_path):
     text = "\n".join(paragraph.text for paragraph in result.paragraphs)
 
     assert "Table 1: Revision History" in text
-    assert "Table 2: Client Reference Logos" in text
-    assert "Table 3: Abbreviations Used" in text
+    assert "Table 2: Abbreviations Used" in text
+    assert "Client Reference Logos" not in text
     assert "11. List of Figures and Tables" in text
     assert "11.1 List of Figures" in text
     assert "11.2 List of Tables" in text

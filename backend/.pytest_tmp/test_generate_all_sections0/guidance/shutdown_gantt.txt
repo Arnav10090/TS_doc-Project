@@ -1,2 +1,0 @@
-[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
-If no shutdown required: one-sentence statement. If required: week-based GanttTask JSON for shutdown-window activities only. Confirm shutdown requirement from metadata before generating schedule.

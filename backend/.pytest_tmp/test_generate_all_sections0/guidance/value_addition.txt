@@ -1,2 +1,0 @@
-[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
-Brief. State: platform, duration, hosting, limitations. Explicit scope-limiting language required. Not a commitment to full deployment. Provided as-is, no SLA.

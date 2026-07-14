@@ -1,2 +1,0 @@
-[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
-Structure: process_summary, system_objective, existing_system, integration_approach, tangible_benefits (bullet list), intangible_benefits (bullet list). Tone: management-level. Required: [CUSTOMER_NAME], [SITE_NAME], production units.

@@ -1,2 +1,0 @@
-[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
-Content: Formal opening referencing enquiry. Required: tender_reference, tender_date, clientname, clientlocation from project metadata. Use placeholders if absent: [TENDER_REF], [TENDER_DATE], [CUSTOMER_NAME], [SITE_LOCATION]. Tone: factual, formal, concise.

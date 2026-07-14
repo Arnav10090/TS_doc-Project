@@ -6,7 +6,7 @@ describe('documentReferences', () => {
     const references = buildDocumentReferences(
       {
         revision_history: { rows: [] },
-        executive_summary: { client_logo_rows: [] },
+        executive_summary: {},
         system_config: {},
         'custom_section_1700000000000_12345678-1234-1234-1234-123456789abc': {
           title: 'Custom Section',
@@ -53,8 +53,7 @@ describe('documentReferences', () => {
     ]);
     expect(references.tables.map((table) => [table.number, table.name])).toEqual([
       [1, 'Revision History'],
-      [2, 'Client Reference Logos'],
-      [3, 'Training Schedule'],
+      [2, 'Training Schedule'],
     ]);
   });
 

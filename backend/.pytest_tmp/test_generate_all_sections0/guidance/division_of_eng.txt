@@ -1,2 +1,0 @@
-[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
-Responsibility matrix: No., Category, Item, BD, BE, DD, SU, ER, COM. Codes: B=Buyer, S=Seller, B/S=Joint. Categories: Services, System Engineering, Hardware, Software, Interface, Training, Construction, Pre-Engineering, Documents. Each interface appears twice: source side (B) and product side (S).

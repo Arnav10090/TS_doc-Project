@@ -2,15 +2,14 @@ import { setSectionDraft, getSectionDraft } from './sectionDraftStore'
 import type { CustomSectionContent, SubsectionData } from '../types/customSections'
 import { RESPONSIBILITY_MATRIX_ROWS } from '../components/preview/templateContent'
 import {
-  dedupeStringParagraphs,
   extractStructuredIntroductionContent,
-  stripStructuredIntroductionJson,
 } from './introductionContent'
 
 type Suggestion = {
   section_key?: string
   structured_import_available?: boolean
   content?: any
+  raw_text?: string | null
   subsection_suggestions?: Array<any> | null
 }
 
@@ -133,6 +132,10 @@ function stripStructuredOutputScaffolding(value: string): string {
 
 function sanitizeRichTextString(value: string): string {
   return stripStructuredOutputScaffolding(value)
+    // Strip leading markdown heading lines (e.g. "## Executive Summary")
+    // since the document template already renders section titles.
+    .replace(/^\s*#{1,6}\s+.+\n*/gm, '')
+    .trim()
 }
 
 function sanitizeParagraphArray(value: unknown): string[] | undefined {
@@ -161,15 +164,6 @@ function sanitizeTextFieldValue(key: string, value: any): any {
   return value
 }
 
-function cleanIntroductionNarrativeBlock(value: string): string {
-  return stripStructuredOutputScaffolding(value)
-    .replace(/^\s*#{1,6}\s*Introduction\s*$/gim, '')
-    .replace(/^\s*Introduction\s*$/gim, '')
-    .replace(/^\s*#{1,6}\s*Tender Reference\s*$/gim, '')
-    .replace(/^\s*(?:\*{1,2})?Tender Reference(?:\*{1,2})?\s*:\s*.+$/gim, '')
-    .replace(/^\s*(?:\*{1,2})?Tender Date(?:\*{1,2})?\s*:\s*.+$/gim, '')
-    .trim()
-}
 
 function normalizeIntroductionImport(existingDraft: Record<string, any>, content: any) {
   const next = { ...(existingDraft || {}) }
@@ -179,19 +173,27 @@ function normalizeIntroductionImport(existingDraft: Record<string, any>, content
       ? []
       : collectTextFragments(content)
   const combinedText = fragments.join('\n\n')
+  // Strip HTML tags so label extraction handles "<p>Tender Reference: ...</p>"
+  const htmlStrippedText = combinedText.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ')
 
-  const tenderReference =
+  const rawTenderReference =
     structuredIntroduction?.tenderReference ??
     (content && typeof content === 'object'
       ? getStringValueByKey(content, ['tender_reference', 'tenderreference'])
       : undefined) ??
-    extractLabeledValue(combinedText, 'Tender Reference')
-  const tenderDate =
+    extractLabeledValue(combinedText, 'Tender Reference') ??
+    extractLabeledValue(htmlStrippedText, 'Tender Reference')
+  const rawTenderDate =
     structuredIntroduction?.tenderDate ??
     (content && typeof content === 'object'
       ? getStringValueByKey(content, ['tender_date', 'tenderdate'])
       : undefined) ??
-    extractLabeledValue(combinedText, 'Tender Date')
+    extractLabeledValue(combinedText, 'Tender Date') ??
+    extractLabeledValue(htmlStrippedText, 'Tender Date')
+
+  // Strip any residual HTML tags from extracted values
+  const tenderReference = rawTenderReference?.replace(/<[^>]+>/g, '').trim()
+  const tenderDate = rawTenderDate?.replace(/<[^>]+>/g, '').trim()
 
   if (tenderReference) {
     next.tender_reference = tenderReference
@@ -205,24 +207,8 @@ function normalizeIntroductionImport(existingDraft: Record<string, any>, content
     next.heading = content.heading.trim()
   }
 
-  const importedParagraphs =
-    typeof content === 'string'
-      ? [
-          ...splitImportedTextToParagraphs(stripStructuredIntroductionJson(content)),
-          ...(structuredIntroduction?.paragraphs ?? []),
-        ]
-      : structuredIntroduction?.paragraphs?.length
-        ? structuredIntroduction.paragraphs
-        : fragments.flatMap((fragment) => splitImportedTextToParagraphs(fragment))
-
-  const cleanedParagraphs = importedParagraphs
-    .map((paragraph: string) => cleanIntroductionNarrativeBlock(paragraph))
-    .filter(Boolean)
-  const uniqueParagraphs = dedupeStringParagraphs(cleanedParagraphs)
-
-  if (uniqueParagraphs.length > 0) {
-    next.paragraphs = uniqueParagraphs
-  }
+  // Introduction paragraphs are hardcoded in the doc preview template;
+  // only tender_reference and tender_date are imported from AI suggestions.
 
   return next
 }
@@ -305,7 +291,18 @@ export async function importSuggestion(
   const draft = existingDraft ?? getSectionDraft(projectId, sectionKey) ?? {}
 
   if (sectionKey === 'introduction') {
-    const updated = normalizeIntroductionImport(draft, content)
+    // When the backend parser (Family A) returns structured_available=false
+    // (e.g. plain markdown with no HTML tags), content is null and the actual
+    // text lives in raw_text. Fall back to raw_text so we can still extract
+    // tender_reference and tender_date from the plain-text response.
+    const introContent = content ?? suggestion.raw_text ?? null
+    console.log('[INTRO_IMPORT] suggestion.content:', suggestion.content)
+    console.log('[INTRO_IMPORT] suggestion.raw_text:', suggestion.raw_text)
+    console.log('[INTRO_IMPORT] introContent type:', typeof introContent, 'value:', introContent)
+    const updated = normalizeIntroductionImport(draft, introContent)
+    console.log('[INTRO_IMPORT] updated.tender_reference:', updated.tender_reference)
+    console.log('[INTRO_IMPORT] updated.tender_date:', updated.tender_date)
+    console.log('[INTRO_IMPORT] full updated:', JSON.stringify(updated, null, 2))
     setSectionDraft(projectId, sectionKey, updated)
     return updated
   }
@@ -609,12 +606,12 @@ function mergeResponsibilityMatrixRows(existingRows: unknown, importedRows: unkn
     if (targetIndex === undefined) {
       let bestMatch: { index: number; score: number } | null = null
 
-      candidateRowIndices.forEach(({ index, item }) => {
+      for (const { index, item } of candidateRowIndices) {
         const score = scoreMatrixItemMatch(importedItem, item)
         if (score >= 0.6 && (!bestMatch || score > bestMatch.score)) {
           bestMatch = { index, score }
         }
-      })
+      }
 
       targetIndex = bestMatch?.index
     }
@@ -719,7 +716,7 @@ export function importFamilyD(
     targetKey === 'custom_items' ||
     (targetKey === 'items' &&
       Boolean(sectionKey) &&
-      FAMILY_D_STRING_ITEM_SECTION_KEYS.has(sectionKey))
+      FAMILY_D_STRING_ITEM_SECTION_KEYS.has(sectionKey!))
 
   if (expectsStringItems) {
     const normalizedExistingItems = dedupeStringList(

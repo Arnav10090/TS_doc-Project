@@ -80,11 +80,6 @@ PREDEFINED_SECTION_ORDER = [
 
 BUILT_IN_TABLES = {
     "revision_history": ("table:revision_history", "Revision History", 1),
-    "executive_summary": (
-        "table:executive_summary:client_logos",
-        "Client Reference Logos",
-        2,
-    ),
     "abbreviations": ("table:abbreviations", "Abbreviations Used", 3),
     "tech_stack": ("table:tech_stack", "Technology Stack", 4),
     "hardware_specs": ("table:hardware_specs", "Hardware Specifications", 5),

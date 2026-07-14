@@ -1,2 +1,0 @@
-[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
-2-3 sentence companion text: indicative duration, key phases, milestones. All durations indicative only; buyer prerequisite delays cause proportional delivery delays. For draw.io: week-based GanttTask JSON (task, phase, start_week, duration_weeks, milestone, dependencies).

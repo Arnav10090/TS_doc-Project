@@ -1,2 +1,0 @@
-[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
-BOM table: name, maker, qty, specs_line1-4. Vendor: generic acceptable ('HP/Dell/Lenovo or equivalent'). Sizing: 'Sized per [parameter] — confirmed at detailed engineering.' Do not state specific RAM/storage values.

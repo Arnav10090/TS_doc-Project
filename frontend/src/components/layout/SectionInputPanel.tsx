@@ -304,7 +304,32 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
                 const baseDraft = isCustomSection
                   ? existingDraft
                   : { ...getDefaultSectionContent(activeSectionKey), ...existingDraft }
-                const updated = await importSuggestion(projectId, activeSectionKey, suggestion, baseDraft)
+                let updated = await importSuggestion(projectId, activeSectionKey, suggestion, baseDraft)
+                
+                // Fallback extraction for introduction if the backend returns raw_text
+                console.log('[ON_IMPORT] activeSectionKey:', activeSectionKey);
+                console.log('[ON_IMPORT] suggestion.raw_text:', suggestion.raw_text);
+                if (activeSectionKey === 'introduction' && suggestion.raw_text) {
+                  updated = updated || { ...baseDraft }
+                  const text = suggestion.raw_text
+                  const htmlStrippedText = text.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ')
+                  const extractLabeledValue = (t: string, label: string) => {
+                    const regex = new RegExp(`(?:^|\\n)\\s*(?:[-*]\\s*)?(?:\\*\\*)?${label}(?:\\*\\*)?\\s*:\\s*(.+)$`, 'im')
+                    const match = t.match(regex)
+                    return match?.[1]?.trim()?.replace(/<[^>]+>/g, '')
+                  }
+                  const tenderRef = extractLabeledValue(text, 'Tender Reference') ?? extractLabeledValue(htmlStrippedText, 'Tender Reference')
+                  const tenderDate = extractLabeledValue(text, 'Tender Date') ?? extractLabeledValue(htmlStrippedText, 'Tender Date')
+                  
+                  console.log('[ON_IMPORT] Extracted tenderRef:', tenderRef);
+                  console.log('[ON_IMPORT] Extracted tenderDate:', tenderDate);
+
+                  if (tenderRef) (updated as Record<string, any>).tender_reference = tenderRef
+                  if (tenderDate) (updated as Record<string, any>).tender_date = tenderDate
+                }
+
+                console.log('[ON_IMPORT] final updated object:', updated);
+
                 if (updated) {
                   // update in-memory draft and notify parent
                   handleContentChange(updated as Record<string, any>)

@@ -1,2 +1,0 @@
-[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
-Format: Two-column table (Abbreviation | Meaning). Include: standard project abbreviations + product-specific terms. Do not invent abbreviations not used in the document.

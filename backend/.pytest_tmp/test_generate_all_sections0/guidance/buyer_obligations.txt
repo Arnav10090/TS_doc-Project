@@ -1,2 +1,0 @@
-[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
-Bulleted imperative list ('Provide...', 'Arrange...', 'Ensure...', 'Configure...'). Each item specific enough to be referenced contractually. Include all standard prerequisites for this product type.

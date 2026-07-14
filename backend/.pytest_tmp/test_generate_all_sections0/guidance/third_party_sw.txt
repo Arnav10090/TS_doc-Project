@@ -1,2 +1,0 @@
-[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
-Document third-party software requirements. Required: remote link/VPN statement (buyer-provided and managed). Do not invent specific VPN products or bandwidth requirements.

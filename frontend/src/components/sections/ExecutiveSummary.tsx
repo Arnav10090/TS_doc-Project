@@ -4,8 +4,11 @@ import { getSection } from '../../api/sections';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import SectionHeader from '../shared/SectionHeader';
 import RichTextEditor from '../shared/RichTextEditor';
-import { EXECUTIVE_SUMMARY_BOILERPLATE, CLIENT_LOGOS_TABLE } from '../../constants/lockedSections';
+import { EXECUTIVE_SUMMARY_BOILERPLATE } from '../../constants/lockedSections';
 import type { ExecutiveSummaryContent } from '../../types';
+
+const EXECUTIVE_SUMMARY_IMAGE_SRC = '/Executive_summary.png';
+const CLIENTS_IMAGE_SRC = '/Clients.png';
 
 interface ExecutiveSummaryProps {
   projectId: string;
@@ -94,34 +97,6 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ projectId }) => {
         </div>
       </div>
 
-      {/* Client Logos Table */}
-      <div style={{
-        marginBottom: '24px',
-        padding: '16px',
-        backgroundColor: '#F9FAFB',
-        borderRadius: '6px',
-        border: '1px solid #E5E7EB',
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '12px',
-          color: '#6B7280',
-          fontSize: '14px',
-        }}>
-          <span>Client logos table</span>
-        </div>
-        <div style={{
-          whiteSpace: 'pre-wrap',
-          fontSize: '14px',
-          color: '#1A1A2E',
-          lineHeight: '1.6',
-        }}>
-          {CLIENT_LOGOS_TABLE}
-        </div>
-      </div>
-
       {/* Editable Project-Specific Paragraph */}
       <div>
         <label style={{
@@ -144,6 +119,19 @@ const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ projectId }) => {
           value={content.para1}
           onChange={handleEditorChange}
           placeholder="Enter project-specific summary..."
+        />
+      </div>
+
+      <div style={{ marginTop: '24px' }}>
+        <img
+          src={EXECUTIVE_SUMMARY_IMAGE_SRC}
+          alt="Executive summary"
+          style={{ width: '90%', height: 'auto', display: 'block', margin: '0 auto 16px auto' }}
+        />
+        <img
+          src={CLIENTS_IMAGE_SRC}
+          alt="Client references"
+          style={{ width: '90%', height: 'auto', display: 'block', margin: '0 auto' }}
         />
       </div>
     </div>

@@ -92,6 +92,8 @@ const LAST_CHANGED_FILL = "rgba(23, 241, 49, 0.18)";
 const WORD_PAGE_WIDTH = "21.59cm";
 const WORD_PAGE_HEIGHT = "27.94cm";
 const WORD_PAGE_MARGIN = "2.54cm";
+const EXECUTIVE_SUMMARY_IMAGE_SRC = "/Executive_summary.png";
+const CLIENTS_IMAGE_SRC = "/Clients.png";
 
 type RequiredFieldRef = {
   sectionKey: string;
@@ -1505,7 +1507,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     ): React.CSSProperties =>
       isEditedPath(sectionKey, path)
         ? {
-            color: LAST_CHANGED_COLOR,
+            color: "#000000",
             backgroundColor: LAST_CHANGED_SOFT,
             boxShadow: `inset 3px 0 0 ${LAST_CHANGED_COLOR}`,
             paddingLeft: "4px",
@@ -1518,7 +1520,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     ): React.CSSProperties =>
       isEditedPath(sectionKey, path)
         ? {
-            color: LAST_CHANGED_COLOR,
+            color: "#000000",
             backgroundColor: LAST_CHANGED_SOFT,
             borderLeft: `3px solid ${LAST_CHANGED_COLOR}`,
             paddingLeft: "8px",
@@ -1650,7 +1652,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               : undefined
           }
           style={{
-            ...(isRequired ? requiredTextStyle : {}),
             ...(requiredField
               ? getEditedBlockStyle(requiredField.sectionKey, requiredField.path)
               : {}),
@@ -3260,42 +3261,35 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   "[Enter executive summary content]",
                   { sectionKey: "executive_summary", path: "para1" },
                 )}
+                <div style={{ marginBottom: "6px" }}>
+                  <img
+                    src={EXECUTIVE_SUMMARY_IMAGE_SRC}
+                    alt="Executive summary"
+                    style={{
+                      width: "90%",
+                      height: "auto",
+                      display: "block",
+                      margin: "0 auto",
+                    }}
+                  />
+                </div>
                 {renderTemplateParagraphs(
                   (documentContent.executiveSummary.paragraphs ||
                     EXECUTIVE_SUMMARY_PARAGRAPHS).slice(1),
                 )}
-                <p style={bodyParagraphStyle}>Some of our clients include:</p>
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    marginBottom: "18px",
-                  }}
-                >
-                  <tbody>
-                    {(documentContent.executiveSummary.client_logo_rows || [
-                      ["HITACHI", "Client Logo", "Client Logo"],
-                      ["Client Logo", "Client Logo", "Client Logo"],
-                    ]).map((row: string[], rowIndex: number) => (
-                      <tr key={`logo-row-${rowIndex}`}>
-                        {row.map((cell, columnIndex) => (
-                          <td
-                            key={`logo-cell-${rowIndex}-${columnIndex}`}
-                            style={{
-                              border: "1px solid #D1D5DB",
-                              height: "54px",
-                              textAlign: "center",
-                              color: "#9CA3AF",
-                              fontSize: "9pt",
-                            }}
-                          >
-                            {cell}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <p style={{...bodyParagraphStyle, marginBottom: "4px"}}>Some of our clients include:</p>
+                <div style={{ marginBottom: "6px" }}>
+                  <img
+                    src={CLIENTS_IMAGE_SRC}
+                    alt="Client references"
+                    style={{
+                      width: "90%",
+                      height: "auto",
+                      display: "block",
+                      margin: "0 auto",
+                    }}
+                  />
+                </div>
               </SectionWrapper>
 
               {/* Page Break: End of Page 5 (Executive Summary) */}
@@ -3334,10 +3328,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                       `${sectionCounter.current}.${getNextSubsectionNumber()}`,
                     )}
                   </h2>
-                  {renderTemplateParagraphs(
-                    documentContent.introduction.paragraphs ||
-                      INTRODUCTION_PARAGRAPHS,
-                  )}
+                  {renderTemplateParagraphs(INTRODUCTION_PARAGRAPHS)}
                 </SectionWrapper>
               )}
 

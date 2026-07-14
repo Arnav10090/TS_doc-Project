@@ -72,10 +72,6 @@ const BUILT_IN_TABLES: Record<string, { id: string; name: string }> = {
     id: 'table:revision_history',
     name: 'Revision History',
   },
-  executive_summary: {
-    id: 'table:executive_summary:client_logos',
-    name: 'Client Reference Logos',
-  },
   abbreviations: {
     id: 'table:abbreviations',
     name: 'Abbreviations Used',

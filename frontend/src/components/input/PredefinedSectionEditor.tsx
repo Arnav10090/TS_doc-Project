@@ -31,6 +31,10 @@ const IMAGE_SECTION_TYPES: Record<string, ImageType> = {
 };
 
 const HIDDEN_KEYS = new Set(['id', 'locked', 'locked_specs_line1', EDIT_METADATA_KEY]);
+const HIDDEN_SECTION_FIELDS: Record<string, Set<string>> = {
+  executive_summary: new Set(['client_logo_rows']),
+  introduction: new Set(['paragraphs']),
+};
 
 const RICH_TEXT_KEYS = new Set([
   'para1',
@@ -50,7 +54,6 @@ const LABEL_OVERRIDES: Record<string, string> = {
   dev_days: 'Developer days',
   comm_days: 'Commissioning days',
   total_man_days: 'Total man-days',
-  client_logo_rows: 'Client logo table',
   matrix_rows: 'Responsibility matrix',
 };
 
@@ -743,10 +746,21 @@ const PredefinedSectionEditor: React.FC<PredefinedSectionEditorProps> = ({
 
   useEffect(() => {
     if (loading || !incomingContent) {
+      console.log('[PREDEF_EDITOR] skipping incomingContent effect:', { loading, hasContent: !!incomingContent });
       return;
     }
 
-    setContent(mergeSectionContent(sectionKey, stripEditMetadata(incomingContent), defaultContext));
+    console.log('[PREDEF_EDITOR] incomingContent changed for', sectionKey, {
+      tender_reference: incomingContent?.tender_reference,
+      tender_date: incomingContent?.tender_date,
+      keys: Object.keys(incomingContent),
+    });
+    const merged = mergeSectionContent(sectionKey, stripEditMetadata(incomingContent), defaultContext);
+    console.log('[PREDEF_EDITOR] merged content:', {
+      tender_reference: merged?.tender_reference,
+      tender_date: merged?.tender_date,
+    });
+    setContent(merged);
   }, [defaultContext, incomingContent, loading, sectionKey]);
 
   const updateContent = (nextContent: Record<string, any>) => {
@@ -760,7 +774,7 @@ const PredefinedSectionEditor: React.FC<PredefinedSectionEditorProps> = ({
   };
 
   const renderValue = (key: string, value: any, path: string): React.ReactNode => {
-    if (HIDDEN_KEYS.has(key)) {
+    if (HIDDEN_KEYS.has(key) || HIDDEN_SECTION_FIELDS[sectionKey]?.has(key)) {
       return null;
     }
 
@@ -907,4 +921,3 @@ const PredefinedSectionEditor: React.FC<PredefinedSectionEditorProps> = ({
 };
 
 export default PredefinedSectionEditor;
-

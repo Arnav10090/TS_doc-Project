@@ -274,10 +274,6 @@ export const getDefaultSectionContent = (
         heading: 'EXECUTIVE SUMMARY',
         paragraphs: [...EXECUTIVE_SUMMARY_PARAGRAPHS],
         para1: '',
-        client_logo_rows: [
-          ['HITACHI', 'Client Logo', 'Client Logo'],
-          ['Client Logo', 'Client Logo', 'Client Logo'],
-        ],
       };
     case 'introduction':
       return {

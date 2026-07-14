@@ -1,2 +1,0 @@
-[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
-Short. State: platform, where it runs, duration, limitations. Scope-limiting language required. IP remains with seller. Not a deployment commitment. Provided as-is.

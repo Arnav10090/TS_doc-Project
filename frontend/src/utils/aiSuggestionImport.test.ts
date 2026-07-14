@@ -18,12 +18,12 @@ describe('aiSuggestionImport utilities', () => {
   })
 
   it('importFamilyA replaces textual fields and preserves structural fields', () => {
-    const existing = { client_logo_rows: ['logo'], html: '<p>old</p>', title: 'Title' }
+    const existing = { attachments: ['logo'], html: '<p>old</p>', title: 'Title' }
     const content = '<p>new</p>'
 
     const updated = importFamilyA(existing, content)
 
-    expect(updated.client_logo_rows).toEqual(['logo'])
+    expect(updated.attachments).toEqual(['logo'])
     expect(updated.html === '<p>new</p>' || updated.paragraph === '<p>new</p>').toBe(true)
   })
 

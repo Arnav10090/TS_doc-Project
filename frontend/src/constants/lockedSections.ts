@@ -22,17 +22,6 @@ that appears before the user-editable project-specific paragraph.
 `;
 
 /**
- * Client Logos Table Structure (Section 1)
- * Table showing Hitachi and client logos side by side
- */
-export const CLIENT_LOGOS_TABLE = `
-[PLACEHOLDER - EXTRACT FROM TS_Template_original.docx Section 1]
-
-This section should contain the HTML/text structure for the client logos table
-that appears in the Executive Summary.
-`;
-
-/**
  * Scope Definitions Content (Section 7.1)
  * Standard definitions for scope-related terms
  */
