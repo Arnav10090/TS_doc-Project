@@ -33,6 +33,10 @@ const FAMILY_D_STRING_ITEM_SECTION_KEYS = new Set([
   'buyer_prerequisites',
 ])
 
+const FAMILY_D_CUSTOM_ITEM_TARGET_SECTION_KEYS = new Set([
+  'buyer_obligations',
+])
+
 function parseStructuredStringContent(content: any): any {
   if (typeof content !== 'string') {
     return content
@@ -66,6 +70,32 @@ function splitImportedTextToParagraphs(value: string): string[] {
     .split(/\n\s*\n+/)
     .map((part) => part.trim())
     .filter(Boolean)
+}
+
+/**
+ * Extract bullet-point or numbered-list items from raw AI text output.
+ * Used as a last-resort fallback when the backend parser fails to produce
+ * structured JSON for string-list Family D sections.
+ */
+function extractBulletItemsFromText(text: string): string[] {
+  const lines = normalizeLineBreaks(text).split('\n')
+  const items: string[] = []
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+
+    // Match bullet points: "- text", "* text", "• text"
+    // or numbered items: "1. text", "2) text"
+    const bulletMatch = trimmed.match(/^(?:[-*•]|\d+[.)]\s*)\s*(.+)$/)
+    if (bulletMatch?.[1]?.trim()) {
+      // Strip surrounding quotes if any
+      const item = bulletMatch[1].trim().replace(/^["']|["']$/g, '')
+      if (item) items.push(item)
+    }
+  }
+
+  return items
 }
 
 function getStringValueByKey(obj: Record<string, any>, candidates: string[]): string | undefined {
@@ -114,12 +144,27 @@ function collectTextFragments(content: any): string[] {
 }
 
 function extractLabeledValue(text: string, label: string): string | undefined {
-  const regex = new RegExp(
-    `(?:^|\\n)\\s*(?:[-*]\\s*)?(?:\\*\\*)?${label}(?:\\*\\*)?\\s*:\\s*(.+)$`,
+  // First try: match with end of line anchor (original pattern)
+  const regexEndOfLine = new RegExp(
+    `(?:^|\\n)\\s*(?:[-*]\\s*)?(?:\\*\\*)?${label}(?:\\*\\*)?\\s*:\\s*(.+?)\\s*$`,
     'im',
   )
-  const match = text.match(regex)
-  return match?.[1]?.trim()
+  const matchEndOfLine = text.match(regexEndOfLine)
+  if (matchEndOfLine?.[1]?.trim()) {
+    return matchEndOfLine[1].trim()
+  }
+
+  // Second try: match until HTML closing tag or end of string (for HTML content)
+  const regexHtml = new RegExp(
+    `(?:^|\\n|>)\\s*(?:[-*]\\s*)?(?:\\*\\*)?${label}(?:\\*\\*)?\\s*:\\s*([^<\\n]+?)(?:<|\\n|$)`,
+    'im',
+  )
+  const matchHtml = text.match(regexHtml)
+  if (matchHtml?.[1]?.trim()) {
+    return matchHtml[1].trim()
+  }
+
+  return undefined
 }
 
 function stripStructuredOutputScaffolding(value: string): string {
@@ -168,27 +213,39 @@ function sanitizeTextFieldValue(key: string, value: any): any {
 function normalizeIntroductionImport(existingDraft: Record<string, any>, content: any) {
   const next = { ...(existingDraft || {}) }
   const structuredIntroduction = extractStructuredIntroductionContent(content)
+  
+  // Collect all text fragments from the content for fallback extraction
   const fragments =
     structuredIntroduction && content && typeof content === 'object'
       ? []
       : collectTextFragments(content)
   const combinedText = fragments.join('\n\n')
+  
+  // If structuredIntroduction has paragraphs, also check those for embedded values
+  let paragraphText = ''
+  if (structuredIntroduction?.paragraphs && Array.isArray(structuredIntroduction.paragraphs)) {
+    paragraphText = structuredIntroduction.paragraphs.join('\n\n')
+  }
+  
+  // Combine all text sources for extraction
+  const allText = [combinedText, paragraphText].filter(Boolean).join('\n\n')
+  
   // Strip HTML tags so label extraction handles "<p>Tender Reference: ...</p>"
-  const htmlStrippedText = combinedText.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ')
+  const htmlStrippedText = allText.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ')
 
   const rawTenderReference =
     structuredIntroduction?.tenderReference ??
     (content && typeof content === 'object'
       ? getStringValueByKey(content, ['tender_reference', 'tenderreference'])
       : undefined) ??
-    extractLabeledValue(combinedText, 'Tender Reference') ??
+    extractLabeledValue(allText, 'Tender Reference') ??
     extractLabeledValue(htmlStrippedText, 'Tender Reference')
   const rawTenderDate =
     structuredIntroduction?.tenderDate ??
     (content && typeof content === 'object'
       ? getStringValueByKey(content, ['tender_date', 'tenderdate'])
       : undefined) ??
-    extractLabeledValue(combinedText, 'Tender Date') ??
+    extractLabeledValue(allText, 'Tender Date') ??
     extractLabeledValue(htmlStrippedText, 'Tender Date')
 
   // Strip any residual HTML tags from extracted values
@@ -229,36 +286,49 @@ function findArrayKey(obj: Record<string, any>) {
 }
 
 function extractStringListItem(value: unknown): string[] {
+  console.log('[extractStringListItem] Input:', value);
+  
   if (typeof value === 'string') {
     const trimmed = value.trim()
-    return trimmed ? [trimmed] : []
+    const result = trimmed ? [trimmed] : []
+    console.log('[extractStringListItem] Output:', result);
+    return result
   }
 
   if (Array.isArray(value)) {
-    return value.flatMap((item) => extractStringListItem(item))
+    const result = value.flatMap((item) => extractStringListItem(item))
+    console.log('[extractStringListItem] Output:', result);
+    return result
   }
 
   if (!value || typeof value !== 'object') {
+    console.log('[extractStringListItem] Output:', []);
     return []
   }
 
   const record = value as Record<string, unknown>
 
+  // First check nested items array (AI often returns this)
   if (Array.isArray(record.items)) {
     const nestedItems = record.items.flatMap((item) => extractStringListItem(item))
     if (nestedItems.length > 0) {
+      console.log('[extractStringListItem] Output:', nestedItems);
       return nestedItems
     }
   }
 
-  const preferredKeys = ['name', 'title', 'item', 'label', 'text', 'description', 'brief']
+  // Then check preferred field names - added 'obligation' to handle buyer_obligations AI responses
+  const preferredKeys = ['name', 'title', 'item', 'label', 'text', 'description', 'brief', 'obligation']
   for (const key of preferredKeys) {
     const candidate = record[key]
     if (typeof candidate === 'string' && candidate.trim()) {
-      return [candidate.trim()]
+      const result = [candidate.trim()]
+      console.log('[extractStringListItem] Output:', result);
+      return result
     }
   }
 
+  console.log('[extractStringListItem] Output:', []);
   return []
 }
 
@@ -273,12 +343,58 @@ function dedupeStringList(items: string[]): string[] {
   })
 }
 
+function extractFamilyDImportItems(content: any, sectionKey: string): any[] | null {
+  if (Array.isArray(content)) {
+    return content
+  }
+
+  if (!content || typeof content !== 'object') {
+    return null
+  }
+
+  const record = content as Record<string, unknown>
+
+  const wrappedSectionContent = record[sectionKey]
+  if (wrappedSectionContent && wrappedSectionContent !== content) {
+    const nestedItems = extractFamilyDImportItems(wrappedSectionContent, sectionKey)
+    if (nestedItems) {
+      return nestedItems
+    }
+  }
+
+  const arrayKeys = ['custom_items', 'items', 'criteria', 'list', 'entries', 'rows', 'data']
+  for (const key of arrayKeys) {
+    if (Array.isArray(record[key])) {
+      return record[key] as any[]
+    }
+  }
+
+  const extractedItem = extractStringListItem(content)
+  if (extractedItem.length > 0) {
+    return [content]
+  }
+
+  return null
+}
+
 export async function importSuggestion(
   projectId: string,
   sectionKey: string,
   suggestion: Suggestion,
   existingDraft?: Record<string, any>,
 ): Promise<Record<string, any> | CustomSectionContent | null> {
+  console.log('[importSuggestion] Called with:', {
+    projectId,
+    sectionKey,
+    suggestionKeys: Object.keys(suggestion),
+    structuredImportAvailable: suggestion.structured_import_available,
+    hasContent: !!suggestion.content,
+    contentType: typeof suggestion.content,
+    contentIsString: typeof suggestion.content === 'string',
+    contentSample: suggestion.content ? JSON.stringify(suggestion.content).substring(0, 300) : null,
+    rawContentDump: suggestion.content,
+  });
+
   // If custom subsection suggestions exist, handle custom import
   if (suggestion.subsection_suggestions && suggestion.subsection_suggestions.length > 0) {
     const updated = importCustomSection(existingDraft as CustomSectionContent, suggestion.subsection_suggestions)
@@ -288,7 +404,24 @@ export async function importSuggestion(
   }
 
   const content = parseStructuredStringContent(suggestion.content)
+  console.log('[importSuggestion] Parsed content:', {
+    isNull: content === null,
+    isArray: Array.isArray(content),
+    isObject: content && typeof content === 'object',
+    hasItemsArray: content && typeof content === 'object' && Array.isArray((content as any).items),
+    itemsLength: content && typeof content === 'object' && Array.isArray((content as any).items) ? (content as any).items.length : 0,
+    hasCustomItemsArray: content && typeof content === 'object' && Array.isArray((content as any).custom_items),
+    customItemsLength: content && typeof content === 'object' && Array.isArray((content as any).custom_items) ? (content as any).custom_items.length : 0,
+    contentKeys: content && typeof content === 'object' && !Array.isArray(content) ? Object.keys(content) : [],
+    contentFullDump: JSON.stringify(content),
+  });
+
   const draft = existingDraft ?? getSectionDraft(projectId, sectionKey) ?? {}
+  console.log('[importSuggestion] Draft:', {
+    hasItems: Array.isArray(draft.items),
+    hasCustomItems: Array.isArray(draft.custom_items),
+    draftKeys: Object.keys(draft),
+  });
 
   if (sectionKey === 'introduction') {
     // When the backend parser (Family A) returns structured_available=false
@@ -296,69 +429,51 @@ export async function importSuggestion(
     // text lives in raw_text. Fall back to raw_text so we can still extract
     // tender_reference and tender_date from the plain-text response.
     const introContent = content ?? suggestion.raw_text ?? null
-    console.log('[INTRO_IMPORT] suggestion.content:', suggestion.content)
-    console.log('[INTRO_IMPORT] suggestion.raw_text:', suggestion.raw_text)
-    console.log('[INTRO_IMPORT] introContent type:', typeof introContent, 'value:', introContent)
     const updated = normalizeIntroductionImport(draft, introContent)
-    console.log('[INTRO_IMPORT] updated.tender_reference:', updated.tender_reference)
-    console.log('[INTRO_IMPORT] updated.tender_date:', updated.tender_date)
-    console.log('[INTRO_IMPORT] full updated:', JSON.stringify(updated, null, 2))
     setSectionDraft(projectId, sectionKey, updated)
     return updated
   }
 
-  // Family D: list-based sections that canonically use `items`. Route by
-  // section key (FAMILY_D_ITEMS_SECTION_KEYS), not by incidentally checking
-  // whether a `rows` key is absent from the draft — that heuristic breaks
-  // permanently for a project once any `rows` key is ever written onto its
-  // `features` draft (including by this very bug), because
-  // mergeSectionContent() in
-  // frontend/src/components/sections/predefinedSectionContent.ts preserves
-  // any key not present in getDefaultSectionContent(). The document generator
-  // (backend/app/generation/context_builder.py) only reads `features.items`,
-  // so suggestions landing in `rows` never reach the doc preview or export.
-  if (
-    Array.isArray(content) &&
-    FAMILY_D_ITEMS_SECTION_KEYS.has(sectionKey) &&
-    Array.isArray(draft.items)
-  ) {
-    const updated = importFamilyD(draft, content, sectionKey)
-    // #region debug-point A:documentation-control-import
-    if (sectionKey === 'documentation_control') {
-      fetch('http://127.0.0.1:7779/event', {
-        method: 'POST',
-        body: JSON.stringify({
-          sessionId: 'pmyms-fullscreen-blank',
-          runId: 'pre-fix',
-          hypothesisId: 'A',
-          location: 'aiSuggestionImport.ts:276',
-          msg: '[DEBUG] documentation_control importFamilyD output',
-          data: {
-            contentSample: content.slice(0, 3),
-            contentTypes: content.map((item) => ({
-              type: typeof item,
-              isArray: Array.isArray(item),
-              keys: item && typeof item === 'object' ? Object.keys(item) : [],
-            })),
-            updatedItemTypes: Array.isArray(updated.items)
-              ? updated.items.map((item) => ({
-                  type: typeof item,
-                  isArray: Array.isArray(item),
-                  keys: item && typeof item === 'object' ? Object.keys(item) : [],
-                }))
-              : null,
-          },
-          ts: Date.now(),
-        }),
-      }).catch(() => {})
+  // Family D: list-based sections that canonically use `items` or `custom_items`.
+  // Route by section key instead of falling through to Family B/C based on incidental
+  // content shape. This keeps fixed template items intact while importing AI-generated
+  // additions into the editable list field for sections like buyer_obligations.
+  if (FAMILY_D_ITEMS_SECTION_KEYS.has(sectionKey)) {
+    const familyDItems = extractFamilyDImportItems(content, sectionKey)
+    if (familyDItems !== null) {
+      console.log('[importSuggestion] Matched: Family D by section key');
+      const updated = importFamilyD(draft, familyDItems, sectionKey)
+      console.log('[importSuggestion] importFamilyD result:', {
+        updatedKeys: Object.keys(updated),
+        itemsLength: updated.items?.length,
+        customItemsLength: updated.custom_items?.length,
+      });
+      setSectionDraft(projectId, sectionKey, updated)
+      return updated
     }
-    // #endregion
+  }
+
+  if (
+    content &&
+    typeof content === 'object' &&
+    !Array.isArray(content) &&
+    Array.isArray((content as any).items) &&
+    FAMILY_D_ITEMS_SECTION_KEYS.has(sectionKey)
+  ) {
+    console.log('[importSuggestion] Matched: Object with nested items array (Family D)');
+    const updated = importFamilyD(draft, (content as any).items, sectionKey)
+    console.log('[importSuggestion] importFamilyD result:', {
+      updatedKeys: Object.keys(updated),
+      itemsLength: updated.items?.length,
+      customItemsLength: updated.custom_items?.length,
+    });
     setSectionDraft(projectId, sectionKey, updated)
     return updated
   }
 
   // Family B: tabular
   if (content && (Array.isArray(content) || Array.isArray(content?.rows) || content?.tables)) {
+    console.log('[importSuggestion] Matched: Family B (tabular)');
     const updated = importFamilyB(draft, content)
     setSectionDraft(projectId, sectionKey, updated)
     return updated
@@ -366,6 +481,7 @@ export async function importSuggestion(
 
   // Family A: rich text
   if (typeof content === 'string' || content?.html || content?.paragraphs) {
+    console.log('[importSuggestion] Matched: Family A (rich text)');
     const updated = importFamilyA(draft, content)
     setSectionDraft(projectId, sectionKey, updated)
     return updated
@@ -373,6 +489,7 @@ export async function importSuggestion(
 
   // Family D: list-based (fallback for other array content)
   if (Array.isArray(content)) {
+    console.log('[importSuggestion] Matched: Family D fallback (array)');
     const updated = importFamilyD(draft, content, sectionKey)
     setSectionDraft(projectId, sectionKey, updated)
     return updated
@@ -380,6 +497,7 @@ export async function importSuggestion(
 
   // Family E: image-backed
   if (content && (content.images || content.base64 || Object.keys(content).some((k) => k.toLowerCase().includes('image')))) {
+    console.log('[importSuggestion] Matched: Family E (image-backed)');
     const updated = importFamilyE(draft, content)
     setSectionDraft(projectId, sectionKey, updated)
     return updated
@@ -387,11 +505,30 @@ export async function importSuggestion(
 
   // Family C: fallback mixed-field shallow merge
   if (content && typeof content === 'object') {
+    console.log('[importSuggestion] Matched: Family C (mixed-field shallow merge)');
     const updated = importFamilyC(draft, content)
     setSectionDraft(projectId, sectionKey, updated)
     return updated
   }
 
+  // Fallback: for Family D string-list sections (buyer_obligations, etc.),
+  // when content is null but raw_text is available, extract bullet items from
+  // the raw text so the import still works even if the parser failed.
+  if (
+    !content &&
+    suggestion.raw_text &&
+    FAMILY_D_STRING_ITEM_SECTION_KEYS.has(sectionKey)
+  ) {
+    console.log('[importSuggestion] Fallback: extracting bullet items from raw_text for', sectionKey);
+    const rawItems = extractBulletItemsFromText(suggestion.raw_text)
+    if (rawItems.length > 0) {
+      const updated = importFamilyD(draft, rawItems, sectionKey)
+      setSectionDraft(projectId, sectionKey, updated)
+      return updated
+    }
+  }
+
+  console.log('[importSuggestion] NO MATCH - returning null');
   return null
 }
 
@@ -691,10 +828,25 @@ export function importFamilyD(
   sectionKey?: string,
 ) {
   const next = { ...(existingDraft || {}) }
-  // Expanded preferred keys to include `criteria` (used by work_completion)
-  const preferredKeys = ['items', 'criteria', 'list', 'rows', 'entries']
+  // Expanded preferred keys to include `criteria` (used by work_completion) and `custom_items` (used by buyer_obligations)
+  const preferredKeys = ['items', 'criteria', 'custom_items', 'list', 'rows', 'entries']
   let targetKey: string | undefined
+
+  if (
+    sectionKey &&
+    FAMILY_D_CUSTOM_ITEM_TARGET_SECTION_KEYS.has(sectionKey)
+  ) {
+    // Ensure custom_items is an array so AI imports land in the right field
+    if (!Array.isArray(next.custom_items)) {
+      next.custom_items = []
+    }
+    targetKey = 'custom_items'
+  }
+
   for (const k of preferredKeys) {
+    if (targetKey) {
+      break
+    }
     if (Array.isArray(next[k])) {
       targetKey = k
       break

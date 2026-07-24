@@ -1,9 +1,0 @@
-Architecture: Multi-layered architecture based on Purdue Model (ISA-95). Next-Generation Firewalls (NGFW) at IT/OT boundary and between L2/L3 zones. Endpoint protection on HMI/Engineering stations. Centralized logging and SIEM integration.
-
-Technology: NGFW (Fortinet/Palo Alto/Cisco); Endpoint Detection & Response (EDR) for OT (CrowdStrike/Defender/Trellix); Secure Remote Access (Claroty/BeyondTrust/VPN); Network Detection & Response (NDR) for OT (Nozomi/Claroty/Dragos); OT Backup Solutions (Veeam/Acronis); Windows Defender/WSUS for patching.
-
-Data acquisition: Passive SPAN/mirror port traffic analysis for NDR; API integration with firewalls and EDR agents; Syslog forwarding to SIEM.
-
-Storage: Centralized log server or SIEM with 1-year retention standard; secure offline backups for configurations.
-
-Integration pattern: Integration with existing IT SIEM/SOC; Read-only passive monitoring for L1/L2 networks. Diagram: Purdue model overlay with security zones, conduits, and sensor placement.

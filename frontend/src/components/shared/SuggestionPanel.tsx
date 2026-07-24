@@ -377,17 +377,6 @@ const SuggestionPanel: React.FC<Props> = ({
               )}
             </div>
           )}
-
-        {suggestion.context_sources && suggestion.context_sources.length > 0 && (
-          <div style={{ marginTop: 12, fontSize: 12, color: '#6B7280' }}>
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>Context sources</div>
-            <ul style={{ marginLeft: 16 }}>
-              {suggestion.context_sources.map((s: string) => (
-                <li key={s}>{s}</li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
     </div>
   )

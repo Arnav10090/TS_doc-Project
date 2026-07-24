@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { isCustomSectionKey } from '../../utils/customSectionUtils';
 import CustomSectionInput from '../input/CustomSectionInput';
 import PredefinedSectionEditor from '../input/PredefinedSectionEditor';
+import BuyerObligationsSection from '../sections/BuyerObligationsSection';
 import type { CustomSectionContent } from '../../types/customSections';
-import type { AutoSaveStatus } from '../../types';
+import type { AutoSaveStatus, BuyerObligationsContent } from '../../types';
 import { PREDEFINED_SECTION_TITLES, getDefaultSectionContent } from '../sections/predefinedSectionContent';
 import { stripEditMetadata } from '../../utils/editMetadata';
 import { useProjectStore } from '../../store/project.store'
@@ -88,7 +89,7 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
   const sectionName = getSectionName();
   const isSaving = saveStatus === 'saving';
   const tsType = useProjectStore((s) => s.tsType)
-  const [groqConfigured, setGroqConfigured] = useState<boolean | null>(null)
+  const [aiConfigured, setAiConfigured] = useState<boolean | null>(null)
   const [suggestion, setSuggestion] = useState<SuggestionResponse | null>(null)
   const [isRegenerating, setIsRegenerating] = useState(false)
   const activeDraftContent = sectionContents[activeSectionKey]
@@ -96,12 +97,12 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
   const isSuppressedSection = suppressedSections.has(activeSectionKey)
   const hasSavedCustomSection = Boolean(customSectionContent)
   const showAISuggestions = !isSuppressedSection && (!isCustomSection || hasSavedCustomSection)
-  const aiSuggestionsDisabled = !tsType || groqConfigured !== true
+  const aiSuggestionsDisabled = !tsType || aiConfigured !== true
   const aiSuggestionsDisabledTooltip = !tsType
     ? 'Select a TS type for this project to enable AI suggestions'
-    : groqConfigured === false
+    : aiConfigured === false
       ? 'AI provider is not configured'
-      : groqConfigured === null
+      : aiConfigured === null
         ? 'Checking AI provider configuration...'
         : undefined
 
@@ -112,12 +113,12 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
       try {
         const status = await getAISuggestionsStatus()
         if (!cancelled) {
-          setGroqConfigured(status.groq_configured)
+          setAiConfigured(status.ai_configured ?? status.groq_configured ?? false)
         }
       } catch (error) {
         console.error('AI suggestions status error', error)
         if (!cancelled) {
-          setGroqConfigured(false)
+          setAiConfigured(false)
         }
       }
     }
@@ -307,8 +308,6 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
                 let updated = await importSuggestion(projectId, activeSectionKey, suggestion, baseDraft)
                 
                 // Fallback extraction for introduction if the backend returns raw_text
-                console.log('[ON_IMPORT] activeSectionKey:', activeSectionKey);
-                console.log('[ON_IMPORT] suggestion.raw_text:', suggestion.raw_text);
                 if (activeSectionKey === 'introduction' && suggestion.raw_text) {
                   updated = updated || { ...baseDraft }
                   const text = suggestion.raw_text
@@ -320,15 +319,10 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
                   }
                   const tenderRef = extractLabeledValue(text, 'Tender Reference') ?? extractLabeledValue(htmlStrippedText, 'Tender Reference')
                   const tenderDate = extractLabeledValue(text, 'Tender Date') ?? extractLabeledValue(htmlStrippedText, 'Tender Date')
-                  
-                  console.log('[ON_IMPORT] Extracted tenderRef:', tenderRef);
-                  console.log('[ON_IMPORT] Extracted tenderDate:', tenderDate);
 
                   if (tenderRef) (updated as Record<string, any>).tender_reference = tenderRef
                   if (tenderDate) (updated as Record<string, any>).tender_date = tenderDate
                 }
-
-                console.log('[ON_IMPORT] final updated object:', updated);
 
                 if (updated) {
                   // update in-memory draft and notify parent
@@ -399,6 +393,12 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
           >
             This section is no longer available. Redirecting to a valid section...
           </div>
+        ) : activeSectionKey === 'buyer_obligations' ? (
+          <BuyerObligationsSection
+            projectId={projectId}
+            content={sectionContents['buyer_obligations'] as BuyerObligationsContent | undefined}
+            onContentChange={handleContentChange}
+          />
         ) : (
           <PredefinedSectionEditor
             projectId={projectId}

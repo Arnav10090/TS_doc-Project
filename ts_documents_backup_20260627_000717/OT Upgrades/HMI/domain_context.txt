@@ -1,7 +1,0 @@
-HMI Upgrade Solution — modernizes obsolete Human Machine Interfaces (HMI) in existing industrial plants. Replaces end-of-life hardware (e.g., legacy panel PCs, CRT monitors) and unsupported software (e.g., Windows XP/7, old WinCC/FactoryTalk versions) with current supported equivalents. Ensures continuity of plant operations while improving operator visibility and system reliability.
-
-Core capabilities: 1-to-1 migration of existing HMI screens to new software versions; replacement of legacy IPCs/Panel PCs with ruggedized modern equivalents; preservation of existing PLC communication drivers; updates to alarm logging and historical trending within the HMI scope.
-
-Business drivers: Mitigate failure risk of obsolete hardware, resolve cybersecurity vulnerabilities of unsupported operating systems (like Windows XP), restore vendor support, improve operator interface responsiveness.
-
-Plant environment: Operating plant with legacy L1 PLCs that are NOT being upgraded. The HMI upgrade must integrate seamlessly with the existing, untouched PLCs. Cutover must happen with minimal or zero production downtime.

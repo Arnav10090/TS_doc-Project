@@ -475,6 +475,29 @@ def _format_output_instructions(section_key: str) -> str:
     if section_key == "division_of_eng":
         return _format_division_of_eng_output_instructions()
     
+    # Special case: customer_training has a MANDATORY fixed template that must be enforced
+    # The AI has been ignoring context file instructions, so we add explicit enforcement here
+    if section_key == "customer_training":
+        return _format_customer_training_output_instructions()
+
+    # Special case: string-list Family D sections (buyer_obligations, exclusion_list, etc.)
+    # These sections store plain string arrays in `custom_items`, not objects with named fields.
+    # Without explicit guidance the AI returns varied shapes (objects, nested arrays, markdown
+    # prose) that the parser and frontend importer cannot reliably handle.
+    _STRING_LIST_SECTION_KEYS = {
+        'buyer_obligations', 'exclusion_list', 'buyer_prerequisites', 'documentation_control',
+    }
+    if section_key in _STRING_LIST_SECTION_KEYS:
+        return """## 8. Output Format (never truncated)
+Output a JSON object with a "custom_items" key containing a JSON array of strings.
+Each string is one obligation/item. Do NOT use objects — just plain strings.
+Do NOT include markdown code fences or explanatory text.
+Output ONLY the JSON object, nothing else.
+
+Example:
+{"custom_items": ["First obligation text here", "Second obligation text here"]}
+"""
+    
     family = get_section_family(section_key)
     
     if not family:
@@ -581,7 +604,7 @@ The "ITEM" value for each row MUST match one of the canonical item names below v
   -1 Study of Existing system
 (7) Documents to be submitted for Reference & Records
   -1 Screen Design Documents
-  -2 Hardware Specifications
+  -2 Basic Hardware Specification
   -3 Software Specifications
   -4 {{SolutionName}} Operation Manual
 (9) Interface with Other System
@@ -597,6 +620,70 @@ Example of the required shape (values below are illustrative only):
 ]
 
 Output ONLY the JSON array. Do NOT include explanatory text or markdown code fences.
+"""
+
+
+def _format_customer_training_output_instructions() -> str:
+    """
+    Family C override for `customer_training` section.
+    
+    The AI has been repeatedly ignoring context file instructions and generating:
+    1. Random paragraphs instead of the mandatory template
+    2. Person NAMES instead of numeric COUNT in the persons field
+    
+    This function enforces the EXACT template structure that must be followed.
+    The template is standardized across ALL TS types and must NOT be modified.
+    """
+    return """## 8. Output Format (never truncated)
+Output a JSON object with EXACTLY three fields. No markdown code fences.
+
+This section has a MANDATORY fixed template that MUST be followed exactly. Do NOT generate creative or alternative text.
+
+REQUIRED OUTPUT STRUCTURE:
+{
+  "paragraph": "EXACT TEMPLATE TEXT (see below)",
+  "persons": "NUMERIC COUNT ONLY (e.g., '10', NOT names)",
+  "days": "NUMERIC COUNT ONLY (e.g., '5')"
+}
+
+CRITICAL INSTRUCTIONS:
+
+1. THE "paragraph" FIELD - USE THIS EXACT TEMPLATE:
+   "SELLER shall provide training at site during commissioning to a maximum of {N} people for a maximum of {M} days. Training shall cover mutually agreed topics on {SolutionName} application. Training shall comprise of classroom training at site."
+   
+   WHERE:
+   - {N} = the numeric value for persons (from project metadata, typically labeled as training_persons, trainee_count, TRAINEE_COUNT, or similar)
+   - {M} = the numeric value for days (from project metadata, typically labeled as training_days, TRAINING_DAYS, or similar)
+   - {SolutionName} = the actual Solution Name from Project Metadata section 1 (e.g., "Plate Mill Yard Management System", "OT Cybersecurity Solution")
+   
+   DO NOT add extra sentences. DO NOT modify the template wording. DO NOT add training topics or details.
+
+2. THE "persons" FIELD - NUMERIC COUNT ONLY:
+   - Output ONLY a numeric string like "10" or "5"
+   - DO NOT output person names like "Rajesh Kumar (Hitachi India - HMI Specialist)" or "Priya Sharma"
+   - DO NOT output arrays of names
+   - DO NOT output descriptive text
+   - CORRECT examples: "10", "5", "15"
+   - WRONG examples: "Rajesh Kumar", ["Person 1", "Person 2"], "5 engineers"
+
+3. THE "days" FIELD - NUMERIC COUNT ONLY:
+   - Output ONLY a numeric string like "5" or "3"
+   - CORRECT examples: "5", "3", "7"
+   - WRONG examples: "5 days", "three days"
+
+EXAMPLE OUTPUT (values are illustrative - use actual project metadata):
+{
+  "paragraph": "SELLER shall provide training at site during commissioning to a maximum of 10 people for a maximum of 5 days. Training shall cover mutually agreed topics on Plate Mill Yard Management System application. Training shall comprise of classroom training at site.",
+  "persons": "10",
+  "days": "5"
+}
+
+FINAL REMINDER:
+- The paragraph template is FIXED and STANDARDIZED across all TS types
+- Only replace the placeholder values {N}, {M}, and {SolutionName}
+- The persons field is a NUMERIC COUNT, not person names
+- Output ONLY the JSON object
+- Do NOT include explanatory text or markdown code fences
 """
 
 

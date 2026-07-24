@@ -1,7 +1,0 @@
-Security responsibility: Hitachi India implements the Historian software using least privilege principles and integrates with Windows Active Directory (if provided) for role-based access control to data. Buyer is responsible for ongoing domain security and network firewall configurations isolating the Historian from public internet.
-
-Patch management: Hitachi India installs the latest stable version of the Historian software. Ongoing OS and application patching are the buyer's responsibility.
-
-Liability: Hitachi India's liability is limited to the successful configuration of data collection based on the agreed tag list. Hitachi India is not liable for data loss caused by network interruptions, L1 hardware failures, or unauthorized database access by buyer personnel.
-
-Remote access: Remote support requires secure VPN access to the Historian server environment.

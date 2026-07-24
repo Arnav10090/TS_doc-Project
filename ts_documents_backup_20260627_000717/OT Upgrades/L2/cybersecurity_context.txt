@@ -1,7 +1,0 @@
-Security responsibility: Buyer holds full responsibility for OT network security, firewall policy between L1/L2/L3 zones, and domain user management. Hitachi India delivers RBAC-enabled L2 application with role-based access (operator/supervisor/engineer/admin), full audit trail on data modifications, and encrypted database connections.
-
-Patch management: Hitachi India recommends quarterly OS and SQL Server patches; scheduling and execution are buyer's responsibility. Hitachi India is not liable for vulnerabilities in buyer-managed server environments or unpatched OS.
-
-Liability: Hitachi India's liability is limited to defects in the supplied L2 software and configuration. No liability for L1 control failures, network security breaches, or ERP data corruption from buyer-side interfaces.
-
-Remote access: Remote support requires buyer-provisioned VPN link and signed NDA. All remote sessions are logged. Hitachi India personnel access is restricted to the L2 application layer only — no L1 control system access via remote link.

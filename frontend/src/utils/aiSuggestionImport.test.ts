@@ -10,6 +10,14 @@ import importSuggestion, {
 import { getSectionDraft, clearSectionDraft } from './sectionDraftStore'
 import { RESPONSIBILITY_MATRIX_ROWS } from '../components/preview/templateContent'
 
+// Helper function to access extractStringListItem for testing
+// We need to test this internal function, so we'll test it through importFamilyD
+function testExtractStringListItem(value: unknown): string[] {
+  // Use importFamilyD to indirectly test extractStringListItem
+  const result = importFamilyD({}, Array.isArray(value) ? value : [value], 'buyer_obligations')
+  return result.custom_items || []
+}
+
 describe('aiSuggestionImport utilities', () => {
   beforeEach(() => {
     // ensure a clean draft store for each test project/section we use
@@ -319,6 +327,85 @@ describe('aiSuggestionImport utilities', () => {
     })
   })
 
+  it('importSuggestion routes buyer obligations imports into `custom_items` when the draft includes locked template items', async () => {
+    const existing = {
+      heading: 'BUYER OBLIGATIONS',
+      intro_text: 'The BUYER should fulfil the following obligations',
+      items: [
+        'Responsible for the project execution',
+        'Arrange all the hardware in BUYER scope',
+      ],
+      custom_items: [],
+    }
+    const suggestion = {
+      structured_import_available: true,
+      content: {
+        items: [
+          { item: 'Provide site access for commissioning' },
+          { obligation: 'Provide dedicated network connectivity' },
+        ],
+      },
+    }
+
+    const result = await importSuggestion(
+      'test-project',
+      'buyer_obligations',
+      suggestion,
+      existing,
+    )
+
+    expect(result).toEqual({
+      heading: 'BUYER OBLIGATIONS',
+      intro_text: 'The BUYER should fulfil the following obligations',
+      items: [
+        'Responsible for the project execution',
+        'Arrange all the hardware in BUYER scope',
+      ],
+      custom_items: [
+        'Provide site access for commissioning',
+        'Provide dedicated network connectivity',
+      ],
+    })
+  })
+
+  it('importSuggestion accepts buyer obligations payloads that provide `custom_items` directly', async () => {
+    const existing = {
+      heading: 'BUYER OBLIGATIONS',
+      intro_text: 'The BUYER should fulfil the following obligations',
+      items: ['Locked obligation'],
+      custom_items: ['Existing custom obligation'],
+    }
+    const suggestion = {
+      structured_import_available: true,
+      content: {
+        heading: 'BUYER OBLIGATIONS',
+        intro_text: 'The Buyer is required to fulfil the following obligations',
+        custom_items: [
+          ['Maintain a dedicated secure internet connection'],
+          { item: 'Provide unrestricted site access to the seller team' },
+        ],
+      },
+    }
+
+    const result = await importSuggestion(
+      'test-project',
+      'buyer_obligations',
+      suggestion,
+      existing,
+    )
+
+    expect(result).toEqual({
+      heading: 'BUYER OBLIGATIONS',
+      intro_text: 'The BUYER should fulfil the following obligations',
+      items: ['Locked obligation'],
+      custom_items: [
+        'Existing custom obligation',
+        'Maintain a dedicated secure internet connection',
+        'Provide unrestricted site access to the seller team',
+      ],
+    })
+  })
+
   it('importSuggestion extracts introduction tender fields and removes metadata blocks from narrative text', async () => {
     const existing = {
       heading: 'INTRODUCTION',
@@ -445,6 +532,290 @@ This Technical Specification (TS) document is submitted in response to the tende
       ],
       tender_reference: '',
       tender_date: '',
+    })
+  })
+
+  // Tests for extractStringListItem function via importFamilyD
+  describe('extractStringListItem (via importFamilyD)', () => {
+    it('extracts simple string array', () => {
+      const input = ['Obligation 1', 'Obligation 2']
+      const result = importFamilyD({}, input, 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual(['Obligation 1', 'Obligation 2'])
+    })
+
+    it('extracts nested objects with "item" key', () => {
+      const input = [
+        { item: 'Obligation 1' },
+        { item: 'Obligation 2' }
+      ]
+      const result = importFamilyD({}, input, 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual(['Obligation 1', 'Obligation 2'])
+    })
+
+    it('extracts nested objects with "obligation" key', () => {
+      const input = [
+        { obligation: 'Buyer shall provide site access' },
+        { obligation: 'Buyer shall provide power supply' }
+      ]
+      const result = importFamilyD({}, input, 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual([
+        'Buyer shall provide site access',
+        'Buyer shall provide power supply'
+      ])
+    })
+
+    it('extracts deeply nested structure with items array', () => {
+      const input = {
+        items: [
+          { obligation: 'Obligation 1' },
+          { obligation: 'Obligation 2' }
+        ]
+      }
+      const result = importFamilyD({}, [input], 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual(['Obligation 1', 'Obligation 2'])
+    })
+
+    it('extracts nested objects with "name" key', () => {
+      const input = [
+        { name: 'Hardware Specifications' },
+        { name: 'Software Specifications' }
+      ]
+      const result = importFamilyD({}, input, 'documentation_control')
+      
+      expect(result.items).toEqual([
+        'Hardware Specifications',
+        'Software Specifications'
+      ])
+    })
+
+    it('extracts nested objects with "title" key', () => {
+      const input = [
+        { title: 'Design Document' },
+        { title: 'Test Report' }
+      ]
+      const result = importFamilyD({}, input, 'documentation_control')
+      
+      expect(result.items).toEqual(['Design Document', 'Test Report'])
+    })
+
+    it('extracts nested objects with "label" key', () => {
+      const input = [
+        { label: 'Label 1' },
+        { label: 'Label 2' }
+      ]
+      const result = importFamilyD({}, input, 'exclusion_list')
+      
+      expect(result.items).toEqual(['Label 1', 'Label 2'])
+    })
+
+    it('extracts nested objects with "text" key', () => {
+      const input = [
+        { text: 'Text content 1' },
+        { text: 'Text content 2' }
+      ]
+      const result = importFamilyD({}, input, 'buyer_prerequisites')
+      
+      expect(result.items).toEqual(['Text content 1', 'Text content 2'])
+    })
+
+    it('extracts nested objects with "description" key', () => {
+      const input = [
+        { description: 'Description 1' },
+        { description: 'Description 2' }
+      ]
+      const result = importFamilyD({}, input, 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual(['Description 1', 'Description 2'])
+    })
+
+    it('extracts nested objects with "brief" key', () => {
+      const input = [
+        { brief: 'Brief 1' },
+        { brief: 'Brief 2' }
+      ]
+      const result = importFamilyD({}, input, 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual(['Brief 1', 'Brief 2'])
+    })
+
+    it('handles mixed format arrays', () => {
+      const input = [
+        'Plain string obligation',
+        { item: 'Object with item key' },
+        { obligation: 'Object with obligation key' }
+      ]
+      const result = importFamilyD({}, input, 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual([
+        'Plain string obligation',
+        'Object with item key',
+        'Object with obligation key'
+      ])
+    })
+
+    it('handles complex nested structures', () => {
+      const input = [
+        {
+          items: [
+            { obligation: 'Nested obligation 1' },
+            { obligation: 'Nested obligation 2' }
+          ]
+        },
+        { item: 'Direct item' }
+      ]
+      const result = importFamilyD({}, input, 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual([
+        'Nested obligation 1',
+        'Nested obligation 2',
+        'Direct item'
+      ])
+    })
+
+    it('filters out empty strings and whitespace', () => {
+      const input = [
+        'Valid obligation',
+        '',
+        '   ',
+        { item: '  ' },
+        { obligation: 'Another valid obligation' }
+      ]
+      const result = importFamilyD({}, input, 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual([
+        'Valid obligation',
+        'Another valid obligation'
+      ])
+    })
+
+    it('trims whitespace from extracted strings', () => {
+      const input = [
+        '  Obligation with leading spaces  ',
+        { item: '  Item with spaces  ' },
+        { obligation: '  Obligation with spaces  ' }
+      ]
+      const result = importFamilyD({}, input, 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual([
+        'Obligation with leading spaces',
+        'Item with spaces',
+        'Obligation with spaces'
+      ])
+    })
+
+    it('deduplicates extracted items', () => {
+      const input = [
+        'Duplicate obligation',
+        'Unique obligation',
+        { item: 'Duplicate obligation' },
+        { obligation: 'Another unique' }
+      ]
+      const result = importFamilyD({}, input, 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual([
+        'Duplicate obligation',
+        'Unique obligation',
+        'Another unique'
+      ])
+    })
+
+    it('merges with existing items without duplicates', () => {
+      const existing = {
+        custom_items: ['Existing obligation 1', 'Existing obligation 2']
+      }
+      const input = [
+        'New obligation',
+        { item: 'Existing obligation 1' }, // Should be deduplicated
+        { obligation: 'Another new obligation' }
+      ]
+      const result = importFamilyD(existing, input, 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual([
+        'Existing obligation 1',
+        'Existing obligation 2',
+        'New obligation',
+        'Another new obligation'
+      ])
+    })
+
+    it('handles null and undefined values gracefully', () => {
+      const input = [
+        null,
+        undefined,
+        'Valid obligation',
+        { item: null },
+        { obligation: undefined }
+      ]
+      const result = importFamilyD({}, input, 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual(['Valid obligation'])
+    })
+
+    it('handles objects without any recognized keys', () => {
+      const input = [
+        { unknownKey: 'Unknown value' },
+        'Valid obligation',
+        { anotherUnknown: 'Another unknown' }
+      ]
+      const result = importFamilyD({}, input, 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual(['Valid obligation'])
+    })
+
+    it('handles very deeply nested items array', () => {
+      const input = {
+        items: [
+          {
+            items: [
+              { obligation: 'Level 3 nested' }
+            ]
+          }
+        ]
+      }
+      const result = importFamilyD({}, [input], 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual(['Level 3 nested'])
+    })
+
+    it('prioritizes "name" over other keys based on order', () => {
+      const input = [
+        {
+          name: 'Name value',
+          title: 'Title value',
+          description: 'Description value'
+        }
+      ]
+      const result = importFamilyD({}, input, 'documentation_control')
+      
+      // Should extract "name" as it comes first in preferredKeys
+      expect(result.items).toEqual(['Name value'])
+    })
+
+    it('handles AI response with nested items and multiple fields', () => {
+      const input = {
+        items: [
+          {
+            obligation: 'Buyer shall provide workspace',
+            priority: 'high',
+            category: 'infrastructure'
+          },
+          {
+            obligation: 'Buyer shall provide utilities',
+            priority: 'medium',
+            category: 'services'
+          }
+        ]
+      }
+      const result = importFamilyD({}, [input], 'buyer_obligations')
+      
+      expect(result.custom_items).toEqual([
+        'Buyer shall provide workspace',
+        'Buyer shall provide utilities'
+      ])
     })
   })
 })

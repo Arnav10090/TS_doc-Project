@@ -230,9 +230,22 @@ Structure: One short paragraph or bullet list naming the delivered documentation
 ## customer_training
 Role: Defines training delivered during commissioning.
 Required: [TRAINING_DAYS], [TRAINEE_COUNT] from metadata (no defaults).
-Infer: On-site, hands-on, during commissioning, covers operational use of the L2 PMS; agenda mutually agreed before delivery.
-Never invent: Specific topics not agreed; certification or assessment commitments.
-Structure: One paragraph. State: on-site during commissioning, [TRAINEE_COUNT] persons, [TRAINING_DAYS] days, operational scope, agenda mutually agreed.
+Output Format: Return a JSON object with exactly three fields:
+```json
+{
+  "paragraph": "SELLER shall provide training at site during commissioning to a maximum of {TRAINEE_COUNT} people for a maximum of {TRAINING_DAYS} days. Training shall cover mutually agreed topics on {Solution Name from Project Metadata} application. Training shall comprise of classroom training at site.",
+  "persons": "{TRAINEE_COUNT}",
+  "days": "{TRAINING_DAYS}"
+}
+```
+AI Instructions: 
+1. The "paragraph" field MUST use the EXACT template text shown above. Replace {TRAINEE_COUNT} with the numeric value from [TRAINEE_COUNT], replace {TRAINING_DAYS} with the numeric value from [TRAINING_DAYS], and replace {Solution Name from Project Metadata} with the actual "Solution Name" value from Project Metadata section 1.
+2. The "persons" field MUST contain ONLY the numeric count from [TRAINEE_COUNT] (e.g., "10", not names).
+3. The "days" field MUST contain ONLY the numeric value from [TRAINING_DAYS] (e.g., "5").
+4. Do NOT add any additional text, explanations, or variations to the template.
+5. Do NOT use person names in the "persons" field - use only the numeric count.
+Never invent: Any text outside the exact template. Specific topics not agreed, person names, or certification or assessment commitments.
+Structure: JSON object with three fields as specified above.
 
 ---
 

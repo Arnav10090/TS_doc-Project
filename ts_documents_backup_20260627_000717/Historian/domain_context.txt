@@ -1,7 +1,0 @@
-Process Historian Solution — provides high-speed, high-volume time-series data collection, storage, and retrieval for industrial processes. Sits at Level 2/3 of the Purdue model. Captures process variables (temperatures, pressures, flows, states) directly from Level 1 PLCs or Level 2 SCADA/PMS at sub-second intervals. NOT a transactional SQL database or an ERP system.
-
-Core capabilities (all deployments): Time-series data compression and archiving; high-speed data collection via standard industrial interfaces (OPC DA/UA, Modbus, native PLC protocols); client trending and analysis tools; Excel add-in for custom reporting; web-based dashboards for process visibility; high availability (redundancy) options for mission-critical data.
-
-Business drivers: long-term process data retention for quality analysis and regulatory compliance, root-cause analysis of equipment failures, process optimization through historical trending, reduction of load on SCADA/HMI logging systems, "single source of truth" for production data.
-
-Plant environment: continuously operating industrial facility generating thousands to hundreds of thousands of data points (tags). Historian server requires robust hardware, high-speed storage, and network access to L1/L2 data sources.

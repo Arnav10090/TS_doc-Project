@@ -133,6 +133,61 @@ const stripHtml = (html: string): string => {
   return (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim();
 };
 
+type NormalizedParagraphItem = {
+  text: string;
+  sourcePath: string;
+};
+
+const normalizeBindingConditionParagraphs = (
+  paragraphs: Array<string | undefined | null>,
+): NormalizedParagraphItem[] =>
+  paragraphs.flatMap((paragraph, index) => {
+    const value = typeof paragraph === "string" ? paragraph.trim() : "";
+    const sourcePath = `paragraphs.${index}`;
+
+    if (!value) {
+      return [];
+    }
+
+    if (/<[^>]+>/.test(value)) {
+      const container = document.createElement("div");
+      container.innerHTML = value;
+      const normalizedItems: NormalizedParagraphItem[] = [];
+
+      Array.from(container.childNodes).forEach((node) => {
+        if (!(node instanceof HTMLElement)) {
+          const text = node.textContent?.trim();
+          if (text) {
+            normalizedItems.push({ text, sourcePath });
+          }
+          return;
+        }
+
+        if (node.matches("ul, ol")) {
+          Array.from(node.querySelectorAll("li"))
+            .map((item) => stripHtml(item.innerHTML))
+            .filter(Boolean)
+            .forEach((text) => normalizedItems.push({ text, sourcePath }));
+          return;
+        }
+
+        const text = stripHtml(node.outerHTML);
+        if (text) {
+          normalizedItems.push({ text, sourcePath });
+        }
+      });
+
+      if (normalizedItems.length > 0) {
+        return normalizedItems;
+      }
+
+      const text = stripHtml(value);
+      return text ? [{ text, sourcePath }] : [];
+    }
+
+    return [{ text: value, sourcePath }];
+  });
+
 const resolveTemplateText = (
   text: string,
   replacements: Record<string, string>,
@@ -151,7 +206,10 @@ const resolveTemplateText = (
 };
 
 const filterFilledItems = (items?: string[]) =>
-  (items || []).map((item) => item.trim()).filter(Boolean);
+  (items || [])
+    .filter((item) => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter(Boolean);
 
 const SectionWrapper: React.FC<SectionWrapperProps> = ({
   sectionKey,
@@ -422,6 +480,43 @@ const PaginatedWordPreview: React.FC<PaginatedWordPreviewProps> = ({
             return;
           }
 
+          // Split UL/OL lists by individual LI items across pages instead of
+          // moving the entire list to a new page (prevents orphaned headings)
+          if (
+            child.nodeType === Node.ELEMENT_NODE &&
+            ((child as HTMLElement).tagName === "UL" || (child as HTMLElement).tagName === "OL")
+          ) {
+            const listEl = child as HTMLElement;
+            const listItems = Array.from(listEl.children);
+            if (listItems.length > 1) {
+              let listShell: HTMLElement | null = null;
+              const ensureList = () => {
+                if (!listShell || listShell.parentElement !== ensureShell()) {
+                  listShell = listEl.cloneNode(false) as HTMLElement;
+                  ensureShell().appendChild(listShell);
+                }
+                return listShell;
+              };
+              for (const li of listItems) {
+                const liClone = li.cloneNode(true);
+                ensureList().appendChild(liClone);
+                if (overflowsPage()) {
+                  ensureList().removeChild(liClone);
+                  if (ensureList().children.length > 0) {
+                    // Current list has items — move to next page and continue
+                    listShell = null;
+                    startNewShell();
+                    ensureList().appendChild(liClone);
+                  } else {
+                    // Even a single LI overflows — just keep it
+                    ensureList().appendChild(liClone);
+                  }
+                }
+              }
+              return;
+            }
+          }
+
           const parent = ensureShell();
           const childClone = child.cloneNode(true);
           parent.appendChild(childClone);
@@ -433,8 +528,25 @@ const PaginatedWordPreview: React.FC<PaginatedWordPreviewProps> = ({
           parent.removeChild(childClone);
 
           if (hasContent(parent)) {
-            const nextParent = startNewShell();
-            nextParent.appendChild(childClone);
+            // Check if the shell only contains headings and short intro text.
+            // If so, move everything to the next page to avoid orphaned headings.
+            const shellChildren = Array.from(parent.children);
+            const onlyHeadingsOrIntro = shellChildren.every((el) => {
+              const tag = (el as HTMLElement).tagName;
+              return tag === "H1" || tag === "H2" || tag === "H3" || tag === "H4" || tag === "P";
+            });
+            if (onlyHeadingsOrIntro && shellChildren.length <= 2) {
+              // Remove the heading/intro nodes from current page
+              const orphanedNodes = shellChildren.map((el) => el.cloneNode(true));
+              shellChildren.forEach((el) => parent.removeChild(el));
+              // Start a new page and re-add heading + intro + the overflowing child
+              const nextParent = startNewShell();
+              orphanedNodes.forEach((n) => nextParent.appendChild(n));
+              nextParent.appendChild(childClone);
+            } else {
+              const nextParent = startNewShell();
+              nextParent.appendChild(childClone);
+            }
             return;
           }
 
@@ -476,7 +588,11 @@ const PaginatedWordPreview: React.FC<PaginatedWordPreviewProps> = ({
 
         currentContent.removeChild(clone);
 
-        if (hasContent(currentContent)) {
+        // Check if this element starts with h2 or h3 (subsection)
+        const firstChild = element.children[0];
+        const isSubsection = firstChild && (firstChild.tagName === "H2" || firstChild.tagName === "H3");
+
+        if (hasContent(currentContent) && !isSubsection) {
           startNewPage();
         }
 
@@ -1086,13 +1202,13 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
 
       if (sectionExists('hardware_specs')) {
         tblCounter += 1;
-        tables.push({ sNo: tables.length + 1, tableNo: `Table ${tblCounter}`, name: 'Hardware Specifications' });
+        tables.push({ sNo: tables.length + 1, tableNo: `Table ${tblCounter}`, name: 'Basic Hardware Specification' });
       }
       collectFromCustomSectionsAfter('hardware_specs');
 
       if (sectionExists('software_specs')) {
         tblCounter += 1;
-        tables.push({ sNo: tables.length + 1, tableNo: `Table ${tblCounter}`, name: 'Software Specifications' });
+        tables.push({ sNo: tables.length + 1, tableNo: `Table ${tblCounter}`, name: 'Basic Software Specification' });
       }
       collectFromCustomSectionsAfter('software_specs');
       collectFromCustomSectionsAfter('third_party_sw');
@@ -1339,14 +1455,15 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     };
 
     const bulletListStyle: React.CSSProperties = {
-      margin: "0 0 12px 22px",
-      paddingLeft: "18px",
+      listStyleType: 'disc',
+      listStylePosition: 'outside',
+      paddingLeft: '24px',
+      margin: '8px 0',
     };
 
     const bulletListItemStyle: React.CSSProperties = {
-      marginBottom: "4px",
-      paddingLeft: "2px",
-      textAlign: "justify",
+      marginBottom: '6px',
+      lineHeight: '1.5',
     };
 
     const labelParagraphStyle: React.CSSProperties = {
@@ -1533,7 +1650,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     ): React.CSSProperties =>
       isEditedPath(sectionKey, path)
         ? {
-            color: LAST_CHANGED_COLOR,
+            color: '#000000',
             backgroundColor: LAST_CHANGED_FILL,
             border: `1.5px solid ${LAST_CHANGED_COLOR}`,
           }
@@ -1614,6 +1731,31 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
           {renderTemplateText(paragraph)}
         </p>
       ));
+
+    const renderEditedBulletList = (
+      items: NormalizedParagraphItem[],
+      sectionKey: string,
+    ) =>
+      items.length > 0 ? (
+        <ul style={bulletListStyle}>
+          {items.map(({ text, sourcePath }, index) => (
+            <li
+              key={`${sourcePath}-${index}-${text}`}
+              title={
+                isEditedPath(sectionKey, sourcePath)
+                  ? formatEditedTitle(sectionKey, sourcePath)
+                  : undefined
+              }
+              style={{
+                ...bulletListItemStyle,
+                ...getEditedBlockStyle(sectionKey, sourcePath),
+              }}
+            >
+              {renderTemplateText(text)}
+            </li>
+          ))}
+        </ul>
+      ) : null;
 
     const renderRichTextPreview = (
       html: string | undefined,
@@ -2214,7 +2356,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       if (sectionExists("hardware_specs")) {
         addSubsection(
           "section:hardware_specs",
-          documentContent.hardwareSpecs.heading || "HARDWARE SPECIFICATIONS",
+          documentContent.hardwareSpecs.heading || "BASIC HARDWARE SPECIFICATION",
         );
         appendCustomInsertions("hardware_specs");
       }
@@ -2222,7 +2364,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       if (sectionExists("software_specs")) {
         addSubsection(
           "section:software_specs",
-          documentContent.softwareSpecs.heading || "SOFTWARE SPECIFICATIONS",
+          documentContent.softwareSpecs.heading || "BASIC SOFTWARE SPECIFICATION",
         );
         appendCustomInsertions("software_specs");
       }
@@ -2230,7 +2372,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       if (sectionExists("third_party_sw")) {
         addSubsection(
           "section:third_party_sw",
-          documentContent.thirdPartySw.heading || "THIRD PARTY SOFTWARE",
+          documentContent.thirdPartySw.heading || "THIRD PARTY SOFTWARE REQUIREMENTS",
         );
         appendCustomInsertions("third_party_sw");
       }
@@ -2713,7 +2855,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
           }
           .edited-preview-content,
           .edited-preview-content * {
-            color: ${LAST_CHANGED_COLOR} !important;
+            color: #000000 !important;
           }
           .word-preview-pages {
             display: flex;
@@ -2755,6 +2897,34 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
           .word-preview-page tr,
           .word-pagination-source-content tr {
             break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          .word-preview-page h1,
+          .word-pagination-source-content h1 {
+            break-after: avoid;
+            page-break-after: avoid;
+          }
+          .word-preview-page h2,
+          .word-preview-page h3,
+          .word-pagination-source-content h2,
+          .word-pagination-source-content h3 {
+            break-before: avoid;
+            page-break-before: avoid;
+            break-after: avoid;
+            page-break-after: avoid;
+          }
+          /* Prevent H2 headings from being orphaned - keep with next content */
+          .word-preview-page h2 + div,
+          .word-preview-page h2 + p,
+          .word-pagination-source-content h2 + div,
+          .word-pagination-source-content h2 + p {
+            break-before: avoid;
+            page-break-before: avoid;
+          }
+          /* Keep section wrappers together when possible */
+          .word-preview-page .section-wrapper,
+          .word-pagination-source-content .section-wrapper {
+            break-inside: avoid-page;
             page-break-inside: avoid;
           }
           .word-preview-page img,
@@ -3928,7 +4098,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.hardwareSpecs.heading ||
-                      "HARDWARE SPECIFICATIONS",
+                      "BASIC HARDWARE SPECIFICATION",
                     `${sectionCounter.current}.${getNextSubsectionNumber()}`,
                   )}
                 </h2>
@@ -4073,7 +4243,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.softwareSpecs.heading ||
-                      "SOFTWARE SPECIFICATIONS",
+                      "BASIC SOFTWARE SPECIFICATION",
                     `${sectionCounter.current}.${getNextSubsectionNumber()}`,
                   )}
                 </h2>
@@ -4191,7 +4361,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.thirdPartySw.heading ||
-                      "THIRD PARTY SOFTWARE",
+                      "THIRD PARTY SOFTWARE REQUIREMENTS",
                     `${sectionCounter.current}.${getNextSubsectionNumber()}`,
                   )}
                 </h2>
@@ -4530,6 +4700,15 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
+              {/* Page Break: End of Value Addition section with custom insertions */}
+              {(sectionExists('work_completion') || 
+                sectionExists('buyer_obligations') || 
+                sectionExists('exclusion_list') || 
+                sectionExists('warranty') || 
+                sectionExists('cybersecurity') || 
+                sectionExists('disclaimer')) && 
+                renderInsertionsAfter('value_addition')}
+
               {/* ── WORK COMPLETION ── */}
               {sectionExists('work_completion') && (
               <SectionWrapper
@@ -4683,9 +4862,12 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                     `${sectionCounter.current}.${getNextSubsectionNumber()}`,
                   )}
                 </h2>
-                {renderTemplateParagraphs(
-                  documentContent.bindingConditions.paragraphs ||
-                    BINDING_CONDITIONS_PARAGRAPHS,
+                {renderEditedBulletList(
+                  normalizeBindingConditionParagraphs(
+                    documentContent.bindingConditions.paragraphs ||
+                      BINDING_CONDITIONS_PARAGRAPHS,
+                  ),
+                  "binding_conditions",
                 )}
               </SectionWrapper>
               )}

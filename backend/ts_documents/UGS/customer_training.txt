@@ -1,0 +1,2 @@
+[DRAFT — FILL IN UGS-SPECIFIC DETAILS]
+Output ONLY two values in JSON format: {"persons": "[number]", "days": "[number]"}.  Extract the training person count and training days count from the project context. Do NOT generate paragraph text. The template paragraph is predefined and only needs these two values.

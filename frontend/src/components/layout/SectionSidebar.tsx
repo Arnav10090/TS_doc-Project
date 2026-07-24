@@ -69,8 +69,8 @@ const SECTION_GROUPS: SectionGroup[] = [
     category: 'TECHNOLOGY STACK',
     sections: [
       { key: 'tech_stack', label: 'Technology Stack' },
-      { key: 'hardware_specs', label: 'Hardware Specifications' },
-      { key: 'software_specs', label: 'Software Specifications' },
+      { key: 'hardware_specs', label: 'Basic Hardware Specification' },
+      { key: 'software_specs', label: 'Basic Software Specification' },
       { key: 'third_party_sw', label: 'Third Party Software' },
     ],
   },

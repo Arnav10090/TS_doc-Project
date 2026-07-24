@@ -12,7 +12,7 @@ interface DocumentationControlSectionProps {
 
 const LOCKED_ITEMS = [
   'Screen Design Document',
-  'Hardware Specifications',
+  'Basic Hardware Specification',
   'Software specifications',
   'Operation Manual',
 ];

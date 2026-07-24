@@ -1,7 +1,0 @@
-Phase structure: M1 Engineering (~6w) → M2 Procurement (~12-16w) → M3 FAT (~2w) → M4 Installation (~8w) → M5 Commissioning (~3w). Total indicative: ~31-35w from PO.
-
-Critical path: Hardware procurement is the primary critical path due to lead times. Cable routing approval gates M4 installation. Availability of clean power gates M5 commissioning.
-
-Shutdown Gantt: LIKELY REQUIRED. While parallel cabling can be done during production, migrating existing PLCs/HMI to the new network switches typically requires a planned shutdown. Cutover is usually scheduled in 8-12 hour windows per production area.
-
-Draw.io format: week-based GanttTask JSON — fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies[].

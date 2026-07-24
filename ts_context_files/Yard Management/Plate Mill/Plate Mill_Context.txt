@@ -526,9 +526,22 @@ Structure: One paragraph or bulleted list. State that SELLER shall provide the f
 ## customer_training
 Role: Defines the training delivered by SELLER during commissioning.
 Required: [TRAINING_DAYS], [TRAINEE_COUNT] from project metadata or commercial agreement.
-Infer: On-site classroom training during commissioning. Covers mutually agreed topics on PMYMS web application. Training agenda agreed between BUYER and SELLER before delivery.
-Never invent: Specific training topics, certification programs, or assessment commitments. Post-commissioning training sessions unless separately agreed.
-Structure: One to two paragraphs. State: at-site classroom training during commissioning, maximum [TRAINEE_COUNT] persons, maximum [TRAINING_DAYS] days, covers mutually agreed PMYMS web application topics, agenda to be agreed before training commencement.
+Output Format: Return a JSON object with exactly three fields:
+```json
+{
+  "paragraph": "SELLER shall provide training at site during commissioning to a maximum of {TRAINEE_COUNT} people for a maximum of {TRAINING_DAYS} days. Training shall cover mutually agreed topics on {Solution Name from Project Metadata} application. Training shall comprise of classroom training at site.",
+  "persons": "{TRAINEE_COUNT}",
+  "days": "{TRAINING_DAYS}"
+}
+```
+AI Instructions: 
+1. The "paragraph" field MUST use the EXACT template text shown above. Replace {TRAINEE_COUNT} with the numeric value from [TRAINEE_COUNT], replace {TRAINING_DAYS} with the numeric value from [TRAINING_DAYS], and replace {Solution Name from Project Metadata} with the actual "Solution Name" value from Project Metadata section 1.
+2. The "persons" field MUST contain ONLY the numeric count from [TRAINEE_COUNT] (e.g., "10", not names).
+3. The "days" field MUST contain ONLY the numeric value from [TRAINING_DAYS] (e.g., "5").
+4. Do NOT add any additional text, explanations, or variations to the template.
+5. Do NOT use person names in the "persons" field - use only the numeric count.
+Never invent: Any text outside the exact template. Specific training topics, certification programs, person names, or assessment commitments.
+Structure: JSON object with three fields as specified above.
 
 ---
 

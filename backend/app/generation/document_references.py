@@ -82,8 +82,8 @@ BUILT_IN_TABLES = {
     "revision_history": ("table:revision_history", "Revision History", 1),
     "abbreviations": ("table:abbreviations", "Abbreviations Used", 3),
     "tech_stack": ("table:tech_stack", "Technology Stack", 4),
-    "hardware_specs": ("table:hardware_specs", "Hardware Specifications", 5),
-    "software_specs": ("table:software_specs", "Software Specifications", 6),
+    "hardware_specs": ("table:hardware_specs", "Basic Hardware Specification", 5),
+    "software_specs": ("table:software_specs", "Basic Software Specification", 6),
     "division_of_eng": ("table:division_of_eng", "Responsibility Matrix", 7),
 }
 
@@ -543,7 +543,7 @@ SECTION_HEADING_MARKERS: Dict[str, List[str]] = {
     "tech_stack": ["TECHNOLOGY STACK"],
     "hardware_specs": ["BASIC HARDWARE SPECIFICATIONS", "HARDWARE SPECIFICATIONS"],
     "software_specs": ["BASIC SOFTWARE SPECIFICATION", "SOFTWARE SPECIFICATIONS"],
-    "third_party_sw": ["THIRD PARTY SOFTWARE"],
+    "third_party_sw": ["THIRD PARTY SOFTWARE REQUIREMENTS", "THIRD PARTY SOFTWARE"],
     "overall_gantt": ["OVERALL GANTT"],
     "shutdown_gantt": ["SHUTDOWN GANTT"],
     "supervisors": ["SUPERVISORS"],

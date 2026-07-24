@@ -1,4 +1,0 @@
-Structure: Three acceptance criteria listed explicitly: (1) complete supply of hardware and software, (2) successful commissioning sign-off, (3) delivery of all project documentation. Deemed-issued clause: if buyer does not raise objection within [N] days of completion notification, certificate deemed issued.
-Avoid: Adding criteria not in standard UGS acceptance list. Do not omit the deemed-issued clause.
-Tone: Contractual-clause style. Each criterion numbered and unambiguous.
-UGS-specific: Remote support period starts upon work completion certificate issuance.

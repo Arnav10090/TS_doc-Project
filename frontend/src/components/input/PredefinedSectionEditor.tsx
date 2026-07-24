@@ -4,6 +4,7 @@ import { getSection } from '../../api/sections';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import { useProjectStore } from '../../store/project.store';
 import { EDIT_METADATA_KEY, stripEditMetadata } from '../../utils/editMetadata';
+import { getSectionDraft } from '../../utils/sectionDraftStore';
 import DiagramUpload from '../shared/DiagramUpload';
 import RichTextEditor from '../shared/RichTextEditor';
 import ExpandableTableFrame from '../shared/ExpandableTableFrame';
@@ -14,6 +15,7 @@ import {
   isRequiredPath,
   mergeSectionContent,
 } from '../sections/predefinedSectionContent';
+import { validateAndFixHeaders } from '../preview/templateContent';
 
 interface PredefinedSectionEditorProps {
   projectId: string;
@@ -179,6 +181,87 @@ const primaryButtonStyle: React.CSSProperties = {
   color: '#E60012',
 };
 
+/**
+ * =============================================================================
+ * MATRIX EDITOR HEADER STYLES AND VALIDATION
+ * =============================================================================
+ * 
+ * The following styles support the fixed header feature for the responsibility matrix
+ * in the Division of Engineering section. This feature ensures visual consistency with
+ * the document template and prevents accidental deletion of critical column headers.
+ * 
+ * **Header Validation Approach:**
+ * 
+ * Header integrity is maintained through a two-layer approach:
+ * 
+ * 1. **Data Load Validation (Primary Defense):**
+ *    - When matrix data is loaded from saved state, the validateAndFixHeaders() function
+ *      (defined in templateContent.ts) ensures the first two rows match the template.
+ *    - If headers are missing or corrupted, they are automatically replaced with the
+ *      correct template structure from RESPONSIBILITY_MATRIX_ROWS.
+ *    - This happens in PredefinedSectionEditor when matrix_rows data is loaded.
+ *    - Data rows (index > 1) are always preserved exactly as saved.
+ * 
+ * 2. **UI Protection (Secondary Defense):**
+ *    - The MatrixEditor component with hasFixedHeaders={true} prevents header modification:
+ *      a) Remove buttons only appear on data rows (index > 1)
+ *      b) The removeRow() function checks rowIndex and rejects header row deletions
+ *      c) Header cells are rendered with renderHeaderCell() which enforces colspan/rowspan
+ *    - Users can still edit header text, but structure is preserved by the rendering logic.
+ * 
+ * **Why This Approach:**
+ * - Validates once at load time rather than on every render (performance)
+ * - Fixes corrupted data from older versions or manual edits
+ * - Provides clear visual distinction between headers and data
+ * - Maintains backward compatibility (other matrix editors unaffected)
+ * 
+ * @see validateAndFixHeaders in templateContent.ts - Header validation function
+ * @see RESPONSIBILITY_MATRIX_ROWS in templateContent.ts - Header template structure
+ * @see renderHeaderCell - Renders headers with correct HTML structure
+ * @see renderDataCell - Renders data rows with group detection
+ */
+
+const headerCellStyle: React.CSSProperties = {
+  border: '1px solid #E5E7EB',
+  padding: '6px',
+  backgroundColor: '#2E75B5', // Blue background
+  color: '#FFFFFF', // White text
+  fontWeight: 'bold',
+  textAlign: 'center',
+  verticalAlign: 'middle',
+};
+
+const headerInputStyle: React.CSSProperties = {
+  ...inputBaseStyle,
+  backgroundColor: 'transparent',
+  color: '#FFFFFF',
+  fontWeight: 'bold',
+  textAlign: 'center',
+  border: 'none',
+};
+
+const dataCellStyle: React.CSSProperties = {
+  border: '1px solid #E5E7EB',
+  padding: '6px',
+  backgroundColor: '#FFFFFF',
+  verticalAlign: 'top',
+};
+
+const groupRowCellStyle: React.CSSProperties = {
+  ...dataCellStyle,
+  backgroundColor: '#F3F3F3', // Light gray for group rows
+  fontWeight: 'bold',
+};
+
+const actionColumnStyle: React.CSSProperties = {
+  border: '1px solid #E5E7EB',
+  padding: '6px',
+  width: '100px', // Fixed width
+  minWidth: '100px',
+  textAlign: 'center',
+  verticalAlign: 'top',
+};
+
 interface FieldLabelProps {
   sectionKey: string;
   path: string;
@@ -342,20 +425,246 @@ const StringListEditor: React.FC<StringListEditorProps> = ({
   );
 };
 
+/**
+ * Props for the MatrixEditor component.
+ * Renders an editable table matrix with optional fixed header rows.
+ */
 interface MatrixEditorProps {
+  /** Display label for the matrix editor */
   label: string;
+  
+  /** Matrix data as 2D string array (rows x columns) */
   rows: string[][];
+  
+  /** Callback when matrix data changes */
   onChange: (rows: string[][]) => void;
+  
+  /**
+   * Enables fixed header rows with special layout (Division of Engineering feature).
+   * 
+   * When enabled:
+   * - First two rows are treated as non-removable headers
+   * - Row 0 structure: "No." (rowspan=2), "ITEM" (rowspan=2), "Responsibility" (colspan=6)
+   * - Row 1 structure: Six sub-header cells (BD, BE, DD, SU, ER, COM) under "Responsibility"
+   * - Headers styled with blue background (#2E75B5) and white text
+   * - Remove buttons only appear on data rows (index > 1)
+   * - Group rows (starting with "(") have light gray background (#F3F3F3)
+   * 
+   * When disabled (default):
+   * - All rows treated equally with standard rendering
+   * - Remove button appears on all rows
+   * - No special header styling or layout
+   * 
+   * @default false (maintains backward compatibility)
+   * @see renderHeaderCell - Handles header cell rendering with colspan/rowspan
+   * @see renderDataCell - Handles data cell rendering with group detection
+   */
+  hasFixedHeaders?: boolean;
 }
 
-const MatrixEditor: React.FC<MatrixEditorProps> = ({ label, rows, onChange }) => {
+/**
+ * Renders a header cell with proper colspan/rowspan attributes for the responsibility matrix.
+ * This function implements the fixed header layout matching the document template structure.
+ * 
+ * **Header Structure:**
+ * - Row 0, Cell 0: "No." (rowspan=2) - Row number column spanning both header rows
+ * - Row 0, Cell 1: "ITEM" (rowspan=2) - Item description column spanning both header rows
+ * - Row 0, Cell 2: "Responsibility" (colspan=6) - Main responsibility heading spanning 6 sub-columns
+ * - Row 1, Cells 2-7: "BD", "BE", "DD", "SU", "ER", "COM" - Responsibility category sub-headers
+ * 
+ * **Styling:**
+ * - Blue background (#2E75B5) with white text (#FFFFFF)
+ * - Bold font weight for emphasis
+ * - Centered text alignment
+ * 
+ * **Validation Approach:**
+ * Header validation is enforced at data load time via the validateAndFixHeaders utility function
+ * in templateContent.ts. This ensures saved data always has correct header structure, even if
+ * previously corrupted. The renderHeaderCell function focuses solely on correct HTML rendering.
+ * 
+ * @param rowIndex - The row index (must be 0 or 1 for headers)
+ * @param cellIndex - The cell index within the row (0-7 for 8-column matrix)
+ * @param value - The cell value to display in the input field
+ * @param updateCell - Callback function to update cell value: (rowIndex, cellIndex, newValue) => void
+ * @returns JSX element for the table cell, or null if the cell position is covered by a colspan/rowspan
+ * 
+ * @example
+ * // Row 0, Cell 0 renders:
+ * // <td rowSpan={2}><input value="No." /></td>
+ * 
+ * @example
+ * // Row 0, Cell 2 renders:
+ * // <td colSpan={6}><input value="Responsibility" /></td>
+ * 
+ * @example
+ * // Row 1, Cell 0 returns null (covered by Row 0's rowspan)
+ * 
+ * @see validateAndFixHeaders in templateContent.ts - Ensures headers match template on data load
+ * @see RESPONSIBILITY_MATRIX_ROWS in templateContent.ts - Defines the header template structure
+ */
+const renderHeaderCell = (
+  rowIndex: number,
+  cellIndex: number,
+  value: string,
+  updateCell: (rowIndex: number, cellIndex: number, value: string) => void
+): React.ReactNode | null => {
+  if (rowIndex === 0) {
+    // First header row: No., ITEM, Responsibility
+    if (cellIndex === 0) {
+      return (
+        <td
+          key={`${rowIndex}-${cellIndex}`}
+          rowSpan={2}
+          style={headerCellStyle}
+        >
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => updateCell(rowIndex, cellIndex, e.target.value)}
+            style={headerInputStyle}
+          />
+        </td>
+      );
+    }
+    if (cellIndex === 1) {
+      return (
+        <td
+          key={`${rowIndex}-${cellIndex}`}
+          rowSpan={2}
+          style={headerCellStyle}
+        >
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => updateCell(rowIndex, cellIndex, e.target.value)}
+            style={headerInputStyle}
+          />
+        </td>
+      );
+    }
+    if (cellIndex === 2) {
+      return (
+        <td
+          key={`${rowIndex}-${cellIndex}`}
+          colSpan={6}
+          style={headerCellStyle}
+        >
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => updateCell(rowIndex, cellIndex, e.target.value)}
+            style={headerInputStyle}
+          />
+        </td>
+      );
+    }
+    // Skip remaining cells in first row (they're covered by colspan)
+    return null;
+  }
+
+  if (rowIndex === 1) {
+    // Second header row: skip first two columns (covered by rowspan)
+    if (cellIndex < 2) {
+      return null;
+    }
+    // Render BD, BE, DD, SU, ER, COM (cells 2-7)
+    return (
+      <td
+        key={`${rowIndex}-${cellIndex}`}
+        style={headerCellStyle}
+      >
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => updateCell(rowIndex, cellIndex, e.target.value)}
+          style={headerInputStyle}
+        />
+      </td>
+    );
+  }
+
+  return null; // Not a header cell
+};
+
+/**
+ * Renders a standard data cell for rows beyond the fixed header rows.
+ * Automatically detects and styles group rows differently from regular data rows.
+ * 
+ * **Group Row Detection:**
+ * A row is identified as a "group row" if its first cell (index 0) starts with an opening
+ * parenthesis "(". Group rows typically represent category headers within the data, such as:
+ * - "(1) Services"
+ * - "(2) Equipment Supply"
+ * 
+ * **Styling:**
+ * - Group rows: Light gray background (#F3F3F3) with bold text
+ * - Regular rows: White background (#FFFFFF) with normal font weight
+ * - All rows: Consistent border styling (1px solid #E5E7EB)
+ * 
+ * **Cell Structure:**
+ * Data cells are rendered without colspan or rowspan attributes, maintaining a simple
+ * 8-column layout (or however many columns are defined in the matrix).
+ * 
+ * @param rowIndex - The row index (must be > 1 for data rows, as 0-1 are headers)
+ * @param cellIndex - The cell index within the row (0 to columnCount-1)
+ * @param value - The cell value to display in the input field
+ * @param rowValues - Complete array of values for the current row (used for group detection)
+ * @param updateCell - Callback function to update cell value: (rowIndex, cellIndex, newValue) => void
+ * @returns JSX element for the table cell with appropriate styling
+ * 
+ * @example
+ * // Group row (first cell is "(1)"):
+ * // <td style={{backgroundColor: '#F3F3F3', fontWeight: 'bold'}}>
+ * //   <input value="(1)" />
+ * // </td>
+ * 
+ * @example
+ * // Regular data row (first cell is "-1"):
+ * // <td style={{backgroundColor: '#FFFFFF'}}>
+ * //   <input value="-1" />
+ * // </td>
+ */
+const renderDataCell = (
+  rowIndex: number,
+  cellIndex: number,
+  value: string,
+  rowValues: string[],
+  updateCell: (rowIndex: number, cellIndex: number, value: string) => void
+): React.ReactNode => {
+  // Detect if this is a group row (first cell starts with "(")
+  const isGroupRow = rowValues.length > 0 && rowValues[0].trim().startsWith('(');
+  const cellStyle = isGroupRow ? groupRowCellStyle : dataCellStyle;
+
+  // Standard data cell (no colspan or rowspan)
+  return (
+    <td
+      key={`${rowIndex}-${cellIndex}`}
+      style={cellStyle}
+    >
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => updateCell(rowIndex, cellIndex, e.target.value)}
+        style={inputBaseStyle}
+      />
+    </td>
+  );
+};
+
+export const MatrixEditor: React.FC<MatrixEditorProps> = ({ label, rows, onChange, hasFixedHeaders = false }) => {
+  // Calculate the maximum column count across all rows
   const columnCount = Math.max(1, ...rows.map((row) => row.length));
 
+  // Normalize rows to ensure all have the same number of columns (pad with empty strings if needed)
   const normalizedRows =
     rows.length > 0
       ? rows.map((row) => Array.from({ length: columnCount }, (_, index) => row[index] || ''))
       : [['']];
 
+  /**
+   * Updates a single cell value in the matrix.
+   * Creates a new matrix array with the updated value, maintaining immutability.
+   */
   const updateCell = (rowIndex: number, columnIndex: number, value: string) => {
     onChange(
       normalizedRows.map((row, currentRowIndex) =>
@@ -366,6 +675,31 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({ label, rows, onChange }) =>
           : row,
       ),
     );
+  };
+
+  /**
+   * Removes a row from the matrix with automatic header protection.
+   * 
+   * **Header Protection:**
+   * When hasFixedHeaders is enabled, rows 0 and 1 are protected from deletion.
+   * This ensures the header structure remains intact even if the function is called
+   * with a header row index (e.g., through programmatic error or UI bypass).
+   * 
+   * **Behavior:**
+   * - If hasFixedHeaders=true and rowIndex <= 1: Logs warning and returns without changes
+   * - Otherwise: Filters out the row at the specified index
+   * 
+   * @param rowIndex - The index of the row to remove
+   */
+  const removeRow = (rowIndex: number) => {
+    if (hasFixedHeaders && rowIndex <= 1) {
+      // Safety check: prevent removal of header rows
+      console.warn(`Cannot remove header row at index ${rowIndex}`);
+      return;
+    }
+    
+    // Filter out the row at the specified index, automatically protecting headers due to conditional rendering
+    onChange(normalizedRows.filter((_, index) => index !== rowIndex));
   };
 
   return (
@@ -404,25 +738,70 @@ const MatrixEditor: React.FC<MatrixEditorProps> = ({ label, rows, onChange }) =>
           <tbody>
             {normalizedRows.map((row, rowIndex) => (
               <tr key={rowIndex}>
-                {row.map((cell, columnIndex) => (
-                  <td key={columnIndex} style={{ border: '1px solid #E5E7EB', padding: '6px' }}>
-                    <input
-                      type="text"
-                      value={cell}
-                      onChange={(event) => updateCell(rowIndex, columnIndex, event.target.value)}
-                      style={inputBaseStyle}
-                    />
-                  </td>
-                ))}
-                <td style={{ border: '1px solid #E5E7EB', padding: '6px', width: '1%' }}>
-                  <button
-                    type="button"
-                    onClick={() => onChange(normalizedRows.filter((_, index) => index !== rowIndex))}
-                    style={buttonStyle}
-                  >
-                    Remove
-                  </button>
-                </td>
+                {hasFixedHeaders && rowIndex <= 1 ? (
+                  // === FIXED HEADER RENDERING (Rows 0-1) ===
+                  // Render header rows with special colspan/rowspan layout
+                  // Row 0: "No." (rowspan=2), "ITEM" (rowspan=2), "Responsibility" (colspan=6), "Actions" (rowspan=2)
+                  // Row 1: (skip first 2 cells due to rowspan), then BD, BE, DD, SU, ER, COM sub-headers
+                  <>
+                    {row.map((cell, columnIndex) =>
+                      renderHeaderCell(rowIndex, columnIndex, cell, updateCell)
+                    ).filter(cell => cell !== null)}
+                    {rowIndex === 0 && (
+                      // Actions column header appears only in Row 0 with rowspan=2
+                      <td
+                        key="actions-header"
+                        rowSpan={2}
+                        style={headerCellStyle}
+                      >
+                        Actions
+                      </td>
+                    )}
+                  </>
+                ) : hasFixedHeaders && rowIndex > 1 ? (
+                  // === DATA ROW RENDERING (Rows 2+) ===
+                  // Render data rows with standard cells (no colspan/rowspan)
+                  // Includes automatic group row detection and Remove button
+                  <>
+                    {row.map((cell, columnIndex) =>
+                      renderDataCell(rowIndex, columnIndex, cell, row, updateCell)
+                    )}
+                    <td style={actionColumnStyle}>
+                      <button
+                        type="button"
+                        onClick={() => removeRow(rowIndex)}
+                        style={buttonStyle}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </>
+                ) : (
+                  // === LEGACY RENDERING (hasFixedHeaders=false) ===
+                  // Original rendering logic for backward compatibility
+                  // All rows treated equally with Remove button on every row
+                  <>
+                    {row.map((cell, columnIndex) => (
+                      <td key={columnIndex} style={{ border: '1px solid #E5E7EB', padding: '6px' }}>
+                        <input
+                          type="text"
+                          value={cell}
+                          onChange={(event) => updateCell(rowIndex, columnIndex, event.target.value)}
+                          style={inputBaseStyle}
+                        />
+                      </td>
+                    ))}
+                    <td style={{ border: '1px solid #E5E7EB', padding: '6px', width: '1%' }}>
+                      <button
+                        type="button"
+                        onClick={() => removeRow(rowIndex)}
+                        style={buttonStyle}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>
@@ -745,23 +1124,43 @@ const PredefinedSectionEditor: React.FC<PredefinedSectionEditorProps> = ({
   }, [defaultContext, projectId, sectionKey]);
 
   useEffect(() => {
-    if (loading || !incomingContent) {
-      console.log('[PREDEF_EDITOR] skipping incomingContent effect:', { loading, hasContent: !!incomingContent });
+    if (loading) {
       return;
     }
 
-    console.log('[PREDEF_EDITOR] incomingContent changed for', sectionKey, {
-      tender_reference: incomingContent?.tender_reference,
-      tender_date: incomingContent?.tender_date,
-      keys: Object.keys(incomingContent),
-    });
+    if (!incomingContent) {
+      return;
+    }
+
     const merged = mergeSectionContent(sectionKey, stripEditMetadata(incomingContent), defaultContext);
-    console.log('[PREDEF_EDITOR] merged content:', {
-      tender_reference: merged?.tender_reference,
-      tender_date: merged?.tender_date,
-    });
     setContent(merged);
   }, [defaultContext, incomingContent, loading, sectionKey]);
+
+  // Poll draft store for updates (handles AI imports and ensures sync)
+  useEffect(() => {
+    if (sectionKey !== 'introduction') {
+      return; // Only poll for introduction section where the bug occurs
+    }
+
+    const interval = setInterval(() => {
+      const draft = getSectionDraft(projectId, sectionKey);
+      if (draft && (draft.tender_reference || draft.tender_date)) {
+        setContent((prev) => {
+          // Only update if values actually changed to avoid unnecessary re-renders
+          if (
+            prev.tender_reference !== draft.tender_reference ||
+            prev.tender_date !== draft.tender_date
+          ) {
+            const merged = mergeSectionContent(sectionKey, draft, defaultContext);
+            return merged;
+          }
+          return prev;
+        });
+      }
+    }, 100); // Poll every 100ms
+
+    return () => clearInterval(interval);
+  }, [defaultContext, projectId, sectionKey]);
 
   const updateContent = (nextContent: Record<string, any>) => {
     setContent(nextContent);
@@ -782,12 +1181,20 @@ const PredefinedSectionEditor: React.FC<PredefinedSectionEditorProps> = ({
       const label = formatLabel(key);
 
       if (value.every((item) => Array.isArray(item))) {
+        // Apply header validation for matrix_rows
+        const matrixValue = key === 'matrix_rows' ? validateAndFixHeaders(value as string[][]) : value;
+        
         return (
           <MatrixEditor
             key={path}
             label={label}
-            rows={value as string[][]}
-            onChange={(rows) => updatePath(path, rows)}
+            rows={matrixValue as string[][]}
+            onChange={(rows) => {
+              // Apply validation on change to maintain header integrity
+              const validatedRows = key === 'matrix_rows' ? validateAndFixHeaders(rows) : rows;
+              updatePath(path, validatedRows);
+            }}
+            hasFixedHeaders={sectionKey === 'division_of_eng' && key === 'matrix_rows'}
           />
         );
       }

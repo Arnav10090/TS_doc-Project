@@ -1,7 +1,0 @@
-Phase structure: M1 Sizing (~3w) → M2 Hardware Delivery (~8-12w) → M3 FAT (~1w) → M4 Installation (~2w) → M5 Handover (~1w). Total indicative: ~15-19w from PO.
-
-Critical path: Server/Storage lead times heavily dictate the schedule. Site readiness (power, cooling, rack space) gates M4 installation.
-
-Shutdown Gantt: NOT REQUIRED. Physical installation of new hardware in a data center does not typically require taking existing systems offline unless it involves migrating existing power feeds.
-
-Draw.io format: week-based GanttTask JSON — fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies[].

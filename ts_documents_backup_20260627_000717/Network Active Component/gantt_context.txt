@@ -1,7 +1,0 @@
-Phase structure: M1 Design (~4w) → M2 Hardware Delivery (~12-16w) → M3 FAT (~3w) → M4 Installation & Cutover (~6w) → M5 Handover (~2w). Total indicative: ~27-31w from PO.
-
-Critical path: Hardware procurement lead times gate M3. Passive network cabling completion gates M4. 
-
-Shutdown Gantt: REQUIRED for brownfield cutovers. Replacing core or distribution switches requires taking down segments of the network. Cutover strategy (parallel build vs. rip-and-replace) determines the length of the shutdown window. Usually scheduled during weekend maintenance windows.
-
-Draw.io format: week-based GanttTask JSON — fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies[].

@@ -1,7 +1,0 @@
-Security responsibility: Hitachi India ensures the Asset Management platform is deployed securely and configured with least privilege access. Buyer is responsible for managing access to the platform and remediating vulnerabilities discovered by the tool.
-
-Patch management: Hitachi India will provide initial firmware/software for the deployed Asset Management solution. Ongoing patching of the platform is the buyer's responsibility.
-
-Liability: Hitachi India's liability is limited to the successful deployment and basic functionality of the Asset Management tool. Hitachi India is not liable for network disruptions caused by active scanning if performed outside agreed maintenance windows or on fragile legacy devices not explicitly identified by the buyer.
-
-Remote access: Secure VPN access is required for deployment support and tuning phases.

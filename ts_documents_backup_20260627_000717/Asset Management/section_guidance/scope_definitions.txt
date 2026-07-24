@@ -1,6 +1,0 @@
-[DRAFT — ADAPT FOR ASSET MANAGEMENT]
-Structure: Define the six standard party abbreviations used in the division table: BD (Buyer Design), BE (Buyer Erection), DD (HICAD Design), SU (HICAD Supply), ER (HICAD Erection), COM (HICAD Commissioning). Define X/Y notation (X = primary responsible, Y = supporting). Short paragraph or two-column definition table.
-Avoid: Adding non-standard abbreviations unless confirmed in metadata.
-Tone: Formal definition style. Must be consistent with division_of_eng table entries.
---- Template structure reminder ---
-Party definitions + abbreviation table. Standard abbreviations: BD, BE, DD, SU, ER, COM. X/Y notation = primary by X with support from Y. Include [CUSTOMER_ABBREVIATION] and seller name.

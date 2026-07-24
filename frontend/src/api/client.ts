@@ -9,6 +9,18 @@ const apiClient = axios.create({
   },
 })
 
+// Request interceptor to increase timeout for AI suggestion requests
+apiClient.interceptors.request.use(
+  (config) => {
+    if (config.url?.includes('/ai-suggestions')) {
+      // Match backend Ollama timeout (120s) plus buffer for network overhead
+      config.timeout = 130000
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
+)
+
 const getDetailMessage = (detail: unknown): string | undefined => {
   if (typeof detail === 'string') return detail
   if (detail && typeof detail === 'object' && 'message' in detail) {
@@ -49,7 +61,7 @@ const getAIErrorMessage = (status: number, detail?: string): string | undefined 
   }
 
   if (status === 503) {
-    return 'AI suggestions are not configured. Ask an admin to set GROQ_API_KEY.'
+    return detail || 'AI suggestions are not configured. Ask an admin to verify the selected AI provider.'
   }
 
   if (status === 504) {

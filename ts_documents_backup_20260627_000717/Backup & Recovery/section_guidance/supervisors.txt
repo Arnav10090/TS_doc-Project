@@ -1,7 +1,0 @@
-[DRAFT — ADAPT FOR BACKUP & RECOVERY]
-Structure: Table of man-day allocations per role from metadata. Roles: Project Manager, Software Engineer, Commissioning Engineer. Each row: Role | On-site Days | Remarks. Include travel exclusion note: "Travel and accommodation expenses are excluded and billed actuals."
-Avoid: Committing to specific man-day counts unless from metadata. Do not list remote man-days as on-site days.
-Tone: Contractually precise. Man-day count drives commercial scope — be exact with metadata values.
-UGS-specific: On-site period is primarily commissioning phase. PM may have brief pre-FAT and FAT visits.
---- Template structure reminder ---
-Fields: pm_days, dev_days, comm_days, total_man_days. From project metadata. Placeholders: [PM_DAYS], [DEV_DAYS], [COMM_DAYS], [TOTAL_DAYS]. Travel excluded. Do not invent man-day counts.

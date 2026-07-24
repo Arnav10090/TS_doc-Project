@@ -4,7 +4,7 @@ This module orchestrates the AI suggestion generation workflow:
 1. Load project and section data
 2. Retrieve historical documents and context
 3. Build section-specific prompts
-4. Call Groq API
+4. Call configured AI provider
 5. Parse and validate responses
 """
 
@@ -17,11 +17,12 @@ import re
 from collections import deque
 from typing import Any, Dict, Optional
 from fastapi import HTTPException, status
-import httpx
 
 from app.config import settings
 from app.ai_suggestions import schemas
 from app.ai_suggestions import builders, parsers, section_schemas
+from app.ai_suggestions.providers import AIProviderRequest, get_ai_provider
+from app.ai_suggestions.providers.errors import AIProviderError
 # Task 25.1/25.2: Import load_layered_context and LayeredCategoryContext.
 # CategoryContext kept for any legacy type hints that may exist in tests.
 from app.ai_suggestions.retrieval import load_layered_context, LayeredCategoryContext, CategoryContext
@@ -71,9 +72,7 @@ def clear_ai_suggestion_latency_metrics() -> None:
     _LATENCY_SAMPLES_MS.clear()
 
 
-# Configure Groq API availability logging
-if not settings.GROQ_API_KEY:
-    logger.warning("GROQ_API_KEY not configured - AI suggestions will be unavailable")
+# Provider availability is checked at request time so local and remote providers can be switched by environment.
 
 
 def _metadata_parts(**metadata: Any) -> str:
@@ -98,56 +97,6 @@ def _text_metadata(prefix: str, text: Optional[str]) -> Dict[str, Any]:
         f"{prefix}_sha256": f"{digest[:16]}...",
     }
 
-
-
-def _extract_groq_response_text(payload: Any) -> Optional[str]:
-    """Extract assistant text from a Groq chat completion payload."""
-    if not isinstance(payload, dict):
-        return None
-
-    choices = payload.get("choices")
-    if not isinstance(choices, list) or not choices:
-        return None
-
-    first_choice = choices[0]
-    if not isinstance(first_choice, dict):
-        return None
-
-    message = first_choice.get("message")
-    if not isinstance(message, dict):
-        return None
-
-    content = message.get("content")
-    if isinstance(content, str):
-        return content.strip() or None
-
-    if isinstance(content, list):
-        parts = []
-        for item in content:
-            if isinstance(item, str):
-                parts.append(item)
-            elif isinstance(item, dict) and isinstance(item.get("text"), str):
-                parts.append(item["text"])
-        joined = "\n".join(parts).strip()
-        return joined or None
-
-    return None
-
-def _provider_status_code(error: Exception) -> Optional[Any]:
-    response = getattr(error, "response", None)
-    if response is not None:
-        status_code = getattr(response, "status_code", None)
-        if status_code is not None:
-            return status_code
-
-    for attr in ("status_code", "code"):
-        status_code = getattr(error, attr, None)
-        if status_code is not None:
-            return status_code
-
-    return None
-
-
 async def call_groq(
     prompt: str,
     timeout: Optional[int] = None,
@@ -156,150 +105,89 @@ async def call_groq(
     section_key: Optional[str] = None,
 ) -> str:
     """
-    Call Groq API with the provided prompt and return the generated text.
+    Legacy compatibility shim for AI Suggestions inference.
 
-    This function wraps Groq's OpenAI-compatible chat completions API and handles:
-    - API key validation
-    - Model configuration (model, max tokens, temperature)
-    - Timeout handling
-    - Error mapping per PRD requirements
-    - Logging with redaction (no raw prompts/responses)
-
-    Args:
-        prompt: The prompt to send to Groq API
-        timeout: Optional timeout in seconds (defaults to GROQ_TIMEOUT_SECONDS)
-
-    Returns:
-        The generated text response from Groq
-
-    Raises:
-        HTTPException 503: Missing GROQ_API_KEY (service unavailable)
-        HTTPException 502: Provider error from Groq API
-        HTTPException 504: Request timeout
-
-    Security:
-        - Never logs raw prompts or responses
-        - Only logs redacted metadata (size, hash, status codes)
+    Runtime provider selection is driven by AI_PROVIDER and handled through
+    AIProvider. The function name remains for existing tests and callers that
+    monkeypatch the historical Groq boundary.
     """
-    if not settings.GROQ_API_KEY:
+    request_timeout = timeout
+    try:
+        provider = get_ai_provider()
+    except AIProviderError as exc:
         logger.error(
-            "AI suggestion attempted without GROQ_API_KEY configured - "
+            "AI provider selection failed - "
             + _metadata_parts(
-                error_type="missing_api_key",
+                provider=settings.AI_PROVIDER,
+                error_type=exc.error_type,
                 project_id=project_id,
                 section_key=section_key,
             )
         )
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI suggestions are not configured."
-        )
-
-    request_timeout = timeout if timeout is not None else settings.GROQ_TIMEOUT_SECONDS
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail)
 
     logger.info(
-        "Groq API call initiated - "
+        "AI provider call initiated - "
         + _metadata_parts(
             **_text_metadata("prompt", prompt),
+            provider=provider.name,
+            model=provider.model,
             project_id=project_id,
             section_key=section_key,
-            model=settings.GROQ_MODEL,
-            max_tokens=settings.GROQ_MAX_TOKENS,
             timeout_seconds=request_timeout,
         )
     )
 
-    payload = {
-        "model": settings.GROQ_MODEL,
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt,
-            }
-        ],
-        # Groq's chat completions endpoint expects `max_tokens`.
-        "max_tokens": settings.GROQ_MAX_TOKENS,
-        "temperature": 0.7,
-    }
-    headers = {
-        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
-        "Content-Type": "application/json",
-    }
-
     try:
-        try:
-            async with httpx.AsyncClient(timeout=request_timeout) as client:
-                response = await client.post(
-                    settings.GROQ_CHAT_COMPLETIONS_URL,
-                    headers=headers,
-                    json=payload,
-                )
-                response.raise_for_status()
-        except (httpx.TimeoutException, asyncio.TimeoutError, TimeoutError):
-            logger.error(
-                "Groq API timeout - "
-                + _metadata_parts(
-                    error_type="timeout",
-                    project_id=project_id,
-                    section_key=section_key,
-                    timeout_seconds=request_timeout,
-                )
-            )
-            raise HTTPException(
-                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-                detail="AI suggestion timed out. Please try again."
-            )
-
-        response_payload = response.json()
-        response_text = _extract_groq_response_text(response_payload)
-        if not response_text:
-            logger.warning(
-                "Groq API returned empty response - "
-                + _metadata_parts(
-                    error_type="empty_response",
-                    project_id=project_id,
-                    section_key=section_key,
-                    provider_status_code=None,
-                    response_size=0,
-                    response_sha256=None,
-                )
-            )
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="AI provider error. Please try again."
-            )
-
-        logger.info(
-            "Groq API call succeeded - "
-            + _metadata_parts(
-                **_text_metadata("response", response_text),
-                project_id=project_id,
+        response = await provider.generate(
+            AIProviderRequest(
+                prompt=prompt,
+                timeout_seconds=request_timeout,
+                project_id=str(project_id) if project_id is not None else None,
                 section_key=section_key,
             )
         )
-
-        return response_text
-
-    except HTTPException:
-        raise
-
-    except Exception as e:
-        error_type = type(e).__name__
+    except AIProviderError as exc:
         logger.error(
-            "Groq API error - "
+            "AI provider call failed - "
             + _metadata_parts(
-                error_type=error_type,
+                provider=provider.name,
+                model=provider.model,
+                error_type=exc.error_type,
                 project_id=project_id,
                 section_key=section_key,
-                provider_status_code=_provider_status_code(e),
-                response_size=None,
-                response_sha256=None,
+                provider_status_code=exc.provider_status_code,
+            )
+        )
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail)
+    except Exception as exc:
+        logger.error(
+            "AI provider call failed - "
+            + _metadata_parts(
+                provider=provider.name,
+                model=provider.model,
+                error_type=type(exc).__name__,
+                project_id=project_id,
+                section_key=section_key,
             )
         )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="AI provider error. Please try again."
+            detail="AI provider error. Please try again.",
         )
+
+    logger.info(
+        "AI provider call succeeded - "
+        + _metadata_parts(
+            **_text_metadata("response", response.text),
+            provider=response.provider,
+            model=response.model,
+            latency_ms=round(response.latency_ms, 2),
+            project_id=project_id,
+            section_key=section_key,
+        )
+    )
+    return response.text
 
 def _build_layered_context_fallback(section_key: str) -> LayeredCategoryContext:
     """
@@ -328,7 +216,7 @@ async def _generate_suggestion_impl(
     1. Project and section data loading
     2. Historical document retrieval (via load_layered_context)
     3. Prompt building with 7-layer knowledge hierarchy
-    4. Groq API call
+    4. Configured AI provider call
     5. Response parsing by content family
     
     Args:
@@ -396,7 +284,7 @@ async def _generate_suggestion_impl(
         if not isinstance(subsections, list) or len(subsections) == 0:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Custom section has no subsections")
 
-        # Helper to process a single subsection: build prompt, call Groq, parse
+        # Helper to process a single subsection: build prompt, call provider, parse
         async def _process_subsection(idx: int, subsection: Dict[str, Any]):
             try:
                 subsection_name = subsection.get('name', '')
@@ -437,7 +325,6 @@ async def _generate_suggestion_impl(
 
                 llm_resp = await call_groq(
                     prompt,
-                    timeout=settings.GROQ_TIMEOUT_SECONDS,
                     project_id=project_id,
                     section_key=section_key,
                 )
@@ -551,7 +438,7 @@ async def _generate_suggestion_impl(
         # Builder rejects suppressed or invalid sections
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-    # Call Groq
+    # Call configured AI provider
     llm_response = await call_groq(prompt, project_id=project_id, section_key=section_key)
 
     # Parse response based on content family
@@ -664,7 +551,7 @@ async def generate_drawio(
     This function:
     - Validates project and section
     - Builds a section-specific Draw.io prompt
-    - Calls Groq to obtain either a JSON array of GanttTask objects or raw mxGraph XML
+    - Calls the configured AI provider to obtain either a JSON array of GanttTask objects or raw mxGraph XML
     - Converts/validates the provider response into Draw.io-compatible XML
     """
     supported_sections = {"system_config", "overall_gantt", "shutdown_gantt"}
@@ -721,7 +608,7 @@ async def generate_drawio(
             category_context=category_context,
         )
 
-    # Call Groq
+    # Call configured AI provider
     llm_response = await call_groq(prompt, project_id=project_id, section_key=section_key)
 
     if section_key == "system_config":
@@ -807,3 +694,4 @@ async def generate_drawio(
     )
 
     return schemas.DrawioResponse(drawio_xml=drawio_xml, chart_instructions=chart_instructions)
+

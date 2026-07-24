@@ -1,7 +1,0 @@
-[DRAFT — ADAPT FOR OT UPGRADES/POC UPGRADE]
-Structure: List any third-party remote support tools required (e.g., TeamViewer, AnyDesk). State buyer VPN responsibility. Confirm NDA requirement for remote access.
-Avoid: Naming specific tools unless confirmed in metadata. Do not promise specific remote support software versions.
-Tone: Clause-style. Contractually clear on who provides and maintains each component.
-UGS-specific: Remote support link is buyer scope — HICAD cannot initiate access. Tool selection confirmed at detailed engineering. Buyer ensures stable internet link.
---- Template structure reminder ---
-Document third-party software requirements. Required: remote link/VPN statement (buyer-provided and managed). Do not invent specific VPN products or bandwidth requirements.

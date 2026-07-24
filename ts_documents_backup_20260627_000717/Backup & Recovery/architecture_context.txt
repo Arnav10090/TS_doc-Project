@@ -1,9 +1,0 @@
-Architecture: Centralized Backup Server managing backup jobs and policies. Backup repositories (NAS/SAN/Direct Attached Storage) for primary storage. Optional secondary repositories for immutable/air-gapped copies. Agents deployed on physical endpoints, or agentless backup for virtual environments.
-
-Technology: Backup Software (Veeam Backup & Replication, Acronis Cyber Protect, Commvault); Backup Server (Windows Server on physical or virtual machine); Storage (Synology/QNAP NAS, Dell ME4 SAN, or high-capacity local disks); Network protocols (SMB/NFS for storage, proprietary agent communication).
-
-Data acquisition: N/A.
-
-Storage: Primary backup repository (disk-based) sized for typical 30-60 day retention (Grandfather-Father-Son rotation). Deduplication and compression enabled. Immutable storage configurations recommended for ransomware protection.
-
-Integration pattern: Integration with hypervisors (vCenter/Hyper-V) for agentless VM backups. Deployment of lightweight agents on physical legacy systems. Diagram: Backup infrastructure showing server, repositories, and protected endpoints across network zones.

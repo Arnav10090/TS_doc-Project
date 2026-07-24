@@ -72,8 +72,8 @@ TEMPLATE_TO_REPOSITORY: Dict[str, Optional[str]] = {
     "System Configuration (for Reference)": "system_config",
     "FAT Condition": "fat_condition",
     "Technology Stack": "tech_stack",
-    "Hardware Specifications": "hardware_specs",
-    "Software Specifications": "software_specs",
+    "Basic Hardware Specification": "hardware_specs",
+    "Basic Software Specification": "software_specs",
     "Third Party Software": "third_party_sw",
     
     # Schedule sections

@@ -1,7 +1,0 @@
-[DRAFT — ADAPT FOR NETWORK ACTIVE COMPONENT]
-Structure: List of software components with version qualifier. Include: UGS application, OS (Windows Server), database (SQL Server), browser-based frontend, antivirus. License count derived from named user roles in metadata.
-Avoid: Committing to specific version numbers — always "current at detailed engineering start." Do not include open-source libraries unless customer-visible.
-Tone: Software-specification list. Each entry: software name + purpose + license basis.
-UGS-specific: UGS software license is perpetual + annual maintenance. Buyer responsible for OS/antivirus license renewal post-delivery.
---- Template structure reminder ---
-Software component table: name, version, notes. Version: always 'current version at detailed engineering start.' Do not hardcode version strings. License count from metadata only.

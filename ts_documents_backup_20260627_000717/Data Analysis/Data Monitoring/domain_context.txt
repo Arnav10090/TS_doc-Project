@@ -1,7 +1,0 @@
-Data Monitoring Solution (EMS/HPMS) — provides real-time visibility, automated reporting, and historical trending for specific operational metrics such as energy consumption (Energy Management System - EMS) or process health (Health & Performance Monitoring System - HPMS). Sits at Level 3 of the Purdue model. 
-
-Core capabilities: Data aggregation from disparate meters/PLCs; real-time dashboards with KPI calculations (e.g., specific energy consumption per ton of product); automated shift/daily/monthly reporting; alarm notifications for threshold breaches (e.g., peak demand limits); data export to ERP/L4 systems.
-
-Business drivers: Identify energy wastage or process inefficiencies, automate manual meter reading and reporting, provide actionable insights to reduce utility costs, support sustainability/ISO 50001 compliance.
-
-Plant environment: Connects to a wide variety of field devices (energy meters, flow meters, PLCs) often across a geographically distributed plant network. Does not provide closed-loop control.

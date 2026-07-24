@@ -150,6 +150,7 @@ const EditorPage = () => {
   const [rightPanelWidth, setRightPanelWidth] = useState(() =>
     getStoredWidth(RIGHT_PANEL_STORAGE_KEY, DEFAULT_RIGHT_PANEL_WIDTH)
   )
+  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false)
   const [resizingPanel, setResizingPanel] = useState<ResizablePanel | null>(null)
   const resizeCleanupRef = useRef<(() => void) | null>(null)
   const sectionDraftsRef = useRef<Record<string, Record<string, any>>>({})
@@ -158,6 +159,8 @@ const EditorPage = () => {
     sectionKey: string
     subsectionKey: string
   } | null>(null)
+
+  const effectiveLeftSidebarWidth = isLeftSidebarCollapsed ? 48 : leftSidebarWidth
 
   useEffect(() => {
     if (!projectId) return
@@ -346,7 +349,7 @@ const EditorPage = () => {
     setSectionDraftContents((prev) => ({
       ...prev,
       [sectionKey]: content,
-    }))
+    }));
     setManualSaveStatus((prev) => ({
       ...prev,
       [sectionKey]: 'idle',
@@ -571,18 +574,20 @@ const EditorPage = () => {
           onSectionClick={handleSectionClick}
           visitedSections={visitedSections}
           sectionContents={sectionContents}
-          width={leftSidebarWidth}
-          showResizeHandle={!isNarrowScreen}
+          width={effectiveLeftSidebarWidth}
+          showResizeHandle={!isNarrowScreen && !isLeftSidebarCollapsed}
           isResizing={resizingPanel === 'left'}
           onResizeStart={createResizeHandler('left')}
           onResizeStep={(delta) => handleSidebarResizeStep('left', delta)}
+          isCollapsed={isLeftSidebarCollapsed}
+          onToggleCollapsed={() => setIsLeftSidebarCollapsed(prev => !prev)}
         />
 
         {(!isNarrowScreen || showPreview) && (
           <div
             style={{
               position: isNarrowScreen ? 'fixed' : 'absolute',
-              left: isNarrowScreen ? 0 : `${leftSidebarWidth}px`,
+              left: isNarrowScreen ? 0 : `${effectiveLeftSidebarWidth}px`,
               right: isNarrowScreen ? 0 : `${rightPanelWidth}px`,
               top: `${HEADER_HEIGHT}px`,
               bottom: isNarrowScreen ? 0 : 0,
@@ -662,7 +667,7 @@ const EditorPage = () => {
           onSubsectionSelect={setActiveSubsectionKey}
           onRefresh={refreshSections}
           width={rightPanelWidth}
-          leftOffset={leftSidebarWidth}
+          leftOffset={effectiveLeftSidebarWidth}
           isNarrowScreen={isNarrowScreen}
           showResizeHandle={!isNarrowScreen}
           isResizing={resizingPanel === 'right'}

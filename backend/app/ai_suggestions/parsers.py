@@ -162,17 +162,23 @@ def parse_list_response(response: str, expected_item_fields: Optional[List[str]]
         # structured parsing (structured_available=False), so the suggestion
         # can still reach the frontend and be imported into `items`.
         items = obj.get('rows')
+    elif isinstance(obj, dict) and isinstance(obj.get('custom_items'), list):
+        # AI may wrap string-list section output as {"custom_items": [...]}
+        items = obj.get('custom_items')
     else:
         return False, None, cleaned
 
-    if not all(isinstance(it, dict) for it in items):
+    # Accept both dict items (e.g. features with id/title/description) and
+    # plain string items (e.g. buyer_obligations, exclusion_list)
+    if not all(isinstance(it, (dict, str)) for it in items):
         return False, None, cleaned
 
     if expected_item_fields:
         for it in items:
-            for f in expected_item_fields:
-                if f not in it:
-                    it[f] = ''
+            if isinstance(it, dict):
+                for f in expected_item_fields:
+                    if f not in it:
+                        it[f] = ''
 
     return True, items, None
 

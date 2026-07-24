@@ -1,7 +1,0 @@
-Security responsibility: Hitachi India implements secure device configurations (disabling unused ports, setting up SSH/HTTPS management, configuring SNMPv3). Buyer is responsible for managing administrative credentials and integrating devices with their central authentication system (RADIUS/TACACS+) if required.
-
-Patch management: Hitachi India flashes the latest approved firmware during staging. Ongoing firmware updates are the buyer's responsibility.
-
-Liability: Hitachi India's liability is limited to the functionality of the active components supplied. Hitachi India is not liable for network issues arising from faulty legacy passive cabling or misbehaving third-party connected devices.
-
-Remote access: Network management requires secure VPN access.

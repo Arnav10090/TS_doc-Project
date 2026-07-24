@@ -1,7 +1,0 @@
-Security responsibility: The POC component will be secured according to modern standards, but it will reside within the buyer's existing, potentially insecure legacy network. Buyer retains overall network security responsibility.
-
-Patch management: Hitachi India will provide the POC hardware with the latest firmware. Patching during the short POC evaluation period is typically not required unless a critical vulnerability is identified.
-
-Liability: Hitachi India's liability is strictly limited to the value of the POC equipment and services. Hitachi India is not liable for production losses if the POC component fails, provided the agreed rollback plan is executed.
-
-Remote access: Remote monitoring of the POC performance may be required, necessitating buyer-provisioned secure VPN access for the duration of the evaluation phase.

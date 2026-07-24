@@ -1,7 +1,0 @@
-[DRAFT — ADAPT FOR OT CYBERSECURITY]
-Structure: Opening positioning sentence (what UGS solves for THIS client), 2-3 bullet value propositions, brief commercial summary. Maintain management-level language — no technical depth.
-Avoid: Detailed specs, phase timelines, pricing. No "we are pleased" filler openers.
-Tone: Confident, strategic, client-centric. Use "this proposal" not "this document".
-UGS-specific: Lead with plant digitalization pain (siloed data, manual reporting). Close with UGS as the foundation layer for future analytics/AI.
---- Template structure reminder ---
-Structure: 2-3 paragraphs. (1) Seller capability intro. (2) Qualification for this engagement. (3) Solution value framing for [CUSTOMER_NAME]. Tone: strategic, management-level. No technical jargon. No heading in output.

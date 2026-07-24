@@ -1,4 +1,1 @@
-Structure: FAT/shop test scope (what is tested — configured PDI/PDO flows, setup/adaptive logic if in scope, reporting against simulated data), test criteria, deliverable (signed test result/report), shipment gate statement.
-Avoid: Committing to FAT duration; use metadata or "agreed commercially." No pass/fail thresholds not agreed. No buyer witness requirements not confirmed.
-Tone: Contractually clear. Sign-off report must be issued before shipment — state explicitly.
-Level 2-specific: FAT/shop test conducted at seller facility. Sign-off (M3 gate) triggers software shipping authorization.
+MUST use 8 subsections w/ ### headers: 1)Section Title 2)Section Purpose(why FAT) 3)FAT Scope(what tested) 4)Test Criteria(pass/fail) 5)Deliverable(report) 6)FAT Location 7)Buyer Obligations(attendance/approval) 8)System Configuration Notes. Formal tone. Include availability formula: Availability=(Total Time-Stop Time)/Total Time×100%. Example: "{{SolutionName}} accepted if ≥98.5% over 72hrs". Avoid inventing durations/thresholds not in metadata.

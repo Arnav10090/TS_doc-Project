@@ -8,6 +8,8 @@ import type { BuyerObligationsContent } from '../../types';
 
 interface BuyerObligationsSectionProps {
   projectId: string;
+  content?: BuyerObligationsContent;
+  onContentChange?: (content: Record<string, any>) => void;
 }
 
 const LOCKED_ITEMS = [
@@ -19,34 +21,63 @@ const LOCKED_ITEMS = [
   'In case of any health issue to SELLER\'s representative, BUYER to immediately provide best available medical facility. The expenses will be borne by the SELLER.',
 ];
 
-const BuyerObligationsSection: React.FC<BuyerObligationsSectionProps> = ({ projectId }) => {
+const BuyerObligationsSection: React.FC<BuyerObligationsSectionProps> = ({ projectId, content: contentProp, onContentChange }) => {
   const navigate = useNavigate();
   const [content, setContent] = useState<BuyerObligationsContent>({
     custom_items: [],
   });
   const [loading, setLoading] = useState(true);
+  const [newlyImportedIndices, setNewlyImportedIndices] = useState<Set<number>>(new Set());
+  const [previousItemCount, setPreviousItemCount] = useState(0);
   const { save, status } = useAutoSave(projectId, 'buyer_obligations', 800);
 
+  // Synchronize state with content prop when it changes (handles AI imports)
   useEffect(() => {
-    const loadSection = async () => {
-      try {
-        const data = await getSection(projectId, 'buyer_obligations');
-        if (data.content && Object.keys(data.content).length > 0) {
-          setContent(data.content as BuyerObligationsContent);
+    if (contentProp && Object.keys(contentProp).length > 0) {
+      // Track which items are new
+      const currentCount = contentProp.custom_items?.length || 0;
+      if (currentCount > previousItemCount) {
+        const newIndices = new Set<number>();
+        for (let i = previousItemCount; i < currentCount; i++) {
+          newIndices.add(i);
         }
-      } catch (error) {
-        console.error('Error loading buyer obligations section:', error);
-      } finally {
-        setLoading(false);
+        setNewlyImportedIndices(newIndices);
       }
-    };
+      setPreviousItemCount(currentCount);
+      setContent(contentProp);
+      setLoading(false);
+    }
+  }, [contentProp, previousItemCount]);
 
-    loadSection();
-  }, [projectId]);
+  useEffect(() => {
+    // Only load from API if no content prop provided
+    if (!contentProp) {
+      const loadSection = async () => {
+        try {
+          const data = await getSection(projectId, 'buyer_obligations');
+          if (data.content && Object.keys(data.content).length > 0) {
+            setContent(data.content as BuyerObligationsContent);
+          }
+        } catch (error) {
+          console.error('Error loading buyer obligations section:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadSection();
+    } else {
+      setLoading(false);
+    }
+  }, [projectId, contentProp]);
 
   const handleCustomItemsChange = (items: string[]) => {
-    const updated = { custom_items: items };
+    const updated = { ...content, custom_items: items };
     setContent(updated);
+    // Clear highlighting after user edits (optional - remove highlights once content is edited)
+    setNewlyImportedIndices(new Set());
+    // Notify parent so sectionContents stays in sync (critical for AI import flow)
+    onContentChange?.(updated);
     save(updated);
   };
 
@@ -134,6 +165,11 @@ const BuyerObligationsSection: React.FC<BuyerObligationsSectionProps> = ({ proje
           onChange={handleCustomItemsChange}
           addButtonLabel="Add Obligation"
           minItems={0}
+          itemStyle={(index) => newlyImportedIndices.has(index) ? {
+            backgroundColor: '#E8F5E9',
+            border: '1px solid #4CAF50',
+            color: '#000000',
+          } : undefined}
         />
       </div>
     </div>

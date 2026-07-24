@@ -27,11 +27,25 @@ class AISuggestionsStatusResponse(BaseModel):
     """Non-secret AI Suggestions availability status."""
 
     model_config = ConfigDict(
-        json_schema_extra={"examples": [{"groq_configured": True}]}
+        json_schema_extra={
+            "examples": [
+                {
+                    "ai_configured": True,
+                    "provider": "ollama",
+                    "model": "gemma3:4b",
+                    "groq_configured": False,
+                }
+            ]
+        }
     )
 
+    ai_configured: bool = Field(
+        description="True when the selected AI provider has required configuration."
+    )
+    provider: str = Field(description="Selected AI provider from AI_PROVIDER.")
+    model: str = Field(description="Selected model name for the active provider.")
     groq_configured: bool = Field(
-        description="True when GROQ_API_KEY is configured on the backend."
+        description="Backward-compatible Groq availability flag. True only when GROQ_API_KEY is configured."
     )
 
 
@@ -120,7 +134,7 @@ class DrawioResponse(BaseModel):
 
 
 class GanttTask(BaseModel):
-    """Week-based Gantt task emitted by Groq before XML conversion."""
+    """Week-based Gantt task emitted by the AI provider before XML conversion."""
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -143,3 +157,4 @@ class GanttTask(BaseModel):
     duration_weeks: int = Field(description="Task duration in weeks.")
     milestone: bool = Field(default=False, description="Whether the task is rendered as a milestone marker.")
     dependencies: Optional[List[int]] = Field(default=None, description="Indexes of predecessor tasks in the generated task array.")
+

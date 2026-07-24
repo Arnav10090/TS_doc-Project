@@ -82,8 +82,12 @@ def test_unsaved_custom_section_returns_404(monkeypatch):
 
 
 def test_missing_groq_api_key_returns_503(monkeypatch):
+    from app.ai_suggestions.providers import clear_provider_cache
+
     project_id = uuid.uuid4()
     _install_project_override(monkeypatch, DummyProject(project_id))
+    clear_provider_cache()
+    monkeypatch.setattr("app.ai_suggestions.service.settings.AI_PROVIDER", "groq")
     monkeypatch.setattr("app.ai_suggestions.service.settings.GROQ_API_KEY", "")
 
     try:
@@ -93,4 +97,5 @@ def test_missing_groq_api_key_returns_503(monkeypatch):
         assert resp.status_code == 503
         assert "not configured" in resp.json().get("detail", "")
     finally:
+        clear_provider_cache()
         _clear_overrides()

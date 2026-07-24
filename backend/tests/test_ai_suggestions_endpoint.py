@@ -99,13 +99,21 @@ async def test_unsaved_custom_section_returns_404(client, create_test_project):
 
 @pytest.mark.asyncio
 async def test_missing_groq_api_key_returns_503(client, create_test_project, monkeypatch):
+    from app.ai_suggestions.providers import clear_provider_cache
+
     project = await create_test_project()
+    clear_provider_cache()
+    monkeypatch.setattr("app.ai_suggestions.service.settings.AI_PROVIDER", "groq")
     monkeypatch.setattr("app.ai_suggestions.service.settings.GROQ_API_KEY", "")
 
-    resp = await client.post(
-        f"/api/v1/projects/{project.id}/ai-suggestions/executive_summary",
-        json={"draft_content": None},
-    )
+    try:
+        resp = await client.post(
+            f"/api/v1/projects/{project.id}/ai-suggestions/executive_summary",
+            json={"draft_content": None},
+        )
 
-    assert resp.status_code == 503
-    assert "not configured" in resp.json().get("detail", "")
+        assert resp.status_code == 503
+        assert "not configured" in resp.json().get("detail", "")
+    finally:
+        clear_provider_cache()
+

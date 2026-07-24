@@ -4,16 +4,18 @@ import { getSection } from '../../api/sections';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import SectionHeader from '../shared/SectionHeader';
 import type { IntroductionContent } from '../../types';
+import { getSectionDraft } from '../../utils/sectionDraftStore';
 
 interface IntroductionSectionProps {
   projectId: string;
+  content?: IntroductionContent;
 }
 
 const INTRODUCTION_TEXT = `This Technical Specification document has been prepared in response to the tender reference {{TenderReference}} dated {{TenderDate}}. The document outlines the proposed solution architecture, technical specifications, implementation approach, and commercial terms for the project.
 
 Hitachi India Pvt. Ltd. is pleased to present this comprehensive technical specification that demonstrates our understanding of the requirements and our capability to deliver a robust, scalable, and future-ready solution.`;
 
-const IntroductionSection: React.FC<IntroductionSectionProps> = ({ projectId }) => {
+const IntroductionSection: React.FC<IntroductionSectionProps> = ({ projectId, content: contentProp }) => {
   const navigate = useNavigate();
   const [content, setContent] = useState<IntroductionContent>({
     tender_reference: '',
@@ -37,6 +39,37 @@ const IntroductionSection: React.FC<IntroductionSectionProps> = ({ projectId }) 
     };
 
     loadSection();
+  }, [projectId]);
+
+  // Synchronize local state with content prop changes (for AI import support)
+  useEffect(() => {
+    if (contentProp) {
+      setContent(contentProp);
+    }
+  }, [contentProp]);
+
+  // Poll draft store for updates (handles standalone rendering and AI imports)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const draft = getSectionDraft(projectId, 'introduction');
+      if (draft && (draft.tender_reference || draft.tender_date)) {
+        setContent((prev) => {
+          // Only update if values actually changed to avoid unnecessary re-renders
+          if (
+            prev.tender_reference !== draft.tender_reference ||
+            prev.tender_date !== draft.tender_date
+          ) {
+            return {
+              tender_reference: draft.tender_reference || '',
+              tender_date: draft.tender_date || '',
+            };
+          }
+          return prev;
+        });
+      }
+    }, 100); // Poll every 100ms
+
+    return () => clearInterval(interval);
   }, [projectId]);
 
   const handleChange = (field: keyof IntroductionContent, value: string) => {

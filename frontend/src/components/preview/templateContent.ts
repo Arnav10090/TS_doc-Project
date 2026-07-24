@@ -17,7 +17,7 @@ export const REMOTE_SUPPORT_PARAGRAPHS = [
 
 export const DOCUMENTATION_CONTROL_ITEMS = [
   'Screen Design Document,',
-  'Hardware Specifications,',
+  'Basic Hardware Specification,',
   'Software specifications, and',
   'Operation Manual',
 ];
@@ -137,6 +137,8 @@ export const POC_PARAGRAPHS = [
   'The solutions under the PoC will be deployed for a limited period of two months to demonstrate the capabilities of these solutions. Upon completion of the demonstration, the BUYER must capitalize on the benefits by purchasing these solutions through a separate commercial contract, ensuring continued access to their full potential. The SELLER reserves the right to withdraw the PoC solutions if the BUYER does not proceed with the purchase following the demonstration.',
 ];
 
+export const HEADER_ROW_COUNT = 2;
+
 export const RESPONSIBILITY_MATRIX_ROWS = [
   ['No.', 'ITEM', 'Responsibility', 'Responsibility', 'Responsibility', 'Responsibility', 'Responsibility', 'Responsibility'],
   ['No.', 'ITEM', 'BD', 'BE', 'DD', 'SU', 'ER', 'COM'],
@@ -177,7 +179,7 @@ export const RESPONSIBILITY_MATRIX_ROWS = [
   ['', '', '', '', '', '', '', ''],
   ['(7)', 'Documents to be submitted for Reference & Records', '', '', '', '', '', ''],
   ['-1', 'Screen Design Documents', 'S', 'S', 'S', 'S', '-', '-'],
-  ['-2', 'Hardware Specifications', 'S', 'S', 'S', 'S', '-', '-'],
+  ['-2', 'Basic Hardware Specification', 'S', 'S', 'S', 'S', '-', '-'],
   ['-3', 'Software Specifications', 'S', 'S', 'S', 'S', '-', '-'],
   ['-4', '{{SolutionName}} Operation Manual', 'S', 'S', 'S', 'S', '-', '-'],
   ['', '', '', '', '', '', '', ''],
@@ -191,3 +193,24 @@ export const RESPONSIBILITY_MATRIX_ROWS = [
   ['', '', '', '', '', '', '', ''],
   ['', '', '', '', '', '', '', ''],
 ];
+
+/**
+ * Validates and fixes matrix headers to match template layout
+ * @param rows - Raw matrix rows from saved data
+ * @returns Normalized rows with correct header structure
+ */
+export const validateAndFixHeaders = (rows: string[][]): string[][] => {
+  if (!rows || rows.length === 0) {
+    return RESPONSIBILITY_MATRIX_ROWS.map(row => [...row]);
+  }
+
+  // Extract data rows (everything after first two rows)
+  const dataRows = rows.slice(2);
+
+  // Replace first two rows with template headers
+  return [
+    [...RESPONSIBILITY_MATRIX_ROWS[0]], // First header row
+    [...RESPONSIBILITY_MATRIX_ROWS[1]], // Second header row
+    ...dataRows                          // Preserve existing data
+  ];
+};

@@ -1,7 +1,0 @@
-[DRAFT — ADAPT FOR ASSET MANAGEMENT]
-Structure: Use only approved TS boilerplate clauses. Standard structure: scope limitation clause (this TS defines complete scope), site-exit condition (HICAD personnel leave upon work completion cert issuance), dispute resolution reference, governing law reference.
-Avoid: Generating novel legal clauses not in approved template. Do not add jurisdiction-specific content without explicit metadata.
-Tone: Legal-boilerplate. Do not paraphrase or soften contractual language. Use exact approved phrasing.
-UGS-specific: Binding conditions are identical across UGS projects — do not project-customize unless metadata explicitly requires.
---- Template structure reminder ---
-Bulleted list. Use repository-approved boilerplate only. Do not generate novel legal clauses, penalties, or indemnity terms. Scope limited to TS-defined content only.

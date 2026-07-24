@@ -8,6 +8,8 @@ from app.ai_suggestions import schemas, service as ai_service
 from app.projects import service as project_service
 from app.ai_suggestions.validation import is_valid_ai_section_key
 from app.config import settings
+from app.ai_suggestions.providers import get_ai_provider
+from app.ai_suggestions.providers.errors import AIProviderError
 
 router = APIRouter(prefix="/api/v1", tags=["ai_suggestions"])
 logger = logging.getLogger(__name__)
@@ -31,15 +33,15 @@ _AI_ERROR_RESPONSES = {
         }}},
     },
     502: {
-        "description": "Groq provider error or invalid AI provider payload.",
+        "description": "AI provider error or invalid AI provider payload.",
         "content": {"application/json": {"example": {"detail": "AI provider error. Please try again."}}},
     },
     503: {
-        "description": "AI Suggestions is not configured because GROQ_API_KEY is missing.",
+        "description": "AI Suggestions is not configured for the selected provider.",
         "content": {"application/json": {"example": {"detail": "AI suggestions are not configured."}}},
     },
     504: {
-        "description": "Groq request timed out.",
+        "description": "AI provider request timed out.",
         "content": {"application/json": {"example": {"detail": "AI suggestion timed out. Please try again."}}},
     },
 }
@@ -93,16 +95,28 @@ _DRAWIO_RESPONSE_EXAMPLE = {
     "/ai-suggestions/status",
     response_model=schemas.AISuggestionsStatusResponse,
     summary="Get AI Suggestions status",
-    description="Returns non-secret availability metadata so the frontend can disable AI controls when Groq is not configured.",
-    response_description="Groq configuration status.",
-    responses={200: {"content": {"application/json": {"example": {"groq_configured": True}}}}},
+    description="Returns non-secret availability metadata so the frontend can disable AI controls when the selected provider is not configured.",
+    response_description="AI provider configuration status.",
+    responses={200: {"content": {"application/json": {"example": {"ai_configured": True, "provider": "ollama", "model": "gemma3:4b", "groq_configured": False}}}}},
 )
 async def get_ai_suggestions_status():
     """Expose non-secret AI suggestions availability for the frontend."""
-    return schemas.AISuggestionsStatusResponse(
-        groq_configured=bool(settings.GROQ_API_KEY)
-    )
+    try:
+        provider = get_ai_provider()
+        ai_configured = provider.is_configured()
+        provider_name = provider.name
+        model = provider.model
+    except AIProviderError:
+        ai_configured = False
+        provider_name = settings.AI_PROVIDER
+        model = ""
 
+    return schemas.AISuggestionsStatusResponse(
+        ai_configured=ai_configured,
+        provider=provider_name,
+        model=model,
+        groq_configured=bool(settings.GROQ_API_KEY),
+    )
 
 @router.post(
     "/projects/{project_id}/ai-suggestions/{section_key}",
@@ -256,3 +270,4 @@ async def generate_drawio_xml(
         raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Draw.io generation not implemented yet")
 
     return response
+

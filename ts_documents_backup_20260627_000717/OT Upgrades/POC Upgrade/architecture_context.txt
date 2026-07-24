@@ -1,9 +1,0 @@
-Architecture: Micro-architecture representing the proposed future state. If it's a PLC upgrade, it involves a single new PLC rack communicating with existing remote I/O and HMIs. If it's an edge data collection POC, it involves an IoT gateway passing data to a cloud or local historian.
-
-Technology: Dependent on POC scope (e.g., Siemens S7-1500 replacing S7-300; Rockwell ControlLogix replacing PLC-5; or Advantech Edge Gateway).
-
-Data acquisition: Must interface seamlessly with the legacy equipment not being upgraded. May require protocol converters or gateways during the POC phase.
-
-Storage: Minimal local storage for POC data buffering.
-
-Integration pattern: The POC component is inserted into the existing architecture, either in parallel (shadow mode) or as a direct replacement with a physical fallback switch. Diagram: Scope-limited architecture highlighting the specific POC component boundary.

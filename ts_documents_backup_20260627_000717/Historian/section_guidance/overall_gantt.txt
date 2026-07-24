@@ -1,6 +1,0 @@
-[DRAFT — ADAPT FOR HISTORIAN]
-Structure: Phase sequence M1→M5 with indicative week ranges from metadata (or observed scale examples if not provided). Mandatory language: all durations indicative, finalized at PO acceptance. Output: week-based JSON for draw.io with fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies (array).
-Avoid: Stating exact dates or calendar months. Never present indicative weeks as contractual commitments.
-Tone: Scheduling-specification. Include buyer prerequisite delay impact statement for M1, M2, M4 gates.
---- Template structure reminder ---
-2-3 sentence companion text: indicative duration, key phases, milestones. All durations indicative only; buyer prerequisite delays cause proportional delivery delays. For draw.io: week-based GanttTask JSON (task, phase, start_week, duration_weeks, milestone, dependencies).

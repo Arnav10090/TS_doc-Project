@@ -1,7 +1,0 @@
-Security responsibility: Hitachi India ensures hardware is delivered with secure default configurations for management interfaces (e.g., disabling default passwords on iDRAC/iLO). Buyer is responsible for physical access control to the server room and applying OS/firmware patches post-handover.
-
-Patch management: Hitachi India flashes the latest stable BIOS and firmware available at the time of installation. Ongoing firmware updates are the buyer's responsibility.
-
-Liability: Hitachi India's liability is limited to the physical integrity and basic hardware functionality of the supplied equipment. Warranty claims are passed through to the respective hardware OEM.
-
-Remote access: Not typically required post-handover for pure hardware deployments. If required for troubleshooting hardware issues, secure VPN access to the management network is needed.

@@ -26,7 +26,7 @@ The **TS Document Generator** is a sophisticated web application designed for Hi
 
 - **⏱️ Save Time**: Reduce document creation time by 60% with AI-powered content suggestions
 - **📋 Ensure Consistency**: Standardized structure across all TS documents
-- **🤖 AI-Assisted**: Gemini-powered suggestions grounded in historical TS documents
+- **?? AI-Assisted**: Provider-backed suggestions grounded in historical TS documents
 - **🎯 Category-Aware**: AI suggestions tailored to specific solution types (Data Analysis, OT Cybersecurity, Level 2, etc.)
 - **📊 Rich Content**: Support for tables, diagrams, Gantt charts, and custom sections
 - **🔄 Version Control**: Built-in revision history and document versioning
@@ -49,7 +49,7 @@ The **TS Document Generator** is a sophisticated web application designed for Hi
 - **Category-Specific Context**: Suggestions tailored to solution types (Historian, EMS, HSM, etc.)
 - **Section-Aware Generation**: Understands the purpose of each section
 - **Draw.io Integration**: Generate Gantt charts ready for draw.io import
-- **Groq & Gemini Support**: Multi-model AI assistance
+- **Provider-Based AI Support**: Local Ollama by default, with Groq retained through configuration
 
 ### 📊 **Professional Output**
 
@@ -191,7 +191,7 @@ Comprehensive documentation is available in the `/docs` folder:
 - SQLAlchemy ORM with async support
 - Pydantic for validation
 - python-docx + Jinja2 for Word generation
-- Gemini API for AI assistance
+- Ollama for local AI assistance, or Groq when `AI_PROVIDER=groq`
 
 **Infrastructure**
 - PostgreSQL 15 database
@@ -233,10 +233,19 @@ Create a `.env` file in the project root:
 # Database
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/ts_generator
 
-# AI Configuration
-GEMINI_API_KEY=your_gemini_api_key_here
-GROQ_API_KEY=your_groq_api_key_here
+# AI Suggestions Configuration
+AI_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=gemma3:4b
+OLLAMA_TIMEOUT=120
+OLLAMA_KEEP_ALIVE=30m
+OLLAMA_NUM_CTX=32768
+OLLAMA_TEMPERATURE=0.2
+OLLAMA_NUM_PREDICT=2048
 
+# Optional: switch with AI_PROVIDER=groq
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=llama-3.3-70b-versatile
 # Application
 TS_DOCUMENTS_PATH=/app/ts_documents
 TS_CONTEXT_PATH=/app/ts_context_files
@@ -370,7 +379,7 @@ This project is proprietary software developed for Hitachi India. All rights res
 ## 🙏 Acknowledgments
 
 - **Hitachi India Engineering Team** for requirements and domain expertise
-- **Gemini API** for powering AI suggestions
+- **Ollama/Groq provider support** for powering AI suggestions
 - **FastAPI** and **React** communities for excellent frameworks
 
 ---
@@ -392,3 +401,4 @@ For issues, questions, or feature requests:
 Made with ❤️ for Hitachi India
 
 </div>
+

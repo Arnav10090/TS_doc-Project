@@ -131,6 +131,87 @@ describe('DocumentPreview - Preservation Property Tests: Non-Deleted Section Beh
       expect(screen.queryByText(/## Flow Summary/)).toBeNull();
     });
 
+    it('renders saved Binding Conditions HTML list content as bullet points in preview', () => {
+      const sectionContents = {
+        cover: { solution_full_name: 'Test Solution' },
+        binding_conditions: {
+          heading: 'BINDING CONDITIONS:',
+          paragraphs: [
+            '<p>SELLER supervisors shall have the right to leave the site without any permission or approval of BUYER in the following cases:</p><ul><li>If idling periods extend more than a considerable time.</li><li>If BUYER prerequisites are not fulfilled as per the agreed and signed TS.</li></ul>',
+          ],
+        },
+      };
+
+      renderWithRouter(
+        <DocumentPreview
+          projectId={projectId}
+          activeSectionKey={activeSectionKey}
+          sectionContents={sectionContents}
+          onSectionClick={onSectionClick}
+        />,
+      );
+
+      expect(
+        screen.getByText(
+          /SELLER supervisors shall have the right to leave the site without any permission or approval of BUYER/i,
+        ),
+      ).not.toBeNull();
+      expect(
+        screen.getByText(/If idling periods extend more than a considerable time\./i),
+      ).not.toBeNull();
+      expect(
+        screen.getByText(/If BUYER prerequisites are not fulfilled as per the agreed and signed TS\./i),
+      ).not.toBeNull();
+      const bulletItem = screen.getByText(
+        /If idling periods extend more than a considerable time\./i,
+      ).closest('li');
+      expect(bulletItem).not.toBeNull();
+      expect(screen.queryByText(/<ul>|<li>/i)).toBeNull();
+    });
+
+    it('applies green highlight and black text to edited Binding Conditions paragraphs', () => {
+      const timestamp = '2026-07-24T10:00:00.000Z';
+      const sectionContents = {
+        cover: { solution_full_name: 'Test Solution' },
+        binding_conditions: {
+          heading: 'BINDING CONDITIONS:',
+          paragraphs: ['AI imported clause for preview highlighting.'],
+          __editMetadata: {
+            version: 1,
+            sectionUpdatedAt: timestamp,
+            markers: {
+              'paragraphs.0': {
+                path: 'paragraphs.0',
+                updatedAt: timestamp,
+                editor: 'AI',
+              },
+            },
+          },
+        },
+      };
+
+      renderWithRouter(
+        <DocumentPreview
+          projectId={projectId}
+          activeSectionKey={activeSectionKey}
+          sectionContents={sectionContents}
+          onSectionClick={onSectionClick}
+        />,
+      );
+
+      const editedParagraph = screen.getByText(
+        /AI imported clause for preview highlighting\./i,
+      );
+
+      expect(editedParagraph.getAttribute('style')).toContain(
+        'background-color: rgba(23, 241, 49, 0.14)',
+      );
+      expect(editedParagraph.getAttribute('style')).toContain('color: rgb(0, 0, 0)');
+      expect(editedParagraph.getAttribute('style')).toContain(
+        'border-left: 3px solid rgb(23, 241, 49)',
+      );
+    });
+
     it('renders stringified introduction JSON as document paragraphs instead of raw JSON', () => {
       const sectionContents = {
         cover: { solution_full_name: 'Test Solution' },
@@ -413,7 +494,7 @@ describe('DocumentPreview - Preservation Property Tests: Non-Deleted Section Beh
       );
 
       // Assert: Section heading should render (use queryAllByText since text appears in heading and placeholder)
-      const hardwareHeadings = screen.queryAllByText(/HARDWARE SPECIFICATIONS/i);
+      const hardwareHeadings = screen.queryAllByText(/BASIC HARDWARE SPECIFICATION/i);
       expect(hardwareHeadings.length).toBeGreaterThan(0);
 
       // Assert: Placeholder text should render

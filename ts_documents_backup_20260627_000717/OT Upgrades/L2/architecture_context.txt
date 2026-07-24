@@ -1,9 +1,0 @@
-Architecture: Client-server deployment — L2 application server (Windows Server) with SQL Server database, web-based or thick-client HMI, redundant server option for critical lines.
-
-Technology: Microsoft Windows Server; SQL Server (on-premises); OPC DA/UA for L1 data acquisition; web services (REST/SOAP) or database link for L3 ERP integration; browser-based reporting dashboards (SSRS or custom); secure RBAC with role-based operator/supervisor/engineer views.
-
-Data acquisition: OPC polling from L1 PLCs and SCADA at configurable scan rates (1s–60s); event-driven triggers from HMI alarm points; manual entry screens for offline data correction.
-
-Storage: SQL Server relational database with configurable retention (typically 12–24 months online, archival beyond); automated housekeeping; indexed for production order and heat/coil query performance.
-
-Integration: L3 ERP via database replication, flat-file exchange, or web service API — confirmed at detailed engineering. Diagram: system architecture with L1→L2→L3 data flow, network zones, and interface protocols labeled.

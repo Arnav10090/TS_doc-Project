@@ -1,7 +1,0 @@
-Backup & Recovery Solution — provides automated, centralized backup and disaster recovery capabilities tailored for Operational Technology (OT) environments. Designed to protect mission-critical OT assets including HMIs, SCADA servers, Historians, Engineering Workstations, and PLC/DCS configurations. Ensures rapid recovery from hardware failures, cyber-attacks (like ransomware), or accidental misconfigurations. NOT a general-purpose IT enterprise backup solution.
-
-Core capabilities (all deployments): Image-based backups for bare-metal and virtualized OT servers; application-aware backups (e.g., SQL Server, Historians); automated backup scheduling and retention policies; secure, offline/air-gapped storage repositories; rapid recovery mechanisms (Instant VM Recovery, bare-metal restore); centralized management dashboard; integration with existing OT network architecture.
-
-Business drivers: Minimize costly production downtime by ensuring rapid recovery of critical systems, protect against data loss from hardware failure or cyber incidents, meet regulatory compliance for disaster recovery planning, reduce reliance on manual or ad-hoc backup methods.
-
-Plant environment: Diverse OT landscape with legacy operating systems (Windows XP/7, older Server editions), specialized industrial software, and potentially fragile network connections. Requires backups to be performed with minimal impact on production systems and network performance.

@@ -143,7 +143,7 @@ const HardwareSpecsSection: React.FC<HardwareSpecsSectionProps> = ({ projectId }
       <SectionHeader
         projectId={projectId}
         sectionKey="hardware_specs"
-        title="Hardware Specifications"
+        title="Basic Hardware Specification"
         showDeleteButton={true}
         onDelete={handleDelete}
         status={status}

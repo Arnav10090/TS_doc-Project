@@ -1,7 +1,0 @@
-Asset Management Solution — provides automated discovery, inventory, and lifecycle management for Operational Technology (OT) assets. Identifies industrial control systems (PLCs, DCS, RTUs), networking equipment, and workstations without disrupting legacy or sensitive plant-floor equipment. Delivers a centralized view of hardware, firmware versions, software installed, and network communication patterns. NOT an enterprise IT service management (ITSM) tool like ServiceNow, though it can integrate with one.
-
-Core capabilities (all deployments): passive network scanning for non-intrusive asset discovery; active querying using OT-safe protocols (WMI, SNMP, specific PLC protocols); automated hardware and software inventory generation; network topology visualization; communication flow baseline mapping; firmware version tracking; integration with existing IT/OT systems (CMMS/ITSM) via API.
-
-Business drivers: overcome lack of visibility into plant floor equipment, prepare for cybersecurity audits by having a definitive asset inventory, identify obsolete or unpatched hardware/software, reduce manual effort of maintaining Excel-based tracking, streamline compliance reporting (e.g., IEC 62443, NIST).
-
-Plant environment: complex industrial network with a mix of legacy and modern control systems. Often involves multiple vendor platforms (Siemens, Rockwell, ABB) residing on flat or partially segmented networks. High sensitivity to active network scanning which can crash older PLCs.

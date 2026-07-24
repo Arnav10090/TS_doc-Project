@@ -1,7 +1,0 @@
-Phase structure: M1 Data Discovery (~4w) → M2 Model Dev (~8w) → M3 Platform Setup (~4w) → M4 Live Tuning (~6w) → M5 Go-Live (~2w). Total indicative: ~24w from PO.
-
-Critical path: Availability of the historical dataset gates M1. Quality of the data dictates the length of M2 feature engineering. Live data connectivity gates M4 tuning.
-
-Shutdown Gantt: NOT REQUIRED. Deployment of an advisory analytics platform does not involve inserting hardware into the critical control path or taking plant equipment offline.
-
-Draw.io format: week-based GanttTask JSON — fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies[].

@@ -38,8 +38,8 @@ async def test_custom_section_missing_title_returns_400(monkeypatch):
     monkeypatch.setattr(ai_service.project_service, 'get_project_by_id', _fake_get_project)
     monkeypatch.setattr(ai_service.sections_service, 'get_all_sections', _fake_get_all_sections)
 
-    # Monkeypatch load_category_context to avoid filesystem access
-    monkeypatch.setattr(ai_service, 'load_category_context', lambda ts_type, dir: SimpleNamespace(context_txt=None, historical_documents=[], folder_path=dir, historical_context_available=False))
+    # Monkeypatch load_layered_context to avoid filesystem access
+    monkeypatch.setattr(ai_service, 'load_layered_context', lambda ts_type, dir, section_key: SimpleNamespace(legacy_context_txt=None, historical_documents=[], loaded_shared_contexts=[], folder_path=dir, historical_context_available=False, section_guidance_available=False))
 
     # Act / Assert
     with pytest.raises(HTTPException) as exc:
@@ -71,8 +71,8 @@ async def test_custom_section_multi_subsection_success(monkeypatch):
     monkeypatch.setattr(ai_service.project_service, 'get_project_by_id', _fake_get_project)
     monkeypatch.setattr(ai_service.sections_service, 'get_all_sections', _fake_get_all_sections)
 
-    # Monkeypatch load_category_context
-    monkeypatch.setattr(ai_service, 'load_category_context', lambda ts_type, dir: SimpleNamespace(context_txt=None, historical_documents=[], folder_path=dir, historical_context_available=False))
+    # Monkeypatch load_layered_context
+    monkeypatch.setattr(ai_service, 'load_layered_context', lambda ts_type, dir, section_key: SimpleNamespace(legacy_context_txt=None, historical_documents=[], loaded_shared_contexts=[], folder_path=dir, historical_context_available=False, section_guidance_available=False))
 
     # Monkeypatch builder to produce predictable prompt text
     def fake_builder(custom_section_title, subsection_name, subsection_type, project, all_sections, draft_content, category_context, expected_row_fields=None):

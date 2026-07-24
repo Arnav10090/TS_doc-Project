@@ -82,11 +82,11 @@ const BUILT_IN_TABLES: Record<string, { id: string; name: string }> = {
   },
   hardware_specs: {
     id: 'table:hardware_specs',
-    name: 'Hardware Specifications',
+    name: 'Basic Hardware Specification',
   },
   software_specs: {
     id: 'table:software_specs',
-    name: 'Software Specifications',
+    name: 'Basic Software Specification',
   },
   division_of_eng: {
     id: 'table:division_of_eng',

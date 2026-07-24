@@ -703,9 +703,22 @@ Structure: Single paragraph listing the documentation deliverables. Brief inline
 ## customer_training
 Role: Defines the training SELLER will provide to BUYER's personnel at site during commissioning.
 Required: [TRAINING_MAX_PERSONS], [TRAINING_MAX_DAYS]
-Infer: Training conducted at site during commissioning; covers CYMS & SYMS web application operation; classroom training format at site; topics mutually agreed between SELLER and BUYER
-Never invent: Specific training curriculum, online training provision, post-training support commitments, specific trainer qualifications, certification or assessment programs
-Structure: Single paragraph. State: at-site delivery during commissioning, maximum [TRAINING_MAX_PERSONS] persons, maximum [TRAINING_MAX_DAYS] days, subject coverage (CYMS & SYMS web application supply topics), format (classroom training), topic agreement (mutually agreed).
+Output Format: Return a JSON object with exactly three fields:
+```json
+{
+  "paragraph": "SELLER shall provide training at site during commissioning to a maximum of {TRAINING_MAX_PERSONS} people for a maximum of {TRAINING_MAX_DAYS} days. Training shall cover mutually agreed topics on {Solution Name from Project Metadata} application. Training shall comprise of classroom training at site.",
+  "persons": "{TRAINING_MAX_PERSONS}",
+  "days": "{TRAINING_MAX_DAYS}"
+}
+```
+AI Instructions: 
+1. The "paragraph" field MUST use the EXACT template text shown above. Replace {TRAINING_MAX_PERSONS} with the numeric value from [TRAINING_MAX_PERSONS], replace {TRAINING_MAX_DAYS} with the numeric value from [TRAINING_MAX_DAYS], and replace {Solution Name from Project Metadata} with the actual "Solution Name" value from Project Metadata section 1.
+2. The "persons" field MUST contain ONLY the numeric count from [TRAINING_MAX_PERSONS] (e.g., "10", not names).
+3. The "days" field MUST contain ONLY the numeric value from [TRAINING_MAX_DAYS] (e.g., "5").
+4. Do NOT add any additional text, explanations, or variations to the template.
+5. Do NOT use person names in the "persons" field - use only the numeric count.
+Never invent: Any text outside the exact template. Specific training curriculum, online training provision, person names, or post-training support commitments.
+Structure: JSON object with three fields as specified above.
 
 ---
 

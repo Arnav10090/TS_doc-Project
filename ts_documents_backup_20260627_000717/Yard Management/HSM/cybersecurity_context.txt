@@ -1,7 +1,0 @@
-Security responsibility: Hitachi India implements the YMS server with standard IT/OT security baselines (RBAC, active directory integration, encrypted client communication). Buyer is responsible for the overall plant Wi-Fi security (e.g., WPA3-Enterprise, MAC filtering) and providing secure network segregation between the YMS and corporate IT networks.
-
-Patch management: Hitachi India provides the YMS software on a patched OS. Post-commissioning patching of the OS and database is the buyer's responsibility. YMS application updates are provided under a separate AMC.
-
-Liability: Hitachi India's liability is limited to the correct functioning of the YMS software based on the inputs received from the crane sensors and L3 interfaces. Hitachi India is not liable for inventory discrepancies caused by manual crane operations circumventing the system, or sensor failures caused by physical damage.
-
-Remote access: Secure VPN access is required for remote troubleshooting of the YMS server.

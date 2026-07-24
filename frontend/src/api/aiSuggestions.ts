@@ -28,7 +28,10 @@ export interface DrawioResponse {
 }
 
 export interface AISuggestionsStatusResponse {
-  groq_configured: boolean
+  ai_configured?: boolean
+  provider?: string
+  model?: string
+  groq_configured?: boolean
 }
 
 export interface SuggestionRequest {

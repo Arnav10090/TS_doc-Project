@@ -1,9 +1,0 @@
-Architecture: Hierarchical network design (Core, Distribution, Access/Edge). Resilient ring topologies (MRP/RSTP) at the edge, redundant star or VSS/Stacking at the core/distribution.
-
-Technology: Industrial Managed Switches (Cisco Industrial Ethernet (IE) series, Scalance, Stratix, Hirschmann); Core Routing Switches (Cisco Catalyst, Nexus); Transceivers (SFP/SFP+ for Fiber); Network Management System (NMS) for centralized configuration and monitoring (e.g., Cisco DNA Center, SolarWinds).
-
-Data acquisition: N/A.
-
-Storage: N/A. Switches store configuration files in NVRAM; central NMS stores backup configurations and syslog.
-
-Integration pattern: Integration with plant historians and L2 systems via standard TCP/IP. Diagram: Logical network topology showing VLAN boundaries, routing domains, and spanning tree root bridge locations.

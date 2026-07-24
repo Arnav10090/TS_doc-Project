@@ -116,7 +116,7 @@ describe('DocumentPreview - Bug Condition Exploration: Deleted Sections Disappea
     const featuresHeading = screen.queryByText(/DESIGN SCOPE OF WORK/i);
     expect(featuresHeading).toBeNull();
 
-    const hardwareHeading = screen.queryByText(/HARDWARE SPECIFICATIONS/i);
+    const hardwareHeading = screen.queryByText(/BASIC HARDWARE SPECIFICATION/i);
     expect(hardwareHeading).toBeNull();
 
     // Verify section wrappers do not exist
@@ -238,8 +238,8 @@ describe('DocumentPreview - Bug Condition Exploration: Deleted Sections Disappea
       { key: 'overview', heading: /OVERVIEW OF/i },
       { key: 'features', heading: /DESIGN SCOPE OF WORK/i },
       { key: 'remote_support', heading: /REMOTE SUPPORT SYSTEM/i },
-      { key: 'hardware_specs', heading: /HARDWARE SPECIFICATIONS/i },
-      { key: 'software_specs', heading: /SOFTWARE SPECIFICATIONS/i },
+      { key: 'hardware_specs', heading: /BASIC HARDWARE SPECIFICATION/i },
+      { key: 'software_specs', heading: /BASIC SOFTWARE SPECIFICATION/i },
       { key: 'overall_gantt', heading: /OVERALL GANTT CHART/i },
       { key: 'supervisors', heading: /SUPERVISORS/i },
     ];

@@ -571,9 +571,22 @@ Structure: One paragraph on documentation philosophy (documentation aligned to i
 ## customer_training
 Role: Defines training delivered during or after commissioning.
 Required: [TRAINING_PERSONS], [TRAINING_DAYS] from metadata.
-Infer: Hands-on training on operational use of the implemented OTCSS tools. Delivered at or after commissioning. Three audience types: leadership (comprehensive awareness session), operations/engineering workforce (general awareness sessions), OT maintenance team (technical hands-on sessions covering tool configuration and incident handling). Total maximum audience: [TRAINING_PERSONS] persons. Total duration: maximum [TRAINING_DAYS] days. Agenda mutually agreed before delivery.
-Never invent: Specific training topics not agreed in scope; trainee certification or assessment; training cost not in scope.
-Structure: One paragraph. State: at or during commissioning, maximum [TRAINING_PERSONS] persons, maximum [TRAINING_DAYS] days, operational and technical scope, multi-audience approach (leadership, workforce, maintenance teams), agenda mutually agreed.
+Output Format: Return a JSON object with exactly three fields:
+```json
+{
+  "paragraph": "SELLER shall provide training at site during commissioning to a maximum of {TRAINING_PERSONS} people for a maximum of {TRAINING_DAYS} days. Training shall cover mutually agreed topics on {Solution Name from Project Metadata} application. Training shall comprise of classroom training at site.",
+  "persons": "{TRAINING_PERSONS}",
+  "days": "{TRAINING_DAYS}"
+}
+```
+AI Instructions: 
+1. The "paragraph" field MUST use the EXACT template text shown above. Replace {TRAINING_PERSONS} with the numeric value from [TRAINING_PERSONS], replace {TRAINING_DAYS} with the numeric value from [TRAINING_DAYS], and replace {Solution Name from Project Metadata} with the actual "Solution Name" value from Project Metadata section 1.
+2. The "persons" field MUST contain ONLY the numeric count from [TRAINING_PERSONS] (e.g., "10", not names).
+3. The "days" field MUST contain ONLY the numeric value from [TRAINING_DAYS] (e.g., "5").
+4. Do NOT add any additional text, explanations, or variations to the template.
+5. Do NOT use person names in the "persons" field - use only the numeric count.
+Never invent: Any text outside the exact template. Specific training topics not agreed in scope, person names, or trainee certification or assessment.
+Structure: JSON object with three fields as specified above.
 
 ---
 

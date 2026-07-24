@@ -1,7 +1,0 @@
-Phase structure: M1 Design (~3w) → M2 Hardware/Software Delivery (~6-8w) → M3 FAT (~2w) → M4 Deployment (~4w) → M5 Handover (~2w). Total indicative: ~17-19w from PO.
-
-Critical path: Network architecture and asset list finalization gates M1 design completion. Storage hardware lead times gate M4 deployment.
-
-Shutdown Gantt: NOT REQUIRED. Backup agents can typically be installed on physical machines without requiring a reboot, though some legacy OS might. Agentless backups of VMs require no downtime. Initial full backups may impact network performance and are scheduled during off-peak hours, but do not require plant shutdown.
-
-Draw.io format: week-based GanttTask JSON — fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies[].

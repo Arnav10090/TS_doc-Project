@@ -77,7 +77,7 @@ const SoftwareSpecsSection: React.FC<SoftwareSpecsSectionProps> = ({ projectId }
       <SectionHeader
         projectId={projectId}
         sectionKey="software_specs"
-        title="Software Specifications"
+        title="Basic Software Specification"
         showDeleteButton={true}
         onDelete={handleDelete}
         status={status}

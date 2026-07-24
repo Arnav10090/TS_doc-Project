@@ -1,7 +1,0 @@
-OT Network & Hardware Solution — provides the foundational networking and computing infrastructure required for industrial automation and Level 2 systems. Delivers ruggedized switching, routing, wireless connectivity, and physical servers/workstations designed for harsh plant environments. It connects Level 1 (PLCs/Sensors) to Level 2 (SCADA/PMS) and establishes the boundary to Level 3 (IT). NOT an enterprise IT network solution or general office hardware.
-
-Core capabilities (all deployments): industrial ethernet network design (ring/star/mesh topologies); managed industrial switches with STP/RSTP/MRP; ruggedized servers and engineering workstations (rackmount or panel PCs); fiber optic and copper cabling design; wireless access points for plant floor mobility; network time synchronization (NTP/PTP); basic network monitoring and management.
-
-Business drivers: ensure high availability and deterministic performance for critical control signals, provide environmentally robust hardware (temperature, dust, vibration), establish secure separation between IT and OT, enable scalable infrastructure for future automation upgrades.
-
-Plant environment: industrial production floor with high electromagnetic interference, temperature extremes, and airborne contaminants. Existing legacy networks (often unmanaged or flat) requiring segmentation. Requires coordination with plant electrical and civil teams for cable routing and panel placement.

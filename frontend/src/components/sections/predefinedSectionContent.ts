@@ -44,8 +44,8 @@ export const PREDEFINED_SECTION_TITLES: Record<string, string> = {
   system_config: 'System Configuration',
   fat_condition: 'FAT Condition',
   tech_stack: 'Technology Stack',
-  hardware_specs: 'Hardware Specifications',
-  software_specs: 'Software Specifications',
+  hardware_specs: 'Basic Hardware Specification',
+  software_specs: 'Basic Software Specification',
   third_party_sw: 'Third Party Software',
   overall_gantt: 'Overall Gantt Chart',
   shutdown_gantt: 'Shutdown Gantt Chart',
@@ -357,19 +357,19 @@ export const getDefaultSectionContent = (
       };
     case 'hardware_specs':
       return {
-        heading: 'HARDWARE SPECIFICATIONS',
+        heading: 'BASIC HARDWARE SPECIFICATION',
         intro_text: 'Following is the list of Hardware required for {{SolutionName}} Application.',
         rows: hardwareRows(context.solutionName),
       };
     case 'software_specs':
       return {
-        heading: 'SOFTWARE SPECIFICATIONS',
+        heading: 'BASIC SOFTWARE SPECIFICATION',
         intro_text: 'Below are the Software Specifications for the Proposed {{SolutionName}} system.',
         rows: softwareRows,
       };
     case 'third_party_sw':
       return {
-        heading: 'THIRD PARTY SOFTWARE',
+        heading: 'THIRD PARTY SOFTWARE REQUIREMENTS',
         sw4_name: '',
         remote_link_text:
           'Remote Link: To provide a suitable level of response to operation & process execution problems and queries raised on site, SELLER requires a network connection via broadband / VPN / Remote connectivity.',

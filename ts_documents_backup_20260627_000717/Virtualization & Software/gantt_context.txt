@@ -1,7 +1,0 @@
-Phase structure: M1 Sizing (~4w) → M2 Hardware Delivery (~10-14w) → M3 FAT (~3w) → M4 Installation & P2V (~6w) → M5 Handover (~2w). Total indicative: ~25-29w from PO.
-
-Critical path: Capacity planning gates server procurement. Network switch readiness gates M4 cluster installation. Scheduled plant downtime windows gate P2V migrations.
-
-Shutdown Gantt: REQUIRED for P2V migrations. Each physical machine being migrated requires being taken offline (shut down), cloned over the network, and brought online as a VM. Typical cutover window is 4-8 hours per server. Multiple servers can be migrated concurrently depending on network bandwidth.
-
-Draw.io format: week-based GanttTask JSON — fields: task, phase, start_week, duration_weeks, milestone (bool), dependencies[].
