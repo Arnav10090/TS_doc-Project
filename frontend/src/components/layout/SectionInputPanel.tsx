@@ -6,7 +6,7 @@ import BuyerObligationsSection from '../sections/BuyerObligationsSection';
 import type { CustomSectionContent } from '../../types/customSections';
 import type { AutoSaveStatus, BuyerObligationsContent } from '../../types';
 import { PREDEFINED_SECTION_TITLES, getDefaultSectionContent } from '../sections/predefinedSectionContent';
-import { stripEditMetadata } from '../../utils/editMetadata';
+import { stripEditMetadata, buildContentWithEditMetadata } from '../../utils/editMetadata';
 import { useProjectStore } from '../../store/project.store'
 import AISuggestionsButton from '../shared/AISuggestionsButton'
 import SuggestionPanel from '../shared/SuggestionPanel'
@@ -57,6 +57,7 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
 }) => {
   // Check if this is a custom section
   const isCustomSection = isCustomSectionKey(activeSectionKey);
+  const solutionName = useProjectStore((s) => s.solutionName)
   const customSectionContent = isCustomSection
     ? (stripEditMetadata(sectionContents[activeSectionKey]) as CustomSectionContent | undefined)
     : undefined;
@@ -82,6 +83,9 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
       }
 
       return customSectionContent?.title || 'New Section';
+    }
+    if (activeSectionKey === 'overview') {
+      return `Overview of ${solutionName || 'Solution'}`
     }
     return PREDEFINED_SECTION_TITLES[activeSectionKey] || 'Section';
   };
@@ -325,8 +329,13 @@ const SectionInputPanel: React.FC<SectionInputPanelProps> = ({
                 }
 
                 if (updated) {
-                  // update in-memory draft and notify parent
-                  handleContentChange(updated as Record<string, any>)
+                  // Wrap with edit metadata — editor is 'AI', type is auto-inferred
+                  const withMetadata = buildContentWithEditMetadata(
+                    sectionContents[activeSectionKey] || {},
+                    updated as Record<string, any>,
+                    'AI',
+                  )
+                  handleContentChange(withMetadata)
                   toast.success('Imported suggestion into draft')
                 } else {
                   toast.error('No structured content available to import')

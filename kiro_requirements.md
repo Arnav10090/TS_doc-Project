@@ -1685,3 +1685,31 @@ The frontend shows these as a list of clickable section names: "Please complete 
 
 **10. `{%tr for %}` loop for features — do not skip this.**
 docxtpl's table row loop syntax requires `{%tr for feature in features %}` inside the first repeating row's first cell, and `{%tr endfor %}` inside the last repeating row's last cell — at the XML level in the `.docx` template. Without this, the for-loop tag renders as literal text in every feature row. After running `convert_template.py`, open `TS_Template_jinja.docx` and manually add these XML tags. If blocked, use the fallback of 6 fixed feature variables (`feature_1_title` through `feature_6_*`) and document it.
+
+**11. Two-Color Edit Highlighting in Document Preview.**
+The preview uses a two-color highlighting system to distinguish newly added content from updated content. The system is driven by `EditMarker` metadata persisted alongside section content in the `__editMetadata` key.
+
+**Marker type inference (operation-based):**
+- The `buildContentWithEditMetadata()` function in `editMetadata.ts` compares `previousContent` with `nextContent` path-by-path.
+- If a path did not exist in `previousContent` (was `undefined`, `null`, or empty string) but has a value in `nextContent` → marker `type: "new"` (Green).
+- If a path existed in both and the value changed → marker `type: "updated"` (Orange).
+- If a path was removed (exists in `previousContent` but not `nextContent`) → no marker is created.
+- Callers pass only the `editor` parameter (`"AI"` or `"User"`) for attribution — the type is auto-inferred.
+
+**Editor attribution and tooltips:**
+- When the user saves a section, `editor: "User"` is set on markers.
+- When AI content is imported via the suggestion panel, `editor: "AI"` is set.
+- Tooltips combine action and editor: `"Added by AI: {date}"`, `"Edited by User: {date}"`, `"Newly added: {date}"`, `"Last edited: {date}"`.
+
+**Rendering rules:**
+- Rule 3: Only ONE batch of Orange highlights is shown at a time — the most recent `updatedAt` timestamp among all `"updated"` markers across all sections.
+- Rule 4: Green highlights persist indefinitely until the content is re-edited.
+- Rule 5: If content previously marked `"new"` (Green) is edited again, the marker transitions to `"updated"` (Orange).
+
+**Visual legend:**
+- A small legend bar appears at the top of the preview when any highlights are active, showing Green = "New content" and Orange = "Updated content".
+
+**Backward compatibility:**
+- `EditMarker.type` is optional. Markers without a `type` field (from existing projects) default to `"updated"` (Orange).
+- `EditMetadata.version` remains `1`. No migration is needed.
+- The backend `strip_edit_metadata()` and DOCX export are unchanged — `__editMetadata` is removed before rendering.

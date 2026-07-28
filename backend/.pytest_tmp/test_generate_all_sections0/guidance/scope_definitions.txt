@@ -1,0 +1,2 @@
+[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
+Party definitions + abbreviation table. Standard abbreviations: BD, BE, DD, SU, ER, COM. X/Y notation = primary by X with support from Y. Include [CUSTOMER_ABBREVIATION] and seller name.

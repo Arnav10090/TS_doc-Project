@@ -60,7 +60,7 @@ The product gives users a guided editor that preserves Hitachi's document struct
 - automatic revision history creation and session-based incrementing
 - custom sections and inline custom subsections with paragraph/table/image content
 - list of figures and tables generation in preview and export
-- edit highlighting metadata persisted with section content
+- two-color edit highlighting in preview: Green (new content) and Orange (updated content), with operation-based type inference, editor attribution (AI/User), tooltips, and a visual legend
 
 Primary code references:
 - [projects.service](file:///c:/Users/Asus/Desktop/HICAD%20Projects/TS-Doc_Project/backend/app/projects/service.py)

@@ -1,0 +1,104 @@
+## Implementation Phases
+Initiation → Pre-Engineering (buyer provides tag lists/docs, M1 gate) → Basic Engineering (system design + buyer approval, M2 gate) → Detailed Design (config, tag mapping, HX if Option B) → FAT (seller facility, M3 gate) → Shipping → Site Preparation/buyer parallel (M4 gate) → Commissioning (install, integrate, test, train, snag, handover) → Handover (docs, work completion cert, remote support starts).
+Critical path: M1 (tag list delivery) and M2 (design approval) are the most common delays. Both are buyer-gated.
+On-site man-days: project-dependent, agreed commercially. Travel excluded.
+
+## Testing
+FAT (seller): all configured flows against simulated sources, security config review, FAT report → gates shipment.
+SAT/Commissioning (site): live acquisition per unit, OPC UA server test with real consumer, email via buyer SMTP, user accounts, documentation check.
+UGS is read-only — removing it has no impact on plant L1/L2 operations.
+Acceptance artifacts: FAT report, commissioning checklist, work completion cert, system operation doc, hardware spec, interface doc.
+
+## Risks
+1. Buyer tag list delay — most critical; define as formal prerequisite with deadline; owner: Buyer
+2. Design approval delay — define turnaround in TS; owner: Buyer
+3. Incompatible/undocumented source system — mitigate via pre-engineering survey; owner: Shared
+4. Network not ready at commissioning — pre-visit checklist; owner: Buyer
+5. OT firewall blocking traffic — document required ports in interface doc; owner: Buyer
+6. Third-party OEM unavailable — state as buyer obligation; owner: Buyer
+7. Scope creep from undiscovered units — define by named units; extras = change order; owner: Shared
+8. Remote access link not established — buyer obligation, NDA required; owner: Buyer
+9. Heavy SQL queries degrading concentrator — recommend OPC UA for real-time consumers; owner: Buyer
+10. Security incident — covered by disclaimer; buyer owns network security; owner: Buyer
+
+## Standard Assumptions
+- Source systems can expose required interface; upgrades for that are buyer scope
+- Tag list, data format, communication parameters finalized in detailed engineering
+- Buyer network provides adequate bandwidth and routing
+- Named units = complete scope; additional units = change order
+- IP addresses and domain details provided by buyer during engineering
+
+## Standard Exclusions
+- Interfaces with systems not named in TS
+- OS patches, antivirus updates, software maintenance after delivery
+- Source code of core UGS platform
+- Modifications to existing L1, L2, MES, ERP, automation systems
+- Erection and civil works
+- Firewalls and networking infrastructure
+- PDA software and PDA hardware
+- Mechanical equipment
+- Performance guarantees on productivity, quality, yield, or process capability
+- Supervision of buyer personnel, contractors, agents
+
+## supervisors
+Role: Records the man-day allocation for seller personnel assigned to this project across project phases.
+Required: Man-day values from project metadata or commercial agreement.
+Infer: Standard roles and phase allocation (project management, development/engineering, commissioning).
+Never invent: Specific man-day counts not confirmed in metadata or project agreement.
+Fields (repository structure): pm_days (project management man-days), dev_days (development/engineering man-days), comm_days (commissioning man-days), total_man_days (sum). Populate from project metadata. If absent, use [PM_DAYS], [DEV_DAYS], [COMM_DAYS], [TOTAL_DAYS] placeholders.
+
+## division_of_eng
+Role: Responsibility matrix showing who (buyer/seller/joint) owns each activity across project phases.
+Required: Architecture option (affects HX line items); confirmed production units (affects interface line items).
+Infer: Seller: supplies and commissions hardware/software in seller scope. Buyer: erection, firewall, server room, existing system configuration. Interfaces: source-system side = buyer, UGS side = seller.
+Never invent: Responsibility assignments without project basis.
+Structure: Table with columns: No., Category, Item, BD, BE, DD, SU, ER, COM. Codes: B=Buyer, S=Seller, B/S=Joint. Categories: Services, System Engineering, Hardware, Software, Interface with External Systems, Training, Construction and Engineering, Pre-Engineering Activities, Documents. Every interface appears twice: source side (B) and UGS side (S).
+
+## work_completion
+Role: Defines work completion certificate criteria and conditions.
+Required: References to scope sections covering hardware/software supply, commissioning, documentation.
+Infer: Three criteria: hardware/software supplied per scope; commissioning man-days completed; documentation submitted. Deemed-issued clause if buyer does not issue within agreed period.
+Never invent: Specific deadline periods not commercially agreed.
+Structure: Three-bullet criteria list + deemed-issued clause. One short paragraph.
+
+## value_addition
+Role: Describes complimentary value-added or PoC items offered alongside the main scope.
+Required: PoC platform name and type (from metadata); demonstration period.
+Infer: Time-limited on UGS server infrastructure; commercial continuation requires separate contract; seller may withdraw if buyer does not proceed; IP remains with seller.
+Never invent: PoC capabilities not listed in scope; deployment commitments.
+Structure: Brief. State platform, duration, hosting, and limitations. Explicit scope-limiting language. Not a commitment to full deployment; provided as-is without SLAs.
+
+## buyer_obligations
+Role: Lists what buyer must provide or arrange for the project to succeed. Contractually binding.
+Required: All standard UGS prerequisites plus any project-specific ones from metadata.
+Infer: All of the following are standard: provide complete tag lists before design starts; configure L1 data acquisition servers for required protocol interface (buyer side); provide site access; arrange buyer-scope hardware ahead of schedule; provide network connectivity and firewall rules; provide SMTP details if email alerting in scope; maintain VPN/internet for remote support; make 3rd-party OEM engineers available at commissioning if required; respond to technical queries promptly.
+Never invent: Prerequisites for systems not in metadata.
+Structure: Bulleted imperative list ("Provide…", "Arrange…", "Ensure…", "Configure…"). Each item specific enough to be referenced in a dispute.
+
+## exclusion_list
+Role: Explicitly documents what is NOT in scope to prevent scope disputes.
+Required: Standard UGS exclusions (see Standard Exclusions in domain knowledge above) plus any project-specific exclusions from metadata.
+Infer: All standard exclusions apply to every UGS project.
+Never invent: Additional exclusions not grounded in standard UGS scope patterns.
+Structure: Bulleted list. One to two sentences per item, specific enough to be contractually useful. Draw from Standard Exclusions above.
+
+## buyer_prerequisites
+Role: Pre-conditions buyer must satisfy before seller begins each project phase. Often overlaps with buyer_obligations but focuses on prerequisites that gate seller work.
+Required: Conditions from project metadata; standard UGS prerequisites.
+Infer: Tag list delivery before design; design approval before software config; site readiness before commissioning; firewall rules before integration; OEM availability at commissioning.
+Never invent: Prerequisites for unconfirmed systems.
+Structure: Bulleted list organized by phase gate. Each item states the prerequisite and which seller activity it gates.
+
+## poc
+Role: Describes the free proof-of-concept offer for additional solutions (analytics, AutoML, etc.).
+Required: Platform name, demonstration period, hosting arrangement (from metadata; typically on UGS server).
+Infer: Complimentary, time-limited, hosted on UGS server infrastructure, does not constitute deployment commitment, IP remains with seller.
+Never invent: Platform capabilities not in scope; deployment timelines.
+Structure: Short. State platform, where it runs, duration, and limitations. Scope-limiting language required.
+
+## scope_definitions
+Role: Defines abbreviations and party identities used in the division of engineering table.
+Required: [CUSTOMER_NAME], [CUSTOMER_ABBREVIATION], seller identity (Hitachi India Pvt. Ltd.).
+Infer: Standard abbreviations: BD=Basic Data, BE=Basic Engineering, DD=Detail Design, SU=Supply or Service, ER=Erection, COM=Commissioning. X/Y notation = primary by X with support from Y.
+Never invent: Abbreviations not used in the TS.
+Structure: Party definitions then abbreviation definitions. Short definitional block.

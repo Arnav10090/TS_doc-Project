@@ -419,7 +419,8 @@ const EditorPage = () => {
           })
       const contentWithEditMetadata = buildContentWithEditMetadata(
         baselineContent,
-        content
+        content,
+        'User',
       )
 
       const existingTimer = manualSaveResetTimersRef.current[sectionKey]

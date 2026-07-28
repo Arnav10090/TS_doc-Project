@@ -13,8 +13,8 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     if (config.url?.includes('/ai-suggestions')) {
-      // Match backend Ollama timeout (120s) plus buffer for network overhead
-      config.timeout = 130000
+      // Draw.io generation requires more time - set to 300s (5 minutes)
+      config.timeout = 300000
     }
     return config
   },

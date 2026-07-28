@@ -86,7 +86,7 @@ _SUGGESTION_RESPONSE_EXAMPLE = {
 }
 
 _DRAWIO_RESPONSE_EXAMPLE = {
-    "drawio_xml": "<mxGraphModel><root>...</root></mxGraphModel>",
+    "drawio_xml": "<mxfile host=\"app.diagrams.net\"><diagram name=\"System Config\"><mxGraphModel><root>...</root></mxGraphModel></diagram></mxfile>",
     "chart_instructions": "Copy the XML below, open https://app.diagrams.net, then File - Import From - Device. Paste the XML and import the diagram.",
 }
 

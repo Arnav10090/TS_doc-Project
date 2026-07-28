@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import toast from 'react-hot-toast'
 import { generateAISuggestion } from '../../api/aiSuggestions'
 import type { SuggestionResponse } from '../../api/aiSuggestions'

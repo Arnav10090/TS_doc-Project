@@ -1,0 +1,2 @@
+[DRAFT — FILL IN TEST TS-SPECIFIC DETAILS]
+Fields: pm_days, dev_days, comm_days, total_man_days. From project metadata. Placeholders: [PM_DAYS], [DEV_DAYS], [COMM_DAYS], [TOTAL_DAYS]. Travel excluded. Do not invent man-day counts.

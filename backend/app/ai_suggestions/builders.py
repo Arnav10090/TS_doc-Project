@@ -1053,7 +1053,7 @@ def build_drawio_architecture_prompt(
     category_context: Union[CategoryContext, LayeredCategoryContext],
 ) -> str:
     """
-    Build a prompt that asks the model to return draw.io-compatible mxGraph XML
+    Build a prompt that asks the model to return draw.io-compatible XML
     for the System Configuration architecture diagram.
 
     The response must be directly importable into diagrams.net, so the prompt is
@@ -1062,14 +1062,17 @@ def build_drawio_architecture_prompt(
     parts = [
         """# SYSTEM ROLE
 You are an expert OT/industrial system architect and draw.io XML author.
-Generate a valid diagrams.net / draw.io `mxGraphModel` XML document for a system
+Generate a valid diagrams.net / draw.io XML document for a system
 architecture diagram.
 
 OUTPUT RULES:
-- Output ONLY XML beginning with `<mxGraphModel` and ending with `</mxGraphModel>`
+- Output ONLY XML beginning with `<mxfile host="app.diagrams.net">` and ending with `</mxfile>`
+- Follow the official Draw.io wrapper structure exactly:
+  `<mxfile>` -> `<diagram name="System Config">` -> `<mxGraphModel ...>` -> `<root>`
 - Do NOT include markdown code fences
 - Do NOT include explanations before or after the XML
-- Ensure the XML is importable into https://app.diagrams.net/
+- Ensure the XML is directly importable into https://app.diagrams.net/ without manual edits
+- Never begin the XML with `<mxGraphModel>`, `<page>`, or `<cell>`
 """
     ]
 
@@ -1127,11 +1130,88 @@ Software specs:
 {json.dumps(software_specs, ensure_ascii=False, indent=2)}
 
 # XML REQUIREMENTS
-- Return a complete `mxGraphModel` document
+- Return a complete Draw.io `mxfile` document using this exact hierarchy:
+  `<mxfile host="app.diagrams.net">`
+  `<diagram name="System Config">`
+  `<mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1000" pageHeight="800">`
+  `<root>`
+  `<mxCell id="0"/>`
+  `<mxCell id="1" parent="0"/>`
+  `...`
+  `</root>`
+  `</mxGraphModel>`
+  `</diagram>`
+  `</mxfile>`
 - Include the standard root cells with ids `0` and `1`
 - Use rectangle vertices for systems/servers/clients and edges for integrations
 - Keep labels concise and business-readable
 - Avoid overlapping shapes by using explicit `x`, `y`, `width`, and `height`
+- CRITICAL: Generate every component as a valid Draw.io vertex. Every single vertex MUST have these exact attributes and children:
+  - `vertex="1"`
+  - `parent="1"`
+  - A nested `<mxGeometry x="..." y="..." width="..." height="..." as="geometry"/>` child element. Do NOT forget this!
+- Never place `x`, `y`, `width`, or `height` directly on `<mxCell>`
+- Generate every connection as a valid Draw.io edge with:
+  - `edge="1"`
+  - `parent="1"`
+  - `source="..."`
+  - `target="..."`
+  - a nested `<mxGeometry relative="1" as="geometry"/>`
+- Never omit `<mxGeometry>` for vertices or edges
+- Use Draw.io-compatible edge styles only; prefer `endArrow=block;html=1;`
+- Do not use legacy or invalid syntax such as `<page>`, `<cell>`, or geometry attributes directly on `<mxCell>`
+- IDs must be unique; generate vertices first and edges afterwards
+
+# CANONICAL XML REFERENCE
+Use this schema pattern as the mandatory reference format for all generated XML:
+
+<mxfile host="app.diagrams.net">
+  <diagram name="System Config">
+    <mxGraphModel
+      dx="1200"
+      dy="800"
+      grid="1"
+      gridSize="10"
+      guides="1"
+      tooltips="1"
+      connect="1"
+      arrows="1"
+      fold="1"
+      page="1"
+      pageScale="1"
+      pageWidth="1000"
+      pageHeight="800">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell
+          id="2"
+          value="Application Server"
+          style="rounded=1;whiteSpace=wrap;html=1;"
+          vertex="1"
+          parent="1">
+          <mxGeometry
+            x="40"
+            y="40"
+            width="180"
+            height="60"
+            as="geometry"/>
+        </mxCell>
+        <mxCell
+          id="14"
+          edge="1"
+          parent="1"
+          source="2"
+          target="3"
+          style="endArrow=block;html=1;">
+          <mxGeometry
+            relative="1"
+            as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
 """
     )
 

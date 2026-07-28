@@ -1,9 +1,12 @@
 export const EDIT_METADATA_KEY = "__editMetadata";
 
+export type EditMarkerType = "new" | "updated";
+
 export interface EditMarker {
   path: string;
   updatedAt: string;
   editor?: string;
+  type?: EditMarkerType;
 }
 
 export interface EditMetadata {
@@ -11,6 +14,9 @@ export interface EditMetadata {
   sectionUpdatedAt?: string;
   markers: Record<string, EditMarker>;
 }
+
+export const getMarkerType = (marker: EditMarker): EditMarkerType =>
+  marker.type ?? "updated";
 
 const IGNORED_ROW_KEYS = new Set(["locked", "locked_specs_line1"]);
 
@@ -58,18 +64,26 @@ const getChildKeys = (previous: Record<string, any>, next: Record<string, any>) 
     (key) => key !== EDIT_METADATA_KEY && !IGNORED_ROW_KEYS.has(key),
   );
 
-const collectChangedPaths = (
+interface ChangedPath {
+  path: string;
+  operation: EditMarkerType;
+}
+
+const isAbsent = (value: unknown): boolean =>
+  value === undefined || value === null || value === "";
+
+const collectChangedPathsWithOperation = (
   previous: unknown,
   next: unknown,
   currentPath = "",
-): string[] => {
+): ChangedPath[] => {
   if (Array.isArray(previous) || Array.isArray(next)) {
     const previousArray = Array.isArray(previous) ? previous : [];
     const nextArray = Array.isArray(next) ? next : [];
     const maxLength = Math.max(previousArray.length, nextArray.length);
 
     return Array.from({ length: maxLength }).flatMap((_, index) =>
-      collectChangedPaths(
+      collectChangedPathsWithOperation(
         previousArray[index],
         nextArray[index],
         currentPath ? `${currentPath}.${index}` : `${index}`,
@@ -82,7 +96,7 @@ const collectChangedPaths = (
     const nextObject = isPlainObject(next) ? next : {};
 
     return getChildKeys(previousObject, nextObject).flatMap((key) =>
-      collectChangedPaths(
+      collectChangedPathsWithOperation(
         previousObject[key],
         nextObject[key],
         currentPath ? `${currentPath}.${key}` : key,
@@ -94,7 +108,14 @@ const collectChangedPaths = (
     return [];
   }
 
-  return [currentPath];
+  // If next is absent (deletion), don't create a marker
+  if (isAbsent(next)) {
+    return [];
+  }
+
+  const operation: EditMarkerType = isAbsent(previous) ? "new" : "updated";
+
+  return [{ path: currentPath, operation }];
 };
 
 export const buildContentWithEditMetadata = (
@@ -106,7 +127,7 @@ export const buildContentWithEditMetadata = (
   const nextClean = stripEditMetadata(nextContent || {}) || {};
   const existingMetadata = getEditMetadata(previousContent);
 
-  const changedPaths = collectChangedPaths(previousClean, nextClean);
+  const changedPaths = collectChangedPathsWithOperation(previousClean, nextClean);
 
   if (changedPaths.length === 0) {
     return {
@@ -119,10 +140,16 @@ export const buildContentWithEditMetadata = (
   const history = existingMetadata?.markers || {};
   const markers: Record<string, EditMarker> = {};
 
-  changedPaths.forEach((path) => {
+  changedPaths.forEach(({ path, operation }) => {
+    // Rule 5: If a path was previously "new" and is edited again, it becomes "updated"
+    const previousMarker = history[path];
+    const resolvedType: EditMarkerType =
+      previousMarker?.type === "new" ? "updated" : operation;
+
     markers[path] = {
       path,
       updatedAt,
+      type: resolvedType,
       ...(editor ? { editor } : {}),
     };
   });

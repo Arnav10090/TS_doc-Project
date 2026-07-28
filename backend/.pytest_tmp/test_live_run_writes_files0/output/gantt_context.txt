@@ -1,0 +1,20 @@
+## Gantt Guidance (all values indicative only)
+Phases: Initiation → Pre-Engineering (M1: buyer tag list) → Basic Engineering (M2: buyer design approval) → Detailed Design → FAT (M3: FAT sign-off) → Shipping → Site Preparation (M4: site ready) → Commissioning → Handover (M5: work completion cert).
+Scale examples (observed, not commitments): small project (few units, no HX) ≈10–14 weeks; medium (several units, HX) ≈14–20 weeks; large (many units, complex) ≈18–26 weeks.
+Draw.io format: week-based JSON tasks with fields: task name, phase, start_week (integer, week 1 = PO acceptance), duration_weeks (integer), milestone (bool), dependencies (array of predecessor indices). Backend converts to mxGraph XML.
+Shutdown Gantt: UGS commissioning is typically non-intrusive — no full shutdown required. Brief panel/cable access managed as permits-to-work. If metadata confirms a shutdown, generate week-based tasks for shutdown-window activities only.
+
+## overall_gantt
+Role: Image-backed Gantt chart section. User uploads the Gantt image. Section holds text companion describing the schedule.
+Required: Nothing specific; use PO date from metadata if available.
+Infer: All canonical UGS phases (see Gantt Guidance above). Milestones M1–M5. All durations indicative only.
+Never invent: Specific calendar dates unless PO date is in metadata; committed durations.
+Structure: 2–3 sentence intro summarizing total indicative duration and key phases. Milestones listed (M1–M5). Note: indicative only; buyer prerequisite delays cause proportional delivery delays. For draw.io Gantt, output week-based GanttTask JSON (task, phase, start_week, duration_weeks, milestone, dependencies) — backend converts to mxGraph XML.
+
+## shutdown_gantt
+Role: Image-backed shutdown activity schedule. Applicable only when commissioning requires a production shutdown window.
+UGS note: Full shutdown usually not required — UGS is read-only and non-intrusive. Brief panel/cable access handled as permits-to-work.
+Required: Whether shutdown is required (from metadata); if yes, which units and duration.
+Infer: If no shutdown required, state explicitly.
+Never invent: Shutdown requirement if not in metadata.
+Structure: If no shutdown required: one-sentence statement. If required: week-based GanttTask JSON for shutdown-window activities only (same format as overall_gantt).

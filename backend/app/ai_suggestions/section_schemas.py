@@ -38,9 +38,9 @@ SECTION_SCHEMAS: Dict[str, SectionSchema] = {
         "fields": ["paragraphs", "para1"],
     },
     "introduction": {
-        "family": "A",
+        "family": "C",
         "description": "Introduction section with tender reference information",
-        "fields": ["paragraphs", "tender_reference", "tender_date"],
+        "fields": ["tender_reference", "tender_date"],
     },
     "process_flow": {
         "family": "A",

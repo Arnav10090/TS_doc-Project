@@ -52,6 +52,25 @@ describe('SectionInputPanel AI provider status handling', () => {
     }
   })
 
+  it('shows the solution name in the overview sidebar heading', async () => {
+    mocks.tsType = 'TS-01'
+
+    render(
+      <SectionInputPanel
+        projectId="test-project"
+        activeSectionKey="overview"
+        sectionContents={{ overview: {} }}
+        width={600}
+        leftOffset={0}
+        isNarrowScreen={false}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Overview of Test' })).toBeInTheDocument()
+    })
+  })
+
   it('disables AI suggestions with tooltip when project ts_type is null', async () => {
     render(
       <SectionInputPanel

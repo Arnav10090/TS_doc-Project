@@ -17,6 +17,7 @@ import re
 from collections import deque
 from typing import Any, Dict, Optional
 from fastapi import HTTPException, status
+from xml.etree import ElementTree as ET
 
 from app.config import settings
 from app.ai_suggestions import schemas
@@ -96,6 +97,146 @@ def _text_metadata(prefix: str, text: Optional[str]) -> Dict[str, Any]:
         f"{prefix}_size": len(text),
         f"{prefix}_sha256": f"{digest[:16]}...",
     }
+
+
+def _extract_system_config_drawio_xml(llm_response: str) -> str:
+    """Extract mxfile XML from an LLM response and wrap raw mxGraphModel when needed."""
+    cleaned = llm_response.strip()
+    fenced_match = re.search(r"```(?:xml)?\s*([\s\S]*?)\s*```", cleaned, re.IGNORECASE)
+    if fenced_match:
+        cleaned = fenced_match.group(1).strip()
+
+    mxfile_match = re.search(r"(<mxfile[\s\S]*?</mxfile>)", cleaned, re.IGNORECASE)
+    if mxfile_match:
+        return mxfile_match.group(1).strip()
+
+    mxgraph_match = re.search(r"(<mxGraphModel[\s\S]*?</mxGraphModel>)", cleaned, re.IGNORECASE)
+    if mxgraph_match:
+        return (
+            '<mxfile host="app.diagrams.net">'
+            '<diagram name="System Config">'
+            f'{mxgraph_match.group(1).strip()}'
+            "</diagram>"
+            "</mxfile>"
+        )
+
+    return cleaned
+
+
+def _validate_system_config_drawio_xml(drawio_xml: str) -> str:
+    """Validate the minimal Draw.io XML structure required for System Configuration diagrams."""
+    try:
+        root = ET.fromstring(drawio_xml)
+    except ET.ParseError as exc:
+        raise ValueError(f"Malformed XML: {exc}") from exc
+
+    if root.tag != "mxfile":
+        raise ValueError("Root element must be <mxfile>")
+
+    diagram = root.find("./diagram")
+    if diagram is None:
+        raise ValueError("Missing <diagram> inside <mxfile>")
+
+    model = diagram.find("./mxGraphModel")
+    if model is None:
+        raise ValueError("Missing <mxGraphModel> inside <diagram>")
+
+    model_root = model.find("./root")
+    if model_root is None:
+        raise ValueError("Missing <root> inside <mxGraphModel>")
+
+    cells = model_root.findall("./mxCell")
+    if not cells:
+        raise ValueError("Draw.io XML must contain at least the standard root cells")
+
+    seen_ids: set[str] = set()
+    found_root_zero = False
+    found_root_one = False
+
+    modified = False
+    auto_x = 40
+    auto_y = 40
+    for cell in cells:
+        cell_id = cell.attrib.get("id")
+        if not cell_id:
+            raise ValueError("Every <mxCell> must include an id attribute")
+        if cell_id in seen_ids:
+            raise ValueError(f"Duplicate mxCell id '{cell_id}'")
+        seen_ids.add(cell_id)
+
+        if cell_id == "0":
+            found_root_zero = True
+        if cell_id == "1" and cell.attrib.get("parent") == "0":
+            found_root_one = True
+
+        geometry = cell.find("./mxGeometry")
+
+        if cell.attrib.get("vertex") == "1":
+            if cell.attrib.get("parent") != "1":
+                cell.set("parent", "1")
+                modified = True
+            
+            if geometry is None:
+                geometry = ET.SubElement(cell, "mxGeometry")
+                modified = True
+            
+            if geometry.attrib.get("as") != "geometry":
+                geometry.set("as", "geometry")
+                modified = True
+                
+            x_val = geometry.attrib.get("x")
+            y_val = geometry.attrib.get("y")
+
+            if (x_val is None or y_val is None) or (x_val == "0" and y_val == "0"):
+                geometry.set("x", str(auto_x))
+                geometry.set("y", str(auto_y))
+                modified = True
+                
+                auto_x += 160
+                if auto_x > 800:
+                    auto_x = 40
+                    auto_y += 100
+            else:
+                try:
+                    if x_val is not None:
+                        auto_x = max(auto_x, int(float(x_val)) + 160)
+                    if y_val is not None:
+                        auto_y = max(auto_y, int(float(y_val)))
+                except ValueError:
+                    pass
+                
+            if geometry.attrib.get("width") is None:
+                geometry.set("width", "120")
+                modified = True
+            if geometry.attrib.get("height") is None:
+                geometry.set("height", "60")
+                modified = True
+
+        if cell.attrib.get("edge") == "1":
+            if cell.attrib.get("parent") != "1":
+                cell.set("parent", "1")
+                modified = True
+            if not cell.attrib.get("source") or not cell.attrib.get("target"):
+                raise ValueError(f"Edge cell '{cell_id}' must include source and target")
+            
+            if geometry is None:
+                geometry = ET.SubElement(cell, "mxGeometry")
+                modified = True
+                
+            if geometry.attrib.get("as") != "geometry":
+                geometry.set("as", "geometry")
+                modified = True
+                
+            if geometry.attrib.get("relative") != "1":
+                geometry.set("relative", "1")
+                modified = True
+
+    if not found_root_zero or not found_root_one:
+        raise ValueError("Draw.io XML must include standard root cells id='0' and id='1'")
+
+    if modified:
+        return ET.tostring(root, encoding="unicode")
+    return drawio_xml
 
 async def call_groq(
     prompt: str,
@@ -612,20 +753,16 @@ async def generate_drawio(
     llm_response = await call_groq(prompt, project_id=project_id, section_key=section_key)
 
     if section_key == "system_config":
-        cleaned = llm_response.strip()
-        fenced_match = re.search(r"```(?:xml)?\s*([\s\S]*?)\s*```", cleaned, re.IGNORECASE)
-        if fenced_match:
-            cleaned = fenced_match.group(1).strip()
+        cleaned = _extract_system_config_drawio_xml(llm_response)
 
-        xml_match = re.search(r"(<mxGraphModel[\s\S]*?</mxGraphModel>)", cleaned, re.IGNORECASE)
-        if xml_match:
-            cleaned = xml_match.group(1).strip()
-
-        if not cleaned.startswith("<mxGraphModel") or "</mxGraphModel>" not in cleaned:
+        try:
+            cleaned = _validate_system_config_drawio_xml(cleaned)
+        except ValueError as exc:
             logger.error(
                 "Failed to parse Draw.io XML from LLM - "
                 + _metadata_parts(
                     error_type="invalid_drawio_xml",
+                    error_detail=str(exc),
                     project_id=project_id,
                     section_key=section_key,
                     **_text_metadata("response", llm_response),
@@ -680,7 +817,13 @@ async def generate_drawio(
 
     # Convert to mxGraph XML
     try:
-        drawio_xml = gantt_converter.convert_gantt_json_to_drawio(validated_tasks)
+        chart_title = "Project Schedule"
+        if section_key == "overall_gantt":
+            chart_title = "Overall Project Schedule"
+        elif section_key == "shutdown_gantt":
+            chart_title = "Shutdown Project Schedule"
+            
+        drawio_xml = gantt_converter.convert_gantt_json_to_drawio(validated_tasks, chart_title=chart_title)
     except Exception as e:
         logger.error(
             "Gantt conversion error - "

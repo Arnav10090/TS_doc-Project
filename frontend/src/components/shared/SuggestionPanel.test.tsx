@@ -328,7 +328,7 @@ The solution addresses key business requirements and technical constraints.
       it('should always render Import Suggestion button and call handler when clicked', () => {
         fc.assert(
           fc.property(
-            fc.constantFrom('introduction', 'project_schedule', 'abbreviations', 'system_config'),
+            fc.constantFrom('introduction', 'project_schedule', 'abbreviations'),
             fc.string({ minLength: 20, maxLength: 100 }),
 
             (sectionKey, content) => {
@@ -506,7 +506,7 @@ The solution addresses key business requirements and technical constraints.
       it('should render section title and AI-generated content message', () => {
         fc.assert(
           fc.property(
-            fc.constantFrom('introduction', 'abbreviations', 'project_schedule', 'system_config'),
+            fc.constantFrom('introduction', 'abbreviations', 'project_schedule'),
             fc.string({ minLength: 5, maxLength: 30 }).filter(s => s.trim().length > 0),
             fc.string({ minLength: 20, maxLength: 100 }).filter(s => s.trim().length > 0),
 
@@ -541,6 +541,57 @@ The solution addresses key business requirements and technical constraints.
           ),
           { numRuns: 30 },
         )
+      })
+
+      it('should show only Draw.io XML tools for Drawio sections and hide regular suggestion preview', async () => {
+        const onGenerateDrawio = vi.fn().mockResolvedValue({
+          drawio_xml: '<mxfile><diagram name="Chart"><mxGraphModel><root /></mxGraphModel></diagram></mxfile>',
+          chart_instructions: 'Backend instructions should stay hidden for drawio sections.',
+        })
+
+        for (const sectionKey of ['system_config', 'overall_gantt', 'shutdown_gantt']) {
+          const { unmount } = render(
+            <SuggestionPanel
+              sectionKey={sectionKey}
+              sectionTitle="Drawio Section"
+              suggestion={{
+                section_key: sectionKey,
+                structured_import_available: true,
+                content: {
+                  description: 'This paragraph should not be shown in the panel.',
+                },
+                raw_text: 'Architecture description should remain hidden.',
+              }}
+              onImport={vi.fn()}
+              onRegenerate={vi.fn()}
+              onGenerateDrawio={onGenerateDrawio}
+              onDismiss={vi.fn()}
+            />,
+          )
+
+          expect(screen.queryByRole('button', { name: /Import Suggestion/i })).toBeNull()
+          expect(screen.queryByText(/Architecture description should remain hidden\./i)).toBeNull()
+          expect(screen.queryByText(/This paragraph should not be shown in the panel\./i)).toBeNull()
+
+          expect(
+            await screen.findByText('<mxfile><diagram name="Chart"><mxGraphModel><root /></mxGraphModel></diagram></mxfile>'),
+          ).toBeInTheDocument()
+          expect(screen.getByRole('link', { name: /Open Draw\.io/i })).toHaveAttribute(
+            'href',
+            'https://app.diagrams.net/',
+          )
+          const tutorial = screen.getByText(/How To Use This XML/i).parentElement
+          expect(tutorial).not.toBeNull()
+          expect(tutorial).toHaveTextContent('Extras -> Edit Diagram')
+          expect(tutorial).toHaveTextContent('Paste the XML code and click Apply')
+          expect(tutorial).toHaveTextContent('File -> Export as -> PNG')
+          expect(tutorial).toHaveTextContent('Where')
+          expect(tutorial).toHaveTextContent('Device')
+          expect(tutorial).toHaveTextContent('Save')
+          expect(screen.queryByText(/Backend instructions should stay hidden for drawio sections\./i)).toBeNull()
+          
+          unmount()
+        }
       })
 
       it('should render introduction section with tender information correctly', () => {

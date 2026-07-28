@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     GROQ_CHAT_COMPLETIONS_URL: str = "https://api.groq.com/openai/v1/chat/completions"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "gemma3:4b"
-    OLLAMA_TIMEOUT: int = 120
+    OLLAMA_TIMEOUT: int = 300
     OLLAMA_KEEP_ALIVE: str = "30m"
     OLLAMA_NUM_CTX: int | None = 32768
     OLLAMA_TEMPERATURE: float | None = 0.2

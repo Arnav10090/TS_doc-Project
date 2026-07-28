@@ -122,14 +122,14 @@ class DrawioResponse(BaseModel):
         json_schema_extra={
             "examples": [
                 {
-                    "drawio_xml": "<mxGraphModel><root>...</root></mxGraphModel>",
+                    "drawio_xml": "<mxfile host=\"app.diagrams.net\"><diagram name=\"System Config\"><mxGraphModel><root>...</root></mxGraphModel></diagram></mxfile>",
                     "chart_instructions": "Copy the XML below, open https://app.diagrams.net, then File - Import From - Device. Paste the XML and import the diagram.",
                 }
             ]
         }
     )
 
-    drawio_xml: str = Field(description="Valid mxGraph XML that can be imported into draw.io or diagrams.net.")
+    drawio_xml: str = Field(description="Valid Draw.io XML that can be imported into draw.io or diagrams.net.")
     chart_instructions: Optional[str] = Field(default=None, description="User-facing import instructions.")
 
 

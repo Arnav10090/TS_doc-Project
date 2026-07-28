@@ -1278,6 +1278,10 @@ const PredefinedSectionEditor: React.FC<PredefinedSectionEditorProps> = ({
     return <div style={{ padding: '24px' }}>Loading...</div>;
   }
 
+  const sectionTitle = sectionKey === 'overview'
+    ? `Overview of ${solutionName || 'Solution'}`
+    : PREDEFINED_SECTION_TITLES[sectionKey] || 'Section';
+
   return (
     <div
       style={{
@@ -1290,7 +1294,7 @@ const PredefinedSectionEditor: React.FC<PredefinedSectionEditorProps> = ({
       <SectionHeader
         projectId={projectId}
         sectionKey={sectionKey}
-        title={PREDEFINED_SECTION_TITLES[sectionKey] || 'Section'}
+        title={sectionTitle}
         showDeleteButton={sectionKey !== 'cover'}
         onDelete={() => navigate(`/editor/${projectId}#cover`)}
         status={status}

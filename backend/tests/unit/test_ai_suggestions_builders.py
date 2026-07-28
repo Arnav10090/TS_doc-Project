@@ -1,4 +1,4 @@
-﻿"""
+"""
 Unit tests for AI suggestions prompt builders.
 
 Tests the 7-layer knowledge hierarchy implementation:
@@ -17,6 +17,7 @@ import pytest
 from unittest.mock import Mock
 from app.ai_suggestions.builders import (
     build_section_prompt,
+    build_drawio_architecture_prompt,
     build_custom_section_prompt,
     _sanitize_text,
     _format_project_metadata,
@@ -254,6 +255,48 @@ class TestFormatHistoricalDocuments:
         assert "doc1.txt" in result
         assert "Level 2/doc1.txt" in result
         assert "Historical content" in result
+
+
+class TestBuildDrawioArchitecturePrompt:
+    """Test Draw.io architecture prompt instructions for system configuration."""
+
+    def test_build_drawio_architecture_prompt_requires_mxfile_schema(self):
+        """Should instruct the model to emit Draw.io mxfile XML, not raw mxGraphModel."""
+        project = Mock()
+        project.solution_name = "Test Solution"
+        project.solution_full_name = "Test Solution Full Name"
+        project.client_name = "Test Client"
+        project.client_location = "Mumbai"
+        project.ts_type = "Level 2"
+        project.doc_date = "2026-07-27"
+
+        category_context = CategoryContext(
+            context_txt="System architecture guidance.",
+            historical_documents=[],
+            folder_path="Level 2",
+            historical_context_available=False,
+        )
+
+        prompt = build_drawio_architecture_prompt(
+            project=project,
+            all_sections={},
+            draft_content=None,
+            category_context=category_context,
+        )
+
+        assert 'Output ONLY XML beginning with `<mxfile host="app.diagrams.net">` and ending with `</mxfile>`' in prompt
+        assert "Never begin the XML with `<mxGraphModel>`, `<page>`, or `<cell>`" in prompt
+        assert "Return a complete Draw.io `mxfile` document using this exact hierarchy:" in prompt
+        assert '<diagram name="System Config">' in prompt
+        assert '<mxCell id="0"/>' in prompt
+        assert '<mxCell id="1" parent="0"/>' in prompt
+        assert '`vertex="1"`' in prompt
+        assert '`parent="1"`' in prompt
+        assert '<mxGeometry relative="1" as="geometry"/>' in prompt
+        assert "Never place `x`, `y`, `width`, or `height` directly on `<mxCell>`" in prompt
+        assert "Do not use legacy or invalid syntax such as `<page>`, `<cell>`, or geometry attributes directly on `<mxCell>`" in prompt
+        assert "Output ONLY XML beginning with `<mxGraphModel` and ending with `</mxGraphModel>`" not in prompt
+        assert "Return a complete `mxGraphModel` document" not in prompt
     
     def test_format_historical_documents_respects_max_5(self):
         """Should include at most 5 documents (Requirement 5.7)."""

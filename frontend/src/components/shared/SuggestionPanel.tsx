@@ -75,8 +75,9 @@ const SuggestionPanel: React.FC<Props> = ({
   const [drawioInstructions, setDrawioInstructions] = React.useState<string | null>(null)
   const [drawioError, setDrawioError] = React.useState<string | null>(null)
   const hasAutoRequestedDrawio = React.useRef(false)
-  const supportsDrawio = ['system_config', 'overall_gantt', 'shutdown_gantt'].includes(sectionKey)
-  const drawioButtonLabel = sectionKey === 'system_config' ? 'Generate Draw.io Code' : 'Generate Draw.io Chart'
+  const isDrawioSection = ['system_config', 'overall_gantt', 'shutdown_gantt'].includes(sectionKey)
+  const supportsDrawio = isDrawioSection
+  const drawioButtonLabel = 'Generate Draw.io Code'
   const safeSectionKey = sectionKey.replace(/[^a-z0-9-]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'diagram'
   const drawioDownloadFilename = `${safeSectionKey}-drawio-code.drawio`
 
@@ -100,7 +101,7 @@ const SuggestionPanel: React.FC<Props> = ({
   }
 
   React.useEffect(() => {
-    if (sectionKey !== 'system_config' || !supportsDrawio || !onGenerateDrawio) {
+    if (!isDrawioSection || !onGenerateDrawio) {
       return
     }
     if (hasAutoRequestedDrawio.current || drawioXml || isGeneratingDrawio) {
@@ -109,7 +110,7 @@ const SuggestionPanel: React.FC<Props> = ({
 
     hasAutoRequestedDrawio.current = true
     void handleGenerateDrawio()
-  }, [sectionKey, supportsDrawio, onGenerateDrawio, drawioXml, isGeneratingDrawio])
+  }, [isDrawioSection, onGenerateDrawio, drawioXml, isGeneratingDrawio])
 
   const handleCopyXml = async () => {
     if (!drawioXml) return
@@ -132,6 +133,10 @@ const SuggestionPanel: React.FC<Props> = ({
   }
 
   const renderContent = () => {
+    if (isDrawioSection) {
+      return null
+    }
+
     if (suggestion.subsection_suggestions && suggestion.subsection_suggestions.length > 0) {
       return (
         <div>
@@ -291,20 +296,26 @@ const SuggestionPanel: React.FC<Props> = ({
 
   return (
     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700 }}>{sectionTitle || sectionKey}</div>
-            <div style={{ fontSize: 12, color: '#6B7280' }}>AI-generated content. Review before importing.</div>
+            <div style={{ fontSize: 12, color: '#6B7280' }}>
+              {isDrawioSection
+                ? 'AI-generated Draw.io XML. Use it to build the architecture diagram in Draw.io.'
+                : 'AI-generated content. Review before importing.'}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              type="button"
-              onClick={onImport}
-              style={{ padding: '8px 12px', backgroundColor: '#10B981', color: '#fff', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 700 }}
-            >
-              Import Suggestion
-            </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {!isDrawioSection && onImport && (
+              <button
+                type="button"
+                onClick={onImport}
+                style={{ padding: '8px 12px', backgroundColor: '#10B981', color: '#fff', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 700 }}
+              >
+                Import Suggestion
+              </button>
+            )}
             <button
               type="button"
               onClick={onRegenerate}
@@ -334,24 +345,24 @@ const SuggestionPanel: React.FC<Props> = ({
           </div>
         </div>
 
-          <div style={{ marginTop: 12 }}>{renderContent()}</div>
+          {!isDrawioSection && <div style={{ marginTop: 12 }}>{renderContent()}</div>}
 
           {/* Draw.io XML / instructions display */}
           {drawioError && (
             <div style={{ marginTop: 12, color: '#E60012', fontSize: 13 }}>{drawioError}</div>
           )}
 
-          {sectionKey === 'system_config' && isGeneratingDrawio && !drawioXml && (
+          {isDrawioSection && isGeneratingDrawio && !drawioXml && (
             <div style={{ marginTop: 12, fontSize: 13, color: '#6B7280' }}>
-              Generating Draw.io XML for this architecture diagram...
+              Generating Draw.io XML for this diagram...
             </div>
           )}
 
           {drawioXml && (
             <div style={{ marginTop: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                 <div style={{ fontWeight: 600 }}>Draw.io XML</div>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button
                     type="button"
                     onClick={handleCopyXml}
@@ -366,10 +377,52 @@ const SuggestionPanel: React.FC<Props> = ({
                   >
                     Download Code File
                   </button>
+                  {isDrawioSection && (
+                    <a
+                      href="https://app.diagrams.net/"
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ padding: '6px 10px', backgroundColor: '#F59E0B', color: '#fff', borderRadius: 6, textDecoration: 'none', fontWeight: 600 }}
+                    >
+                      Open Draw.io
+                    </a>
+                  )}
                 </div>
               </div>
-              <pre style={{ whiteSpace: 'pre-wrap', marginTop: 8, maxHeight: 320, overflow: 'auto', backgroundColor: '#F8FAFC', padding: 12, borderRadius: 6 }}>{drawioXml}</pre>
-              {drawioInstructions && (
+              {isDrawioSection && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: 12,
+                    backgroundColor: '#FFF7ED',
+                    border: '1px solid #FCD34D',
+                    borderRadius: 6,
+                    fontSize: 13,
+                    color: '#7C2D12',
+                    lineHeight: 1.6,
+                  }}
+                >
+                  <div style={{ fontWeight: 700, marginBottom: 6 }}>How To Use This XML</div>
+                  <div>
+                    1. In Draw.io, go to <strong>Extras -&gt; Edit Diagram</strong>.
+                  </div>
+                  <div>
+                    2. Paste the XML code and click <strong>Apply</strong>.
+                  </div>
+                  <div style={{ marginTop: 8, fontWeight: 700 }}>Download The Diagram Image</div>
+                  <div>
+                    1. Go to <strong>File -&gt; Export as -&gt; PNG</strong>.
+                  </div>
+                  <div>
+                    2. Click <strong>Export</strong>.
+                  </div>
+                  <div>
+                    3. For <strong>Where</strong>, choose <strong>Device</strong>, then click <strong>Save</strong>.
+                  </div>
+                </div>
+              )}
+              <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', marginTop: 8, maxHeight: 320, overflow: 'auto', backgroundColor: '#F8FAFC', padding: 12, borderRadius: 6 }}>{drawioXml}</pre>
+              {drawioInstructions && !isDrawioSection && (
                 <div style={{ marginTop: 8, fontSize: 13, color: '#6B7280' }}>
                   <div style={{ fontWeight: 600, marginBottom: 6 }}>Instructions</div>
                   <div>{drawioInstructions}</div>
@@ -383,4 +436,3 @@ const SuggestionPanel: React.FC<Props> = ({
 }
 
 export default SuggestionPanel
-

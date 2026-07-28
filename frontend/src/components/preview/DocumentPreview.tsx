@@ -47,7 +47,9 @@ import {
 } from "../sections/predefinedSectionContent";
 import {
   getEditMetadata,
+  getMarkerType,
   stripEditMetadata,
+  type EditMarkerType,
   type EditMetadata,
 } from "../../utils/editMetadata";
 
@@ -89,6 +91,9 @@ const REQUIRED_PREVIEW_COLOR = "#E60012";
 const LAST_CHANGED_COLOR = "#17F131";
 const LAST_CHANGED_SOFT = "rgba(23, 241, 49, 0.14)";
 const LAST_CHANGED_FILL = "rgba(23, 241, 49, 0.18)";
+const LAST_UPDATED_COLOR = "#ED7D31";
+const LAST_UPDATED_SOFT = "rgba(237, 125, 49, 0.14)";
+const LAST_UPDATED_FILL = "rgba(237, 125, 49, 0.18)";
 const WORD_PAGE_WIDTH = "21.59cm";
 const WORD_PAGE_HEIGHT = "27.94cm";
 const WORD_PAGE_MARGIN = "2.54cm";
@@ -503,12 +508,12 @@ const PaginatedWordPreview: React.FC<PaginatedWordPreviewProps> = ({
                 if (overflowsPage()) {
                   ensureList().removeChild(liClone);
                   if (ensureList().children.length > 0) {
-                    // Current list has items — move to next page and continue
+                    // Current list has items â€” move to next page and continue
                     listShell = null;
                     startNewShell();
                     ensureList().appendChild(liClone);
                   } else {
-                    // Even a single LI overflows — just keep it
+                    // Even a single LI overflows â€” just keep it
                     ensureList().appendChild(liClone);
                   }
                 }
@@ -787,15 +792,23 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       return metadataMap;
     }, [sectionContents]);
 
-    const latestEditTimestamp = useMemo(() => {
+    const latestUpdatedTimestamp = useMemo(() => {
       const timestamps = Object.values(editMetadataBySection).flatMap((metadata) =>
-        Object.values(metadata.markers).map((marker) => marker.updatedAt),
+        Object.values(metadata.markers)
+          .filter((marker) => getMarkerType(marker) === "updated")
+          .map((marker) => marker.updatedAt),
       );
 
       return timestamps
         .filter(Boolean)
         .sort((left, right) => Date.parse(right) - Date.parse(left))[0];
     }, [editMetadataBySection]);
+
+    const hasAnyHighlights = useMemo(() =>
+      Object.values(editMetadataBySection).some((metadata) =>
+        Object.values(metadata.markers).length > 0,
+      ),
+    [editMetadataBySection]);
 
     const sectionExists = (key: string): boolean => key in sectionContents;
 
@@ -1110,7 +1123,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       return { predefinedSections: predefined, customSections: custom };
     }, [sectionContents]);
 
-    // ── Collect all figures and tables across the document in order ──
+    // â”€â”€ Collect all figures and tables across the document in order â”€â”€
     interface FigureEntry { sNo: number; figNo: string; name: string; }
     interface TableEntry { sNo: number; tableNo: string; name: string; }
 
@@ -1320,21 +1333,24 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     const isActiveSubsection = (subsectionKey: string) =>
       activeSubsectionKey === subsectionKey;
 
-    const sectionStyle = (sectionKey: string): React.CSSProperties => ({
-      position: "relative",
-      cursor: onSectionClick ? "pointer" : "default",
-      transition: "all 0.2s ease",
-      marginBottom: "24px",
-      ...(hasSectionEdits(sectionKey) &&
-        sectionKey !== "cover" && {
-          borderLeft: `3px solid ${LAST_CHANGED_COLOR}`,
-          paddingLeft: "8px",
-          marginLeft: "-8px",
-        }),
-      ...(hasSectionEdits(sectionKey) &&
-        sectionKey === "cover" && {
-          boxShadow: `inset 3px 0 0 ${LAST_CHANGED_COLOR}`,
-        }),
+    const sectionStyle = (sectionKey: string): React.CSSProperties => {
+      const highlightColor = getSectionHighlightColor(sectionKey);
+
+      return {
+        position: "relative",
+        cursor: onSectionClick ? "pointer" : "default",
+        transition: "all 0.2s ease",
+        marginBottom: "24px",
+        ...(highlightColor &&
+          sectionKey !== "cover" && {
+            borderLeft: `3px solid ${highlightColor}`,
+            paddingLeft: "8px",
+            marginLeft: "-8px",
+          }),
+        ...(highlightColor &&
+          sectionKey === "cover" && {
+            boxShadow: `inset 3px 0 0 ${highlightColor}`,
+          }),
       ...(isActive(sectionKey) &&
         sectionKey !== "cover" && {
           background: "#FFF9C4",
@@ -1360,7 +1376,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
         sectionKey === "cover" && {
           opacity: 0.9,
         }),
-    });
+      };
+    };
 
     const subsectionStyle = (subsectionKey: string): React.CSSProperties => ({
       position: "relative",
@@ -1375,7 +1392,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       }),
     });
 
-    // ─── STYLE CONSTANTS (updated to match TS_Template_original.docx) ───────
+    // â”€â”€â”€ STYLE CONSTANTS (updated to match TS_Template_original.docx) â”€â”€â”€â”€â”€â”€â”€
 
     // Document font: Hitachi Sans with Arial fallback (matches template font)
     const DOC_FONT = "'Hitachi Sans', Arial, sans-serif";
@@ -1561,16 +1578,20 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
     const getSectionEditMetadata = (sectionKey: string) =>
       editMetadataBySection[sectionKey];
 
-    const getEditedMarker = (sectionKey: string, path: string) => {
+    const getMarkerForPath = (sectionKey: string, path: string) => {
       const metadata = getSectionEditMetadata(sectionKey);
-      if (!metadata || !latestEditTimestamp) {
+      if (!metadata) {
         return undefined;
       }
 
       const normalizedPath = normalizeEditPath(path);
 
       return Object.values(metadata.markers).find((marker) => {
-        if (marker.updatedAt !== latestEditTimestamp) {
+        const markerType = getMarkerType(marker);
+
+        // "new" markers always match (Green persists â€” Rule 4)
+        // "updated" markers only match if they are the latest batch (Rule 3)
+        if (markerType === "updated" && marker.updatedAt !== latestUpdatedTimestamp) {
           return false;
         }
 
@@ -1586,24 +1607,39 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       });
     };
 
-    const isEditedPath = (sectionKey: string, path: string): boolean =>
-      Boolean(getEditedMarker(sectionKey, path));
+    const getHighlightType = (sectionKey: string, path: string): EditMarkerType | null => {
+      const marker = getMarkerForPath(sectionKey, path);
+      return marker ? getMarkerType(marker) : null;
+    };
 
-    const hasSectionEdits = (sectionKey: string) => {
+    const getSectionHighlightColor = (sectionKey: string): string | null => {
       const metadata = getSectionEditMetadata(sectionKey);
+      if (!metadata) {
+        return null;
+      }
 
-      return Boolean(
-        metadata &&
-          latestEditTimestamp &&
-          Object.values(metadata.markers).some(
-            (marker) => marker.updatedAt === latestEditTimestamp,
-          ),
+      const markers = Object.values(metadata.markers);
+
+      // If section has "updated" markers matching latest timestamp â†’ Orange
+      const hasUpdated = latestUpdatedTimestamp && markers.some(
+        (marker) => getMarkerType(marker) === "updated" && marker.updatedAt === latestUpdatedTimestamp,
       );
+      if (hasUpdated) {
+        return LAST_UPDATED_COLOR;
+      }
+
+      // Else if section has any "new" markers â†’ Green
+      const hasNew = markers.some((marker) => getMarkerType(marker) === "new");
+      if (hasNew) {
+        return LAST_CHANGED_COLOR;
+      }
+
+      return null;
     };
 
     const formatEditedTitle = (sectionKey: string, path?: string) => {
       const metadata = getSectionEditMetadata(sectionKey);
-      const marker = path ? getEditedMarker(sectionKey, path) : undefined;
+      const marker = path ? getMarkerForPath(sectionKey, path) : undefined;
       const updatedAt = marker?.updatedAt || metadata?.sectionUpdatedAt;
 
       if (!updatedAt) {
@@ -1615,46 +1651,65 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
         ? updatedAt
         : editedDate.toLocaleString();
 
-      return `Last edited: ${formattedDate}${marker?.editor ? ` by ${marker.editor}` : ""}`;
+      const markerType = marker ? getMarkerType(marker) : "updated";
+      const action = markerType === "new" ? "Added" : "Edited";
+      const byEditor = marker?.editor ? ` by ${marker.editor}` : "";
+
+      return `${action}${byEditor}: ${formattedDate}`;
     };
 
-    const getEditedTextStyle = (
+    const getHighlightTextStyle = (
       sectionKey: string,
       path: string,
-    ): React.CSSProperties =>
-      isEditedPath(sectionKey, path)
-        ? {
-            color: "#000000",
-            backgroundColor: LAST_CHANGED_SOFT,
-            boxShadow: `inset 3px 0 0 ${LAST_CHANGED_COLOR}`,
-            paddingLeft: "4px",
-          }
-        : {};
+    ): React.CSSProperties => {
+      const highlightType = getHighlightType(sectionKey, path);
+      if (!highlightType) return {};
 
-    const getEditedBlockStyle = (
-      sectionKey: string,
-      path: string,
-    ): React.CSSProperties =>
-      isEditedPath(sectionKey, path)
-        ? {
-            color: "#000000",
-            backgroundColor: LAST_CHANGED_SOFT,
-            borderLeft: `3px solid ${LAST_CHANGED_COLOR}`,
-            paddingLeft: "8px",
-          }
-        : {};
+      const color = highlightType === "new" ? LAST_CHANGED_COLOR : LAST_UPDATED_COLOR;
+      const soft = highlightType === "new" ? LAST_CHANGED_SOFT : LAST_UPDATED_SOFT;
 
-    const getEditedCellStyle = (
+      return {
+        color: "#000000",
+        backgroundColor: soft,
+        boxShadow: `inset 3px 0 0 ${color}`,
+        paddingLeft: "4px",
+      };
+    };
+
+    const getHighlightBlockStyle = (
       sectionKey: string,
       path: string,
-    ): React.CSSProperties =>
-      isEditedPath(sectionKey, path)
-        ? {
-            color: '#000000',
-            backgroundColor: LAST_CHANGED_FILL,
-            border: `1.5px solid ${LAST_CHANGED_COLOR}`,
-          }
-        : {};
+    ): React.CSSProperties => {
+      const highlightType = getHighlightType(sectionKey, path);
+      if (!highlightType) return {};
+
+      const color = highlightType === "new" ? LAST_CHANGED_COLOR : LAST_UPDATED_COLOR;
+      const soft = highlightType === "new" ? LAST_CHANGED_SOFT : LAST_UPDATED_SOFT;
+
+      return {
+        color: "#000000",
+        backgroundColor: soft,
+        borderLeft: `3px solid ${color}`,
+        paddingLeft: "8px",
+      };
+    };
+
+    const getHighlightCellStyle = (
+      sectionKey: string,
+      path: string,
+    ): React.CSSProperties => {
+      const highlightType = getHighlightType(sectionKey, path);
+      if (!highlightType) return {};
+
+      const color = highlightType === "new" ? LAST_CHANGED_COLOR : LAST_UPDATED_COLOR;
+      const fill = highlightType === "new" ? LAST_CHANGED_FILL : LAST_UPDATED_FILL;
+
+      return {
+        color: '#000000',
+        backgroundColor: fill,
+        border: `1.5px solid ${color}`,
+      };
+    };
 
     const imageFrameStyle: React.CSSProperties = {
       width: "100%",
@@ -1683,10 +1738,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
       value: React.ReactNode,
     ) => (
       <span
-        title={isEditedPath(sectionKey, path) ? formatEditedTitle(sectionKey, path) : undefined}
+        title={getHighlightType(sectionKey, path) ? formatEditedTitle(sectionKey, path) : undefined}
         style={{
           ...(getRequiredStyle(sectionKey, path) || {}),
-          ...getEditedTextStyle(sectionKey, path),
+          ...getHighlightTextStyle(sectionKey, path),
         }}
       >
         {value}
@@ -1742,13 +1797,13 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
             <li
               key={`${sourcePath}-${index}-${text}`}
               title={
-                isEditedPath(sectionKey, sourcePath)
+                getHighlightType(sectionKey, sourcePath)
                   ? formatEditedTitle(sectionKey, sourcePath)
                   : undefined
               }
               style={{
                 ...bulletListItemStyle,
-                ...getEditedBlockStyle(sectionKey, sourcePath),
+                ...getHighlightBlockStyle(sectionKey, sourcePath),
               }}
             >
               {renderTemplateText(text)}
@@ -1784,18 +1839,18 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
           className={[
             "rich-text-preview",
             isRequired ? "required-preview-content" : "",
-            requiredField && isEditedPath(requiredField.sectionKey, requiredField.path)
+            requiredField && getHighlightType(requiredField.sectionKey, requiredField.path)
               ? "edited-preview-content"
               : "",
           ].filter(Boolean).join(" ")}
           title={
-            requiredField && isEditedPath(requiredField.sectionKey, requiredField.path)
+            requiredField && getHighlightType(requiredField.sectionKey, requiredField.path)
               ? formatEditedTitle(requiredField.sectionKey, requiredField.path)
               : undefined
           }
           style={{
             ...(requiredField
-              ? getEditedBlockStyle(requiredField.sectionKey, requiredField.path)
+              ? getHighlightBlockStyle(requiredField.sectionKey, requiredField.path)
               : {}),
           }}
           dangerouslySetInnerHTML={{ __html: html }}
@@ -1826,7 +1881,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               key={`${keyPrefix}-${index}`}
               title={
                 requiredField &&
-                isEditedPath(requiredField.sectionKey, `${requiredField.path}.${index}`)
+                getHighlightType(requiredField.sectionKey, `${requiredField.path}.${index}`)
                   ? formatEditedTitle(requiredField.sectionKey, `${requiredField.path}.${index}`)
                   : undefined
               }
@@ -1834,7 +1889,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 ...bulletListItemStyle,
                 ...(isRequired ? requiredTextStyle : {}),
                 ...(requiredField
-                  ? getEditedTextStyle(requiredField.sectionKey, `${requiredField.path}.${index}`)
+                  ? getHighlightTextStyle(requiredField.sectionKey, `${requiredField.path}.${index}`)
                   : {}),
               }}
             >
@@ -1899,7 +1954,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               style={
                 rowIndex === undefined
                   ? undefined
-                  : getEditedTextStyle("hardware_specs", `rows.${rowIndex}.${key}`)
+                  : getHighlightTextStyle("hardware_specs", `rows.${rowIndex}.${key}`)
               }
             >
               {line}
@@ -1985,7 +2040,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
           <td
             key={`extra-cell-${column}`}
             title={
-              sectionKey && isEditedPath(sectionKey, path)
+              sectionKey && getHighlightType(sectionKey, path)
                 ? formatEditedTitle(sectionKey, path)
                 : undefined
             }
@@ -1994,7 +2049,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               ...(sectionKey && isRequiredPreviewPath(sectionKey, path)
                 ? requiredTextStyle
                 : {}),
-              ...(sectionKey ? getEditedCellStyle(sectionKey, path) : {}),
+              ...(sectionKey ? getHighlightCellStyle(sectionKey, path) : {}),
             }}
           >
             {row[column] || ""}
@@ -2591,7 +2646,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                           <td
                             key={`${column}-${columnIndex}`}
                             title={
-                              isEditedPath(sectionKey, cellPath)
+                              getHighlightType(sectionKey, cellPath)
                                 ? formatEditedTitle(sectionKey, cellPath)
                                 : undefined
                             }
@@ -2599,7 +2654,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                               border: '1px solid #ddd',
                               padding: '12px',
                               textAlign: 'left',
-                              ...getEditedCellStyle(sectionKey, cellPath),
+                              ...getHighlightCellStyle(sectionKey, cellPath),
                             }}
                           >
                             {row[column] || ''}
@@ -2660,16 +2715,16 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 key={index}
                 className={[
                   "rich-text-preview",
-                  isEditedPath(sectionKey, `${dataPath}.paragraphs.${index}.html`)
+                  getHighlightType(sectionKey, `${dataPath}.paragraphs.${index}.html`)
                     ? "edited-preview-content"
                     : "",
                 ].filter(Boolean).join(" ")}
                 title={
-                  isEditedPath(sectionKey, `${dataPath}.paragraphs.${index}.html`)
+                  getHighlightType(sectionKey, `${dataPath}.paragraphs.${index}.html`)
                     ? formatEditedTitle(sectionKey, `${dataPath}.paragraphs.${index}.html`)
                     : undefined
                 }
-                style={getEditedBlockStyle(
+                style={getHighlightBlockStyle(
                   sectionKey,
                   `${dataPath}.paragraphs.${index}.html`,
                 )}
@@ -2712,7 +2767,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
           <h2 style={heading2BlackStyle}>
             <span
               title={
-                isEditedPath(
+                getHighlightType(
                   sectionKey,
                   `subsections.${subsectionIndex}.name`,
                 )
@@ -2722,7 +2777,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                     )
                   : undefined
               }
-              style={getEditedTextStyle(
+              style={getHighlightTextStyle(
                 sectionKey,
                 `subsections.${subsectionIndex}.name`,
               )}
@@ -2761,11 +2816,11 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
           <h1 style={heading1RedStyle}>
             <span
               title={
-                isEditedPath(sectionKey, "title")
+                getHighlightType(sectionKey, "title")
                   ? formatEditedTitle(sectionKey, "title")
                   : undefined
               }
-              style={getEditedTextStyle(sectionKey, "title")}
+              style={getHighlightTextStyle(sectionKey, "title")}
             >
               {sectionNumber}.{" "}
               {content.title || (
@@ -3100,7 +3155,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               transition: "transform 0.2s ease",
             }}
           >
-            {/* ── A4/Letter page: 21.59cm wide, 2.54cm margins = 96px margin ── */}
+            {/* â”€â”€ A4/Letter page: 21.59cm wide, 2.54cm margins = 96px margin â”€â”€ */}
             <PaginatedWordPreview
               docFont={DOC_FONT}
               activeSectionKey={activeSectionKey}
@@ -3109,6 +3164,49 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               onAddSectionClick={handleAddSectionClick}
               onTocPageNumbersChange={handleTocPageNumbersChange}
             >
+              {/* ── HIGHLIGHT LEGEND ── */}
+              {hasAnyHighlights && (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "16px",
+                    padding: "8px 12px",
+                    backgroundColor: "#F8F9FA",
+                    border: "1px solid #E5E7EB",
+                    borderRadius: "4px",
+                    fontSize: "11px",
+                    color: "#6B7280",
+                    marginBottom: "12px",
+                    alignItems: "center",
+                  }}
+                >
+                  <span style={{ fontWeight: 600, color: "#374151" }}>Highlights:</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: 12,
+                        height: 12,
+                        backgroundColor: LAST_CHANGED_COLOR,
+                        borderRadius: 2,
+                      }}
+                    />
+                    New content
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: 12,
+                        height: 12,
+                        backgroundColor: LAST_UPDATED_COLOR,
+                        borderRadius: 2,
+                      }}
+                    />
+                    Updated content
+                  </span>
+                </div>
+              )}
               {/* ── COVER PAGE ── */}
               <SectionWrapper
                 sectionKey="cover"
@@ -3238,7 +3336,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {/* Page Break: End of Page 1 (Cover) */}
               {sectionExists('revision_history') && renderInsertionsAfter('cover')}
 
-              {/* ── REVISION HISTORY ── */}
+              {/* â”€â”€ REVISION HISTORY â”€â”€ */}
               {sectionExists('revision_history') && (
               <SectionWrapper
                 sectionKey="revision_history"
@@ -3281,21 +3379,21 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   <tbody>
                     {revisionRows.map((row: any, index: number) => (
                       <tr key={`revision-row-${index}`}>
-                        <td style={{ ...tableCellStyle, ...getEditedCellStyle("revision_history", `rows.${index}.sr_no`) }}>{row.sr_no || index + 1}</td>
-                        <td style={{ ...tableCellStyle, ...getEditedCellStyle("revision_history", `rows.${index}.revised_by`) }}>{row.revised_by || ""}</td>
-                        <td style={{ ...tableCellStyle, ...getEditedCellStyle("revision_history", `rows.${index}.checked_by`) }}>{row.checked_by || ""}</td>
-                        <td style={{ ...tableCellStyle, ...getEditedCellStyle("revision_history", `rows.${index}.approved_by`) }}>{row.approved_by || ""}</td>
+                        <td style={{ ...tableCellStyle, ...getHighlightCellStyle("revision_history", `rows.${index}.sr_no`) }}>{row.sr_no || index + 1}</td>
+                        <td style={{ ...tableCellStyle, ...getHighlightCellStyle("revision_history", `rows.${index}.revised_by`) }}>{row.revised_by || ""}</td>
+                        <td style={{ ...tableCellStyle, ...getHighlightCellStyle("revision_history", `rows.${index}.checked_by`) }}>{row.checked_by || ""}</td>
+                        <td style={{ ...tableCellStyle, ...getHighlightCellStyle("revision_history", `rows.${index}.approved_by`) }}>{row.approved_by || ""}</td>
                         <td
                           style={{
                             ...tableCellStyle,
                             ...requiredTextStyle,
-                            ...getEditedCellStyle("revision_history", `rows.${index}.details`),
+                            ...getHighlightCellStyle("revision_history", `rows.${index}.details`),
                           }}
                         >
                           {row.details || ""}
                         </td>
-                        <td style={{ ...tableCellStyle, ...getEditedCellStyle("revision_history", `rows.${index}.date`) }}>{row.date || ""}</td>
-                        <td style={{ ...tableCellStyle, ...getEditedCellStyle("revision_history", `rows.${index}.rev_no`) }}>{row.rev_no || ""}</td>
+                        <td style={{ ...tableCellStyle, ...getHighlightCellStyle("revision_history", `rows.${index}.date`) }}>{row.date || ""}</td>
+                        <td style={{ ...tableCellStyle, ...getHighlightCellStyle("revision_history", `rows.${index}.rev_no`) }}>{row.rev_no || ""}</td>
                         {renderExtraRowCells(
                           row,
                           getExtraTableColumns(revisionRows, [
@@ -3336,7 +3434,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                     marginBottom: "4px",
                   }}
                 >
-                  Copyright © 2026 Hitachi India Pvt. Ltd.
+                  Copyright Â© 2026 Hitachi India Pvt. Ltd.
                 </p>
                 <p
                   style={{
@@ -3348,11 +3446,11 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 >
                   All rights in this work are strictly reserved by the producer
                   and the owner. Any unauthorized use of this
-                  material—including, but not limited to, copying, reproduction,
+                  materialâ€”including, but not limited to, copying, reproduction,
                   hiring, lending, public performance, broadcasting (including
                   communication to the public or via the internet), or
                   transmission by any distribution or diffusion service, whether
-                  in whole or in part—is strictly prohibited. This work contains
+                  in whole or in partâ€”is strictly prohibited. This work contains
                   confidential and/or proprietary information. The information
                   and ideas contained herein are provided solely for the use of
                   the intended recipient. All content remains the exclusive
@@ -3395,7 +3493,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('executive_summary') &&
                 renderInsertionsAfter('revision_history')}
 
-              {/* ── EXECUTIVE SUMMARY ── */}
+              {/* â”€â”€ EXECUTIVE SUMMARY â”€â”€ */}
               <SectionWrapper
                 sectionKey="executive_summary"
                 tocId="section:executive_summary"
@@ -3409,7 +3507,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 }
                 style={sectionStyle("executive_summary")}
               >
-                {/* Heading 1, burgundy #943634 — matches template */}
+                {/* Heading 1, burgundy #943634 â€” matches template */}
                 <h1 style={heading1BurgundyStyle}>
                   {formatHeadingWithNumber(
                     documentContent.executiveSummary.heading ||
@@ -3467,7 +3565,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionExists('process_flow') || sectionExists('overview')) &&
                 renderInsertionsAfter('executive_summary')}
 
-              {/* ── GENERAL OVERVIEW heading (Heading 1, #EE0000) ── */}
+              {/* â”€â”€ GENERAL OVERVIEW heading (Heading 1, #EE0000) â”€â”€ */}
               {(sectionExists('introduction') || sectionExists('abbreviations') || 
                 sectionExists('process_flow') || sectionExists('overview')) && (
                 <h1 style={heading1RedStyle} data-toc-id="group:general_overview">
@@ -3478,7 +3576,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </h1>
               )}
 
-              {/* ── INTRODUCTION ── */}
+              {/* â”€â”€ INTRODUCTION â”€â”€ */}
               {sectionExists('introduction') && (
                 <SectionWrapper
                   sectionKey="introduction"
@@ -3491,7 +3589,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   sectionRef={(el) => (sectionRefs.current.introduction = el)}
                   style={sectionStyle("introduction")}
                 >
-                  {/* Heading 2, no color (black) — matches template */}
+                  {/* Heading 2, no color (black) â€” matches template */}
                   <h2 style={heading2BlackStyle}>
                     {formatHeadingWithNumber(
                       documentContent.introduction.heading || "INTRODUCTION",
@@ -3502,7 +3600,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </SectionWrapper>
               )}
 
-              {/* ── ABBREVIATIONS ── */}
+              {/* â”€â”€ ABBREVIATIONS â”€â”€ */}
               {sectionExists('abbreviations') && (
                 <SectionWrapper
                   sectionKey="abbreviations"
@@ -3564,19 +3662,19 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                       {(documentContent.abbreviations.rows || []).map(
                         (row: any, index: number) => (
                           <tr key={`abbr-${index}`}>
-                            <td style={{ ...tableCellStyle, ...getEditedCellStyle("abbreviations", `rows.${index}.sr_no`) }}>
+                            <td style={{ ...tableCellStyle, ...getHighlightCellStyle("abbreviations", `rows.${index}.sr_no`) }}>
                               {row.sr_no || index + 1}
                             </td>
                             <td
                               style={{
                                 ...tableCellStyle,
                                 ...requiredTextStyle,
-                                ...getEditedCellStyle("abbreviations", `rows.${index}.abbreviation`),
+                                ...getHighlightCellStyle("abbreviations", `rows.${index}.abbreviation`),
                               }}
                             >
                               {row.abbreviation || ""}
                             </td>
-                            <td style={{ ...tableCellStyle, ...getEditedCellStyle("abbreviations", `rows.${index}.description`) }}>
+                            <td style={{ ...tableCellStyle, ...getHighlightCellStyle("abbreviations", `rows.${index}.description`) }}>
                               {row.description || ""}
                             </td>
                             {renderExtraRowCells(
@@ -3607,7 +3705,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </SectionWrapper>
               )}
 
-              {/* ── PROCESS FLOW ── */}
+              {/* â”€â”€ PROCESS FLOW â”€â”€ */}
               {sectionExists('process_flow') && (
                 <SectionWrapper
                   sectionKey="process_flow"
@@ -3634,7 +3732,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </SectionWrapper>
               )}
 
-              {/* ── OVERVIEW ── */}
+              {/* â”€â”€ OVERVIEW â”€â”€ */}
               {sectionExists('overview') && (
                 <SectionWrapper
                   sectionKey="overview"
@@ -3721,7 +3819,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionExists("fat_condition")) &&
                 renderInsertionsAfter('overview')}
 
-              {/* ── OFFERINGS heading (Heading 1, #EE0000) ── */}
+              {/* â”€â”€ OFFERINGS heading (Heading 1, #EE0000) â”€â”€ */}
               {(sectionExists("features") ||
                 sectionExists("remote_support") ||
                 sectionExists("documentation_control") ||
@@ -3736,7 +3834,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </h1>
               )}
 
-              {/* ── FEATURES ── */}
+              {/* â”€â”€ FEATURES â”€â”€ */}
               {sectionExists("features") && (
                 <SectionWrapper
                 sectionKey="features"
@@ -3770,7 +3868,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                         data-toc-id={`feature-item:${index}`}
                         style={{ marginBottom: "14px" }}
                       >
-                        {/* Feature titles: Heading 3, numbered sub-subsection — matches template TOC */}
+                        {/* Feature titles: Heading 3, numbered sub-subsection â€” matches template TOC */}
                         <h3 style={heading3RedStyle}>
                           {featureSubNum}{" "}
                           {renderRequiredValue(
@@ -3795,7 +3893,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── REMOTE SUPPORT ── */}
+              {/* â”€â”€ REMOTE SUPPORT â”€â”€ */}
               {sectionExists("remote_support") && (
                 <SectionWrapper
                 sectionKey="remote_support"
@@ -3808,7 +3906,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionRef={(el) => (sectionRefs.current.remote_support = el)}
                 style={sectionStyle("remote_support")}
               >
-                {/* Heading 2, #EE0000 — matches template (was incorrectly black before) */}
+                {/* Heading 2, #EE0000 â€” matches template (was incorrectly black before) */}
                 <h2 style={heading2RedStyle}>
                   {formatHeadingWithNumber(
                     documentContent.remoteSupport.heading ||
@@ -3828,7 +3926,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── DOCUMENTATION CONTROL ── */}
+              {/* â”€â”€ DOCUMENTATION CONTROL â”€â”€ */}
               {sectionExists("documentation_control") && (
                 <SectionWrapper
                 sectionKey="documentation_control"
@@ -3863,7 +3961,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── CUSTOMER TRAINING ── */}
+              {/* â”€â”€ CUSTOMER TRAINING â”€â”€ */}
               {sectionExists("customer_training") && (
                 <SectionWrapper
                 sectionKey="customer_training"
@@ -3894,7 +3992,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── SYSTEM CONFIGURATION ── */}
+              {/* â”€â”€ SYSTEM CONFIGURATION â”€â”€ */}
               {sectionExists("system_config") && (
                 <SectionWrapper
                 sectionKey="system_config"
@@ -3933,7 +4031,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── FAT CONDITION ── */}
+              {/* â”€â”€ FAT CONDITION â”€â”€ */}
               {sectionExists("fat_condition") && (
                 <SectionWrapper
                 sectionKey="fat_condition"
@@ -3963,7 +4061,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {/* Page Break: End of Page 9-11 (Offerings) */}
               {sectionExists('tech_stack') && renderInsertionsAfter('fat_condition')}
 
-              {/* ── TECHNOLOGY STACK (Heading 1, #EE0000) ── */}
+              {/* â”€â”€ TECHNOLOGY STACK (Heading 1, #EE0000) â”€â”€ */}
               {sectionExists('tech_stack') && (
                 <SectionWrapper
                   sectionKey="tech_stack"
@@ -4029,12 +4127,12 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                     {techRows.length > 0 ? (
                       techRows.map((row: any, index: number) => (
                         <tr key={`tech-row-${index}`}>
-                          <td style={{ ...tableCellStyle, ...getEditedCellStyle("tech_stack", `rows.${index}.sr_no`) }}>
+                          <td style={{ ...tableCellStyle, ...getHighlightCellStyle("tech_stack", `rows.${index}.sr_no`) }}>
                             {row.sr_no || index + 1}
                           </td>
-                          <td style={{ ...tableCellStyle, ...getEditedCellStyle("tech_stack", `rows.${index}.component`) }}>{row.component || ""}</td>
-                          <td style={{ ...tableCellStyle, ...getEditedCellStyle("tech_stack", `rows.${index}.technology`) }}>
-                            <div style={{ ...requiredTextStyle, ...getEditedTextStyle("tech_stack", `rows.${index}.technology`) }}>
+                          <td style={{ ...tableCellStyle, ...getHighlightCellStyle("tech_stack", `rows.${index}.component`) }}>{row.component || ""}</td>
+                          <td style={{ ...tableCellStyle, ...getHighlightCellStyle("tech_stack", `rows.${index}.technology`) }}>
+                            <div style={{ ...requiredTextStyle, ...getHighlightTextStyle("tech_stack", `rows.${index}.technology`) }}>
                               {row.technology || (
                                 <span style={requiredPlaceholderStyle}>
                                   [Technology]
@@ -4047,7 +4145,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                                   ...noteParagraphStyle,
                                   marginBottom: 0,
                                   marginTop: "6px",
-                                  ...getEditedTextStyle("tech_stack", `rows.${index}.note`),
+                                  ...getHighlightTextStyle("tech_stack", `rows.${index}.note`),
                                 }}
                               >
                                 {row.note}
@@ -4082,7 +4180,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── HARDWARE SPECS (Heading 3, #EE0000) ── */}
+              {/* â”€â”€ HARDWARE SPECS (Heading 3, #EE0000) â”€â”€ */}
               {sectionExists('hardware_specs') && (
                 <SectionWrapper
                 sectionKey="hardware_specs"
@@ -4172,16 +4270,16 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                     {hardwareRows.length > 0 ? (
                       hardwareRows.map((row: any, index: number) => (
                         <tr key={`hardware-row-${index}`}>
-                          <td style={{ ...tableCellStyle, ...getEditedCellStyle("hardware_specs", `rows.${index}.sr_no`) }}>
+                          <td style={{ ...tableCellStyle, ...getHighlightCellStyle("hardware_specs", `rows.${index}.sr_no`) }}>
                             {row.sr_no || index + 1}
                           </td>
-                          <td style={{ ...tableCellStyle, ...getEditedCellStyle("hardware_specs", `rows.${index}.name`) }}>{row.name || ""}</td>
-                          <td style={{ ...tableCellStyle, ...getEditedCellStyle("hardware_specs", `rows.${index}.specs_line1`) }}>{renderSpecLines(row, index)}</td>
+                          <td style={{ ...tableCellStyle, ...getHighlightCellStyle("hardware_specs", `rows.${index}.name`) }}>{row.name || ""}</td>
+                          <td style={{ ...tableCellStyle, ...getHighlightCellStyle("hardware_specs", `rows.${index}.specs_line1`) }}>{renderSpecLines(row, index)}</td>
                           <td
                             style={{
                               ...tableCellStyle,
                               ...requiredTextStyle,
-                              ...getEditedCellStyle("hardware_specs", `rows.${index}.maker`),
+                              ...getHighlightCellStyle("hardware_specs", `rows.${index}.maker`),
                             }}
                           >
                             {row.maker || (
@@ -4190,7 +4288,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                               </span>
                             )}
                           </td>
-                          <td style={{ ...tableCellStyle, ...getEditedCellStyle("hardware_specs", `rows.${index}.qty`) }}>
+                          <td style={{ ...tableCellStyle, ...getHighlightCellStyle("hardware_specs", `rows.${index}.qty`) }}>
                             {row.qty || (
                               <span style={placeholderStyle}>[Qty]</span>
                             )}
@@ -4227,7 +4325,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── SOFTWARE SPECS (Heading 3, #EE0000) ── */}
+              {/* â”€â”€ SOFTWARE SPECS (Heading 3, #EE0000) â”€â”€ */}
               {sectionExists('software_specs') && (
                 <SectionWrapper
                 sectionKey="software_specs"
@@ -4305,18 +4403,18 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                     {softwareRows.length > 0 ? (
                       softwareRows.map((row: any, index: number) => (
                         <tr key={`software-row-${index}`}>
-                          <td style={{ ...tableCellStyle, ...getEditedCellStyle("software_specs", `rows.${index}.sr_no`) }}>
+                          <td style={{ ...tableCellStyle, ...getHighlightCellStyle("software_specs", `rows.${index}.sr_no`) }}>
                             {row.sr_no || index + 1}
                           </td>
-                          <td style={{ ...tableCellStyle, ...getEditedCellStyle("software_specs", `rows.${index}.name`) }}>
+                          <td style={{ ...tableCellStyle, ...getHighlightCellStyle("software_specs", `rows.${index}.name`) }}>
                             {formatSoftwareName(row, index)}
                           </td>
-                          <td style={{ ...tableCellStyle, ...getEditedCellStyle("software_specs", `rows.${index}.maker`) }}>
+                          <td style={{ ...tableCellStyle, ...getHighlightCellStyle("software_specs", `rows.${index}.maker`) }}>
                             {row.maker || (
                               <span style={placeholderStyle}>[Maker]</span>
                             )}
                           </td>
-                          <td style={{ ...tableCellStyle, ...getEditedCellStyle("software_specs", `rows.${index}.qty`) }}>{row.qty || ""}</td>
+                          <td style={{ ...tableCellStyle, ...getHighlightCellStyle("software_specs", `rows.${index}.qty`) }}>{row.qty || ""}</td>
                           {renderExtraRowCells(
                             row,
                             getExtraTableColumns(softwareRows, [
@@ -4345,7 +4443,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── THIRD PARTY SW (Heading 3, #EE0000) ── */}
+              {/* â”€â”€ THIRD PARTY SW (Heading 3, #EE0000) â”€â”€ */}
               {sectionExists('third_party_sw') && (
                 <SectionWrapper
                 sectionKey="third_party_sw"
@@ -4391,7 +4489,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionExists("supervisors")) &&
                 renderInsertionsAfter('third_party_sw')}
 
-              {/* ── SCHEDULE (Heading 1, #EE0000) ── */}
+              {/* â”€â”€ SCHEDULE (Heading 1, #EE0000) â”€â”€ */}
               {(sectionExists("overall_gantt") ||
                 sectionExists("shutdown_gantt") ||
                 sectionExists("supervisors")) && (
@@ -4403,7 +4501,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </h1>
               )}
 
-              {/* ── OVERALL GANTT ── */}
+              {/* â”€â”€ OVERALL GANTT â”€â”€ */}
               {sectionExists("overall_gantt") && (
                 <SectionWrapper
                 sectionKey="overall_gantt"
@@ -4438,7 +4536,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── SHUTDOWN GANTT ── */}
+              {/* â”€â”€ SHUTDOWN GANTT â”€â”€ */}
               {sectionExists("shutdown_gantt") && (
                 <SectionWrapper
                 sectionKey="shutdown_gantt"
@@ -4476,7 +4574,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── SUPERVISORS (Heading 3, #EE0000) ── */}
+              {/* â”€â”€ SUPERVISORS (Heading 3, #EE0000) â”€â”€ */}
               {sectionExists("supervisors") && (
                 <SectionWrapper
                 sectionKey="supervisors"
@@ -4519,7 +4617,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionExists('cybersecurity')) &&
                 renderInsertionsAfter('supervisors')}
 
-              {/* ── SCOPE OF SUPPLY (Heading 1, #EE0000) ── */}
+              {/* â”€â”€ SCOPE OF SUPPLY (Heading 1, #EE0000) â”€â”€ */}
               {(sectionExists('scope_definitions') || sectionExists('division_of_eng') || 
                 sectionExists('value_addition') || sectionExists('work_completion') || 
                 sectionExists('buyer_obligations') || sectionExists('exclusion_list') || 
@@ -4533,7 +4631,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </h1>
               )}
 
-              {/* ── SCOPE DEFINITIONS (Heading 2, black — no color in template) ── */}
+              {/* â”€â”€ SCOPE DEFINITIONS (Heading 2, black â€” no color in template) â”€â”€ */}
               {sectionExists('scope_definitions') && (
               <SectionWrapper
                 sectionKey="scope_definitions"
@@ -4562,7 +4660,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── DIVISION OF ENGINEERING ── */}
+              {/* â”€â”€ DIVISION OF ENGINEERING â”€â”€ */}
               {sectionExists('division_of_eng') && (
               <SectionWrapper
                 sectionKey="division_of_eng"
@@ -4620,7 +4718,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                               <td
                                 key={`matrix-cell-${rowIndex}-${cellIndex}`}
                                 title={
-                                  isEditedPath(
+                                  getHighlightType(
                                     "division_of_eng",
                                     `matrix_rows.${rowIndex}.${cellIndex}`,
                                   )
@@ -4639,7 +4737,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                                   backgroundColor:
                                     headerBg || groupBg || "#FFFFFF",
                                   color: headerColor || undefined,
-                                  ...getEditedCellStyle(
+                                  ...getHighlightCellStyle(
                                     "division_of_eng",
                                     `matrix_rows.${rowIndex}.${cellIndex}`,
                                   ),
@@ -4667,7 +4765,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── VALUE ADDITION ── */}
+              {/* â”€â”€ VALUE ADDITION â”€â”€ */}
               {sectionExists('value_addition') && (
               <SectionWrapper
                 sectionKey="value_addition"
@@ -4709,7 +4807,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 sectionExists('disclaimer')) && 
                 renderInsertionsAfter('value_addition')}
 
-              {/* ── WORK COMPLETION ── */}
+              {/* â”€â”€ WORK COMPLETION â”€â”€ */}
               {sectionExists('work_completion') && (
               <SectionWrapper
                 sectionKey="work_completion"
@@ -4744,7 +4842,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── BUYER OBLIGATIONS ── */}
+              {/* â”€â”€ BUYER OBLIGATIONS â”€â”€ */}
               {sectionExists('buyer_obligations') && (
               <SectionWrapper
                 sectionKey="buyer_obligations"
@@ -4777,7 +4875,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── EXCLUSION LIST ── */}
+              {/* â”€â”€ EXCLUSION LIST â”€â”€ */}
               {sectionExists('exclusion_list') && (
               <SectionWrapper
                 sectionKey="exclusion_list"
@@ -4804,7 +4902,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── BUYER PREREQUISITES ── */}
+              {/* â”€â”€ BUYER PREREQUISITES â”€â”€ */}
               {sectionExists('buyer_prerequisites') && (
               <SectionWrapper
                 sectionKey="buyer_prerequisites"
@@ -4840,7 +4938,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── BINDING CONDITIONS (Heading 2, #4F81BD) ── */}
+              {/* â”€â”€ BINDING CONDITIONS (Heading 2, #4F81BD) â”€â”€ */}
               {sectionExists('binding_conditions') && (
               <SectionWrapper
                 sectionKey="binding_conditions"
@@ -4872,7 +4970,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               </SectionWrapper>
               )}
 
-              {/* ── CYBERSECURITY (Heading 2, #4F81BD) ── */}
+              {/* â”€â”€ CYBERSECURITY (Heading 2, #4F81BD) â”€â”€ */}
               {sectionExists('cybersecurity') && (
               <SectionWrapper
                 sectionKey="cybersecurity"
@@ -4903,7 +5001,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('disclaimer') &&
                 renderInsertionsAfter('cybersecurity')}
 
-              {/* ── DISCLAIMER (Heading 1, #4F81BD) ── */}
+              {/* â”€â”€ DISCLAIMER (Heading 1, #4F81BD) â”€â”€ */}
               {sectionExists('disclaimer') && (
               <SectionWrapper
                 sectionKey="disclaimer"
@@ -4924,7 +5022,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                 </h1>
                 {(documentContent.disclaimer.sections || DISCLAIMER_SECTIONS).map((section: any, sectionIdx: number) => (
                   <div key={section.title} style={{ marginBottom: "18px" }} data-toc-id={`disclaimer-subsection:${sectionIdx}`}>
-                    {/* Disclaimer subsections: Heading 2, no color (black) — matches template */}
+                    {/* Disclaimer subsections: Heading 2, no color (black) â€” matches template */}
                     <h2 style={heading2BlackStyle}>
                       {formatHeadingWithNumber(
                         section.title,
@@ -4940,7 +5038,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {/* Page Break: End of Page 24-25 (Disclaimer) */}
               {sectionExists('poc') && renderInsertionsAfter('disclaimer')}
 
-              {/* ── PROOF OF CONCEPT (Heading 1, #4F81BD) ── */}
+              {/* â”€â”€ PROOF OF CONCEPT (Heading 1, #4F81BD) â”€â”€ */}
               {sectionExists('poc') && (
               <SectionWrapper
                 sectionKey="poc"
@@ -4986,7 +5084,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
               {sectionExists('list_of_figures_tables') && renderInsertionsAfter('poc')}
               {!sectionExists('list_of_figures_tables') && renderInsertionsAfter('poc', false)}
 
-              {/* ── LIST OF FIGURES & TABLES (Heading 1, #4F81BD) ── */}
+              {/* â”€â”€ LIST OF FIGURES & TABLES (Heading 1, #4F81BD) â”€â”€ */}
               {sectionExists('list_of_figures_tables') && (
               <SectionWrapper
                 sectionKey="list_of_figures_tables"
@@ -5007,7 +5105,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   )}
                 </h1>
 
-                {/* ── List of Figures subsection ── */}
+                {/* â”€â”€ List of Figures subsection â”€â”€ */}
                 <h2
                   data-toc-id="section:list_of_figures"
                   style={{
@@ -5048,7 +5146,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = React.memo(
                   </p>
                 )}
 
-                {/* ── List of Tables subsection ── */}
+                {/* â”€â”€ List of Tables subsection â”€â”€ */}
                 <h2
                   data-toc-id="section:list_of_tables"
                   style={{

@@ -24,6 +24,8 @@ export default defineConfig({
       '/api': {
         target: 'http://backend:8000',
         changeOrigin: true,
+        proxyTimeout: 300000,
+        timeout: 300000,
       },
       '/uploads': {
         target: 'http://backend:8000',
