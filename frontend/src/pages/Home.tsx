@@ -56,7 +56,7 @@ const HomePage = () => {
 
       const latestVersion = versions[0]
       const blob = await downloadVersion(latestVersion.id)
-      
+
       handleDocumentDownload(blob, latestVersion.filename)
     } catch (error) {
       toast.error('Failed to download document')
@@ -78,9 +78,12 @@ const HomePage = () => {
       {/* Header */}
       <div className="bg-surface border-b border-border">
         <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-primary mb-2">HITACHI</h1>
-            <p className="text-xl text-text-muted">Technical Specification Generator</p>
+          <div className="flex items-center gap-4">
+            <img src="/logo.png" alt="Logo" className="h-16 w-auto object-contain" />
+            <div>
+              <h1 className="text-4xl font-bold text-primary mb-2">HITACHI</h1>
+              <p className="text-xl text-text-muted">Technical Specification Document Generator</p>
+            </div>
           </div>
           <button
             onClick={openNewProjectModal}
